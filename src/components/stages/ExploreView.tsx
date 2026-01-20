@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export function ExploreView() {
     const { project, updateProject } = useProjectData();
-    const [viewState, setViewState] = useState<'entry' | 'tools' | 'workspace'>('entry');
+    const [viewState, setViewState] = useState<'entry' | 'tools' | 'workspace' | 'test'>('entry');
     const [showGuide, setShowGuide] = useState(false);
     const [activeMethod, setActiveMethod] = useState<MethodCard | null>(null);
     const [activeRunId, setActiveRunId] = useState<string | null>(null);

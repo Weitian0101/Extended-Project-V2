@@ -36,6 +36,9 @@ export function ToolWorkspace({ card, existingRun, onSave, onBack }: ToolWorkspa
         onSave(answers);
     };
 
+    const template = card.template || [];
+    const currentAnswers = answers || {};
+
     return (
         <div className="flex flex-col h-full bg-white">
             {/* Header */}
@@ -69,7 +72,7 @@ export function ToolWorkspace({ card, existingRun, onSave, onBack }: ToolWorkspa
             {/* Form Content */}
             <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full">
                 <div className="space-y-8">
-                    {card.template.map((step) => (
+                    {template.map((step) => (
                         <div key={step.id} className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
                             <label className="block text-lg font-medium text-gray-800 mb-3">
                                 {step.question}

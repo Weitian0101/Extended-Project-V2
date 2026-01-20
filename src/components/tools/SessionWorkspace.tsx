@@ -24,8 +24,9 @@ export function SessionWorkspace({ card, existingRun, onSave, onBack }: SessionW
         }
     }, [existingRun]);
 
-    const currentStep = card.steps[currentStepIndex];
-    const totalSteps = card.steps.length;
+    const steps = card.steps || [];
+    const currentStep = steps[currentStepIndex];
+    const totalSteps = steps.length;
 
     // --- State Helpers ---
     const getStepData = (stepId: string) => runData[stepId];

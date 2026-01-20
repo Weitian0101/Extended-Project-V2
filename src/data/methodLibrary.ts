@@ -33,6 +33,24 @@ export const METHOD_LIBRARY: MethodCard[] = [
                 label: 'Propose a 3-step sequence',
                 promptTemplate: 'Propose a 3-step warm-up sequence to build trust and creative energy.'
             }
+        ],
+        steps: [
+            {
+                id: 'step-1',
+                title: 'Brainstorm Ideas',
+                type: 'diverge',
+                facilitatorText: 'Let\'s start by generating some fun icebreaker ideas. Don\'t overthink it!',
+                placeholder: 'Type an idea and press Enter...',
+                aiCapability: 'generate'
+            },
+            {
+                id: 'step-2',
+                title: 'Select & Refine',
+                type: 'input',
+                facilitatorText: 'Pick your favorite idea and refine it into a clear instruction for the group.',
+                placeholder: 'Describe the final icebreaker activity here...',
+                aiCapability: 'refine'
+            }
         ]
     }
 ];
