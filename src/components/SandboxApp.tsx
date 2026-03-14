@@ -3,19 +3,19 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Menu, Settings2 } from 'lucide-react';
 
+import { ProjectSettingsDialog } from '@/components/dashboard/ProjectSettingsDialog';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { ProjectOverview } from '@/components/stages/ProjectOverview';
 import { ExploreView } from '@/components/stages/ExploreView';
 import { ImagineView } from '@/components/stages/ImagineView';
 import { ImplementView } from '@/components/stages/ImplementView';
+import { ProjectOverview } from '@/components/stages/ProjectOverview';
 import { TellStoryView } from '@/components/stages/TellStoryView';
-import { useProjectData } from '@/hooks/useProjectData';
-import { StageId, UserProfileData, WorkspaceProject } from '@/types';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { AvatarCluster } from '@/components/ui/AvatarCluster';
-import { ProfilePanel } from '@/components/ui/ProfilePanel';
-import { ProjectSettingsDialog } from '@/components/dashboard/ProjectSettingsDialog';
 import { Button } from '@/components/ui/Button';
+import { ProfilePanel } from '@/components/ui/ProfilePanel';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useProjectData } from '@/hooks/useProjectData';
+import { ProjectInvite, StageId, TeamMember, UserProfileData, WorkspaceProject } from '@/types';
 
 interface SandboxAppProps {
     project: WorkspaceProject;
@@ -23,15 +23,30 @@ interface SandboxAppProps {
     onExit: () => void;
     onUpdateProject: (projectId: string, updates: Partial<WorkspaceProject>) => void;
     onOpenProfile: () => void;
+    runtimeMode?: 'local-mvp' | 'remote-supabase';
+    onInviteMember?: (projectId: string, email: string, permission: TeamMember['permission']) => Promise<{
+        delivery: 'member-added' | 'invite-created';
+        invite?: ProjectInvite;
+    }>;
+    onUpdateMemberPermission?: (projectId: string, memberId: string, permission: TeamMember['permission']) => Promise<void>;
 }
 
-export function SandboxApp({ project: projectSummary, profile, onExit, onUpdateProject, onOpenProfile }: SandboxAppProps) {
+export function SandboxApp({
+    project: projectSummary,
+    profile,
+    onExit,
+    onUpdateProject,
+    onOpenProfile,
+    runtimeMode = 'local-mvp',
+    onInviteMember,
+    onUpdateMemberPermission
+}: SandboxAppProps) {
     const { project, updateProject, isLoaded } = useProjectData(projectSummary.id, projectSummary.name);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
 
     if (!isLoaded) {
-        return <div className="flex h-screen items-center justify-center bg-[var(--background)] text-[var(--foreground-muted)] font-display">Loading project...</div>;
+        return <div className="flex h-screen items-center justify-center bg-[var(--background)] font-display text-[var(--foreground-muted)]">Loading project...</div>;
     }
 
     const handleSetStage = (stage: StageId) => {
@@ -61,13 +76,13 @@ export function SandboxApp({ project: projectSummary, profile, onExit, onUpdateP
             case 'overview':
                 return <ProjectOverview project={project} onUpdateContext={handleUpdateContext} />;
             case 'explore':
-                return <ExploreView />;
+                return <ExploreView projectId={projectSummary.id} projectName={project.context.name} />;
             case 'imagine':
-                return <ImagineView />;
+                return <ImagineView projectId={projectSummary.id} projectName={project.context.name} />;
             case 'implement':
-                return <ImplementView />;
+                return <ImplementView projectId={projectSummary.id} projectName={project.context.name} />;
             case 'tell-story':
-                return <TellStoryView />;
+                return <TellStoryView projectId={projectSummary.id} projectName={project.context.name} />;
             default:
                 return <ProjectOverview project={project} onUpdateContext={handleUpdateContext} />;
         }
@@ -92,13 +107,13 @@ export function SandboxApp({ project: projectSummary, profile, onExit, onUpdateP
                             </button>
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Current Project</div>
-                                <div className="text-lg font-display font-semibold text-[var(--foreground)]">{projectSummary.name}</div>
+                                <div className="text-lg font-display font-semibold text-[var(--foreground)]">{project.context.name}</div>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2 lg:gap-3">
-                            <div className="hidden sm:flex items-center gap-3 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2">
-                                <AvatarCluster members={projectSummary.members.filter(member => member.status !== 'offline')} size="sm" />
+                            <div className="hidden items-center gap-3 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 sm:flex">
+                                <AvatarCluster members={projectSummary.members.filter((member) => member.status !== 'offline')} size="sm" />
                             </div>
                             <ThemeToggle compact />
                             <button
@@ -112,7 +127,7 @@ export function SandboxApp({ project: projectSummary, profile, onExit, onUpdateP
                             <ProfilePanel
                                 compact
                                 name={profile.name}
-                                title={`${profile.membershipLabel} membership`}
+                                title={profile.accountRole || profile.title}
                                 onClick={onOpenProfile}
                             />
                             <Button variant="secondary" onClick={onExit} className="hidden lg:inline-flex">
@@ -133,6 +148,10 @@ export function SandboxApp({ project: projectSummary, profile, onExit, onUpdateP
             <ProjectSettingsDialog
                 open={settingsOpen}
                 project={projectSummary}
+                projectId={projectSummary.id}
+                remoteMode={runtimeMode === 'remote-supabase'}
+                onInviteMember={onInviteMember}
+                onUpdateMemberPermission={onUpdateMemberPermission}
                 onClose={() => setSettingsOpen(false)}
                 onSave={handleSaveProjectSettings}
             />

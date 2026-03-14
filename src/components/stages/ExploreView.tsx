@@ -2,9 +2,16 @@ import React from 'react';
 
 import { StageMethodView } from '@/components/stages/StageMethodView';
 
-export function ExploreView() {
+interface ExploreViewProps {
+    projectId: string;
+    projectName: string;
+}
+
+export function ExploreView({ projectId, projectName }: ExploreViewProps) {
     return (
         <StageMethodView
+            projectId={projectId}
+            projectName={projectName}
             stage="explore"
             stageTitle="Explore Stage"
             entryHeadline="Understand the people, context, and real problem before moving into ideas."

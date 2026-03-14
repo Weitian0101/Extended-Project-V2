@@ -95,18 +95,18 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 <section id="sandbox-demo" className="mx-auto mt-8 max-w-7xl">
                     <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr]">
                         <div className="surface-panel-strong rounded-[34px] p-6 lg:p-8">
-                            <div className="eyebrow">Sandbox Demo Zone</div>
+                            <div className="eyebrow">Product Walkthrough</div>
                             <h2 className="mt-4 text-3xl font-display font-semibold text-[var(--foreground)] lg:text-5xl">
-                                Leave room for video, UI captures, and the exact workflow you want people to understand fast.
+                                Show the product in motion and let people understand the workflow quickly.
                             </h2>
                             <p className="mt-4 max-w-xl text-base leading-relaxed text-[var(--foreground-soft)] lg:text-lg">
-                                The layout is now ready for a product demo reel, short stage walkthrough, or static screenshots. You can drop in real footage later without redesigning the page.
+                                Use this space for a concise walkthrough, product video, or guided capture of the core experience.
                             </p>
                             <div className="mt-6 space-y-3">
                                 {[
                                     'Show how a project moves from context into Explore, Imagine, Implement, and Tell Story.',
-                                    'Replace static placeholders with your own sandbox recording or feature screenshots.',
-                                    'Keep onboarding short by showing the real workspace instead of explaining it in abstract terms.'
+                                    'Highlight the workspace, method library, and team collaboration flow.',
+                                    'Keep onboarding short by showing the product directly instead of over-explaining it.'
                                 ].map(item => (
                                     <div key={item} className="flex items-start gap-3 rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4">
                                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-500" />
@@ -121,8 +121,8 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                                 <div className="surface-contrast relative overflow-hidden rounded-[28px] p-5">
                                     <div className="relative flex h-full flex-col justify-between">
                                         <div>
-                                            <div className="text-[10px] uppercase tracking-[0.24em] text-white/60">Demo Canvas</div>
-                                            <div className="mt-2 text-2xl font-display font-semibold text-white">Feature video / narrated walkthrough</div>
+                                            <div className="text-[10px] uppercase tracking-[0.24em] text-white/60">Feature Walkthrough</div>
+                                            <div className="mt-2 text-2xl font-display font-semibold text-white">Product video / narrated overview</div>
                                             <div className="mt-3 max-w-md text-sm leading-relaxed text-white/76">
                                                 Use a concise demo to show the book entry interaction, the method browser, the AI prompt board, and the context-aware workspace.
                                             </div>
@@ -133,7 +133,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                                                     <Play className="ml-0.5 h-5 w-5" />
                                                 </div>
                                                 <div>
-                                                    <div className="text-sm font-semibold">Demo placeholder</div>
+                                                    <div className="text-sm font-semibold">Watch overview</div>
                                                     <div className="text-xs text-white/60">Suggested duration: 45 to 90 seconds</div>
                                                 </div>
                                             </div>

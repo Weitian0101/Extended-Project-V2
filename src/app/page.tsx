@@ -10,28 +10,38 @@ import { SandboxApp } from '@/components/SandboxApp';
 import { SignOutPage } from '@/components/auth/SignOutPage';
 import { AppThemeProvider } from '@/components/ui/AppThemeProvider';
 import { DEFAULT_PROJECTS } from '@/data/workspaceSeed';
-import { UserProfileData, WorkspaceProject } from '@/types';
+import { AppViewState, UserProfileData, WorkspaceProject } from '@/types';
 import { ProfilePage } from '@/components/profile/ProfilePage';
 import { DEFAULT_USER } from '@/data/workspaceSeed';
-
-type ViewState = 'landing' | 'auth' | 'dashboard' | 'sandbox' | 'profile' | 'logging_out';
-const PROJECTS_STORAGE_KEY = 'app_projects';
-const PROFILE_STORAGE_KEY = 'app_profile';
+import { RemoteWorkspaceShell } from '@/components/app/RemoteWorkspaceShell';
+import { isRemoteBackendEnabled } from '@/lib/config/backend';
+import {
+  clearWorkspaceSession,
+  exportWorkspaceSnapshot,
+  importWorkspaceSnapshot,
+  loadWorkspaceSession,
+  loadWorkspaceShell,
+  removeProjectDocument,
+  saveWorkspaceSession,
+  saveWorkspaceShell
+} from '@/lib/services/mvpWorkspace';
 
 export default function Home() {
   return (
     <AppThemeProvider>
-      <HomeShell />
+      {isRemoteBackendEnabled() ? <RemoteWorkspaceShell /> : <HomeShell />}
     </AppThemeProvider>
   );
 }
 
 function HomeShell() {
-  const [view, setView] = useState<ViewState>('landing');
+  const [view, setView] = useState<AppViewState>('landing');
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [projects, setProjects] = useState<WorkspaceProject[]>(DEFAULT_PROJECTS);
   const [profile, setProfile] = useState<UserProfileData>(DEFAULT_USER);
   const [profileReturnView, setProfileReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
+  const [workspaceStatus, setWorkspaceStatus] = useState<string | null>(null);
+  const [isWorkspaceHydrated, setIsWorkspaceHydrated] = useState(false);
 
   useEffect(() => {
     document.body.setAttribute('data-app-view', view);
@@ -43,52 +53,35 @@ function HomeShell() {
 
   // --- Persistence ---
   useEffect(() => {
-    // Load state on mount
-    const savedView = localStorage.getItem('app_view') as ViewState;
-    const savedProject = localStorage.getItem('app_project_id');
+    const savedSession = loadWorkspaceSession();
+    const savedWorkspace = loadWorkspaceShell();
+    const restoredView = savedSession.view === 'logging_out' ? 'landing' : savedSession.view;
 
-    // If we were logging out, reset to landing
-    if (savedView === 'logging_out') {
-      setView('landing');
-      return;
-    }
-
-    if (savedView) setView(savedView);
-    if (savedProject) setActiveProjectId(savedProject);
-
-    const savedProjects = localStorage.getItem(PROJECTS_STORAGE_KEY);
-    if (savedProjects) {
-      setProjects(JSON.parse(savedProjects));
-    }
-
-    const savedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setView(restoredView);
+    setActiveProjectId(savedSession.activeProjectId);
+    setProjects(savedWorkspace.projects);
+    setProfile(savedWorkspace.profile);
+    setIsWorkspaceHydrated(true);
   }, []);
 
   useEffect(() => {
-    // Save state on change
-    if (view === 'logging_out') {
-      localStorage.removeItem('app_view');
-      localStorage.removeItem('app_project_id');
-    } else {
-      localStorage.setItem('app_view', view);
-      if (activeProjectId) {
-        localStorage.setItem('app_project_id', activeProjectId);
-      } else {
-        localStorage.removeItem('app_project_id');
-      }
-    }
-  }, [view, activeProjectId]);
+    if (!isWorkspaceHydrated) return;
+
+    saveWorkspaceSession({
+      view,
+      activeProjectId
+    });
+  }, [activeProjectId, isWorkspaceHydrated, view]);
 
   useEffect(() => {
-    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
-  }, [projects]);
+    if (!isWorkspaceHydrated) return;
 
-  useEffect(() => {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
-  }, [profile]);
+    saveWorkspaceShell({
+      projects,
+      profile
+    });
+  }, [isWorkspaceHydrated, profile, projects]);
 
   // --- Navigation Handlers ---
 
@@ -123,6 +116,7 @@ function HomeShell() {
 
   const handleDeleteProject = (projectId: string) => {
     setProjects(currentProjects => currentProjects.filter(project => project.id !== projectId));
+    removeProjectDocument(projectId);
     if (activeProjectId === projectId) {
       setActiveProjectId(null);
       setView('dashboard');
@@ -139,14 +133,44 @@ function HomeShell() {
   };
 
   const handleLogout = () => {
-    // Start logout sequence
+    clearWorkspaceSession();
     setView('logging_out');
-    // Persistence useEffect will handle clearing storage
   };
 
   const handleOpenProfile = (source: 'dashboard' | 'sandbox') => {
     setProfileReturnView(source);
     setView('profile');
+  };
+
+  const handleExportWorkspace = () => {
+    const snapshot = exportWorkspaceSnapshot({ projects, profile });
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const fileStamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+
+    link.href = downloadUrl;
+    link.download = `innovation-sandbox-workspace-${fileStamp}.json`;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+    setWorkspaceStatus('Workspace backup exported as JSON.');
+  };
+
+  const handleImportWorkspace = async (file: File) => {
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw);
+      const importedWorkspace = importWorkspaceSnapshot(parsed);
+
+      setProjects(importedWorkspace.projects);
+      setProfile(importedWorkspace.profile);
+      setActiveProjectId(null);
+      setView('dashboard');
+      setWorkspaceStatus(`Imported ${importedWorkspace.projects.length} project${importedWorkspace.projects.length === 1 ? '' : 's'} from backup.`);
+    } catch (error) {
+      console.error('Failed to import workspace backup', error);
+      setWorkspaceStatus(error instanceof Error ? error.message : 'Failed to import backup file.');
+    }
   };
 
   // --- View Rendering ---
@@ -170,6 +194,9 @@ function HomeShell() {
           onDeleteProject={handleDeleteProject}
           onOpenProfile={() => handleOpenProfile('dashboard')}
           onLogout={handleLogout}
+          onExportWorkspace={handleExportWorkspace}
+          onImportWorkspace={handleImportWorkspace}
+          workspaceStatus={workspaceStatus}
         />
       );
 
@@ -181,6 +208,7 @@ function HomeShell() {
           onExit={handleExitSandbox}
           onUpdateProject={handleUpdateProject}
           onOpenProfile={() => handleOpenProfile('sandbox')}
+          runtimeMode="local-mvp"
         />
       ) : (
         <Dashboard
@@ -192,6 +220,9 @@ function HomeShell() {
           onDeleteProject={handleDeleteProject}
           onOpenProfile={() => handleOpenProfile('dashboard')}
           onLogout={handleLogout}
+          onExportWorkspace={handleExportWorkspace}
+          onImportWorkspace={handleImportWorkspace}
+          workspaceStatus={workspaceStatus}
         />
       );
 

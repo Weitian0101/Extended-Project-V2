@@ -2,9 +2,16 @@ import React from 'react';
 
 import { StageMethodView } from '@/components/stages/StageMethodView';
 
-export function ImplementView() {
+interface ImplementViewProps {
+    projectId: string;
+    projectName: string;
+}
+
+export function ImplementView({ projectId, projectName }: ImplementViewProps) {
     return (
         <StageMethodView
+            projectId={projectId}
+            projectName={projectName}
             stage="implement"
             stageTitle="Implement Stage"
             entryHeadline="Turn the strongest ideas into experiments, decisions, and practical rollout moves."

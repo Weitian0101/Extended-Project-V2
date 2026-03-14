@@ -1,4 +1,7 @@
-export type StageId = 'overview' | 'explore' | 'imagine' | 'implement' | 'test' | 'tell-story';
+export type StageId = 'overview' | 'explore' | 'imagine' | 'implement' | 'tell-story';
+export type AppViewState = 'landing' | 'auth' | 'dashboard' | 'sandbox' | 'profile' | 'logging_out';
+export type ToolFieldValue = string | string[] | boolean | number | null;
+export type ToolFieldMap = Record<string, ToolFieldValue>;
 
 export interface AiPrompt {
     id: string;
@@ -45,9 +48,9 @@ export interface ToolRun {
     createdAt: number;
     updatedAt: number;
     currentStepIndex?: number; // Optional for legacy
-    data?: Record<string, any>; // For SessionWorkspace
-    answers?: Record<string, any>; // For ToolWorkspace
-    aiResponses?: { prompt: string; response: string; timestamp: number }[];
+    data?: ToolFieldMap; // For SessionWorkspace
+    answers?: ToolFieldMap; // For ToolWorkspace
+    aiResponses?: AiResponseEntry[];
 }
 
 export interface ProjectContext {
@@ -68,9 +71,28 @@ export type PermissionLevel = 'owner' | 'edit' | 'view';
 export type MembershipTier = 'free' | 'plus' | 'ultra' | 'business';
 export type BillingCycle = 'monthly' | 'yearly';
 
+export interface BillingInvoice {
+    id: string;
+    label: string;
+    amount: number;
+    currency: string;
+    status: 'draft' | 'paid' | 'open' | 'void';
+    issuedAt: string;
+}
+
+export interface ProjectInvite {
+    id: string;
+    email: string;
+    permission: PermissionLevel;
+    status: 'pending' | 'accepted' | 'revoked';
+    createdAt: string;
+    inviteUrl?: string;
+}
+
 export interface TeamMember {
     id: string;
     name: string;
+    email?: string;
     initials: string;
     role: string;
     status: 'online' | 'away' | 'offline';
@@ -84,27 +106,31 @@ export interface WorkspaceProject {
     accent: string;
     ownerId: string;
     updated: string;
+    updatedAt?: string;
     summary: string;
     members: TeamMember[];
+    pendingInvites?: ProjectInvite[];
 }
 
 export interface UserProfileData {
+    id?: string;
     name: string;
     email: string;
     title: string;
     phone: string;
     location: string;
     workspace: string;
-    membership: MembershipTier;
-    membershipLabel: string;
-    plan: string;
-    billingCycle: BillingCycle;
-    seats: number;
     billingEmail: string;
-    paymentMethod: string;
     company: string;
-    renewalDate: string;
-    usage: string;
+    accountRole: string;
+    subscriptionTier: MembershipTier;
+    billingCycle: BillingCycle;
+    subscriptionStatus: 'inactive' | 'trial' | 'active' | 'past_due' | 'canceled';
+    renewalDate?: string | null;
+    paymentMethodLabel: string;
+    billingInvoices: BillingInvoice[];
+    createdAt?: string;
+    lastSignInAt?: string | null;
 }
 
 export interface ProjectState {
@@ -132,4 +158,10 @@ export interface FeedbackItem {
     id: string;
     content: string;
     userId?: string;
+}
+
+export interface AiResponseEntry {
+    prompt: string;
+    response: string;
+    timestamp: number;
 }

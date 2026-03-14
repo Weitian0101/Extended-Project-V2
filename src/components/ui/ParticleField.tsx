@@ -25,14 +25,52 @@ interface ParticleFieldProps {
 }
 
 const HERO_WAVES = [
-    { top: '14%', left: '-10%', width: '72%', height: '11rem', delay: '0s', duration: '16s' },
-    { top: '34%', left: '18%', width: '66%', height: '10rem', delay: '2.2s', duration: '18s' },
-    { top: '56%', left: '-4%', width: '78%', height: '12rem', delay: '4.1s', duration: '20s' }
+    { top: '12%', left: '-10%', width: '76%', height: '12rem', delay: '0s', duration: '15s' },
+    { top: '34%', left: '18%', width: '70%', height: '11rem', delay: '2.2s', duration: '17s' },
+    { top: '57%', left: '-6%', width: '82%', height: '13rem', delay: '4.1s', duration: '19s' }
+];
+
+const HERO_ORBS = [
+    { top: '8%', left: '10%', size: '16rem', delay: '0s', duration: '18s', className: 'particle-orb-sky' },
+    { top: '42%', left: '72%', size: '14rem', delay: '2.8s', duration: '20s', className: 'particle-orb-warm' }
+];
+
+const HERO_BEAMS = [
+    { top: '16%', left: '-6%', width: '56%', height: '10rem', delay: '0s', duration: '14s' },
+    { top: '48%', left: '44%', width: '48%', height: '9rem', delay: '3.1s', duration: '16s' }
 ];
 
 export function ParticleField({ className, variant = 'ambient' }: ParticleFieldProps) {
     return (
         <div className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}>
+            {variant === 'hero' && HERO_ORBS.map((orb, index) => (
+                <span
+                    key={`orb-${index}`}
+                    className={cn('particle-orb absolute rounded-full', orb.className)}
+                    style={{
+                        top: orb.top,
+                        left: orb.left,
+                        width: orb.size,
+                        height: orb.size,
+                        animationDelay: orb.delay,
+                        animationDuration: orb.duration
+                    }}
+                />
+            ))}
+            {variant === 'hero' && HERO_BEAMS.map((beam, index) => (
+                <span
+                    key={`beam-${index}`}
+                    className="particle-beam absolute rounded-full"
+                    style={{
+                        top: beam.top,
+                        left: beam.left,
+                        width: beam.width,
+                        height: beam.height,
+                        animationDelay: beam.delay,
+                        animationDuration: beam.duration
+                    }}
+                />
+            ))}
             {variant === 'hero' && HERO_WAVES.map((wave, index) => (
                 <span
                     key={`wave-${index}`}

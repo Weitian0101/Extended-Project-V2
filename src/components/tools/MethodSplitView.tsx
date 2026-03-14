@@ -5,6 +5,7 @@ import { ArrowDownCircle, Bot, ChevronLeft, Send, Sparkles, X, Zap } from 'lucid
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { MethodCard, ProjectContext, ToolRun } from '@/types';
+import { aiGateway } from '@/lib/services/aiGateway';
 
 interface MethodSplitViewProps {
     card: MethodCard;
@@ -112,20 +113,30 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
         setResponses(previous => [...previous, createAiResponseEntry(prompt, response)]);
     };
 
-    const handlePromptClick = (promptTemplate: string) => {
+    const handlePromptClick = async (promptTemplate: string, promptLabel: string) => {
         setIsLoading(true);
         setIsFacilitatorOpen(true);
 
-        setTimeout(() => {
-            appendAiResponse(
-                promptTemplate,
-                `[AI generated response based on '${context.name}' context]\n\n1. Anchor the method around ${context.objectives || 'the project goal'}.\n2. Surface evidence or signals the team can react to immediately.\n3. End with one concrete takeaway to carry into the next stage.`
-            );
+        try {
+            const response = await aiGateway.promptBoard({
+                methodId: card.id,
+                methodTitle: card.title,
+                stage: card.stage,
+                project: context,
+                promptLabel,
+                promptTemplate
+            });
+
+            appendAiResponse(promptTemplate, response.reply);
+        } catch (error) {
+            console.error('Failed to run prompt board request', error);
+            appendAiResponse(promptTemplate, 'The local facilitator could not prepare a response. Try again, or continue with a manual prompt.');
+        } finally {
             setIsLoading(false);
-        }, 1500);
+        }
     };
 
-    const handleChatSubmit = () => {
+    const handleChatSubmit = async () => {
         const trimmedInput = chatInput.trim();
         if (!trimmedInput || isLoading) return;
 
@@ -133,10 +144,23 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
         setChatInput('');
         setIsFacilitatorOpen(true);
 
-        setTimeout(() => {
+        try {
+            const response = await aiGateway.facilitatorChat({
+                methodId: card.id,
+                methodTitle: card.title,
+                stage: card.stage,
+                project: context,
+                message: trimmedInput,
+                history: responses
+            });
+
+            appendAiResponse(trimmedInput, response.reply);
+        } catch (error) {
+            console.error('Failed to run facilitator chat request', error);
             appendAiResponse(trimmedInput, buildAiResponse(trimmedInput));
+        } finally {
             setIsLoading(false);
-        }, 900);
+        }
     };
 
     return (
@@ -245,7 +269,7 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                         {card.aiPrompts.map(prompt => (
                             <button
                                 key={prompt.id}
-                                onClick={() => handlePromptClick(prompt.promptTemplate)}
+                                onClick={() => handlePromptClick(prompt.promptTemplate, prompt.label)}
                                 disabled={isLoading}
                                 className={cn(
                                     'text-left px-4 py-4 lg:px-5 lg:py-4 bg-[var(--panel)] border rounded-2xl shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition-all group flex items-center justify-between',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { MethodCard } from '@/types';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
 
 interface ToolCardProps {
     card: MethodCard;

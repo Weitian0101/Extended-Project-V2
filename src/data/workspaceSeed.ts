@@ -1,28 +1,27 @@
 import { TeamMember, UserProfileData, WorkspaceProject } from '@/types';
+import { buildMembershipProfile } from '@/lib/membership';
 
 export const DEFAULT_USER: UserProfileData = {
+    id: 'user',
     name: 'User',
     email: 'user@innovation-sandbox.ai',
-    title: 'Workspace Owner',
+    title: 'Innovation lead',
     phone: '+44 20 7946 0958',
     location: 'London, United Kingdom',
     workspace: 'Innovation Sandbox Workspace',
-    membership: 'plus',
-    membershipLabel: 'Plus',
-    plan: 'Plus Membership',
-    billingCycle: 'yearly',
-    seats: 1,
     billingEmail: 'billing@innovation-sandbox.ai',
-    paymentMethod: 'Visa ending in 4242',
     company: 'Innovation Sandbox Ltd.',
-    renewalDate: '30 Apr 2026',
-    usage: '1 of 1 seat active'
+    accountRole: 'Workspace owner',
+    ...buildMembershipProfile('business', 'monthly', 'active'),
+    createdAt: new Date('2026-01-19T10:00:00.000Z').toISOString(),
+    lastSignInAt: new Date('2026-03-14T08:45:00.000Z').toISOString()
 };
 
 export const DEFAULT_TEAM: TeamMember[] = [
     {
         id: 'user',
         name: 'User',
+        email: 'user@innovation-sandbox.ai',
         initials: 'US',
         role: 'Workspace Owner',
         status: 'online',
@@ -32,6 +31,7 @@ export const DEFAULT_TEAM: TeamMember[] = [
     {
         id: 'maya',
         name: 'Maya Chen',
+        email: 'maya@example.com',
         initials: 'MC',
         role: 'Research Lead',
         status: 'online',
@@ -41,6 +41,7 @@ export const DEFAULT_TEAM: TeamMember[] = [
     {
         id: 'leo',
         name: 'Leo Park',
+        email: 'leo@example.com',
         initials: 'LP',
         role: 'Product Designer',
         status: 'away',
@@ -50,6 +51,7 @@ export const DEFAULT_TEAM: TeamMember[] = [
     {
         id: 'nina',
         name: 'Nina Gomez',
+        email: 'nina@example.com',
         initials: 'NG',
         role: 'Business Partner',
         status: 'online',

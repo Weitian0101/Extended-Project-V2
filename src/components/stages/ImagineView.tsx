@@ -2,9 +2,16 @@ import React from 'react';
 
 import { StageMethodView } from '@/components/stages/StageMethodView';
 
-export function ImagineView() {
+interface ImagineViewProps {
+    projectId: string;
+    projectName: string;
+}
+
+export function ImagineView({ projectId, projectName }: ImagineViewProps) {
     return (
         <StageMethodView
+            projectId={projectId}
+            projectName={projectName}
             stage="imagine"
             stageTitle="Imagine Stage"
             entryHeadline="Open up possibilities before deciding which ideas deserve investment."

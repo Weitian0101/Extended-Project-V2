@@ -12,20 +12,22 @@ interface AppThemeContextValue {
 
 const AppThemeContext = createContext<AppThemeContextValue | null>(null);
 
+function getInitialTheme(): AppTheme {
+    if (typeof window === 'undefined') {
+        return 'light';
+    }
+
+    const storedTheme = window.localStorage.getItem('app_theme');
+
+    if (storedTheme === 'light' || storedTheme === 'dark') {
+        return storedTheme;
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setTheme] = useState<AppTheme>('light');
-
-    useEffect(() => {
-        const storedTheme = window.localStorage.getItem('app_theme') as AppTheme | null;
-
-        if (storedTheme === 'light' || storedTheme === 'dark') {
-            setTheme(storedTheme);
-            return;
-        }
-
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setTheme(prefersDark ? 'dark' : 'light');
-    }, []);
+    const [theme, setTheme] = useState<AppTheme>(getInitialTheme);
 
     useEffect(() => {
         document.documentElement.classList.toggle('dark', theme === 'dark');

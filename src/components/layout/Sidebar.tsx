@@ -51,12 +51,6 @@ const STAGE_ACCENTS: Record<StageId, {
         activeIcon: 'bg-sky-500/12 text-sky-700 border-sky-200/80',
         activeText: 'text-sky-700',
         softGlow: 'bg-sky-300/26'
-    },
-    test: {
-        indicator: 'bg-slate-400 shadow-[0_0_18px_rgba(148,163,184,0.3)]',
-        activeIcon: 'bg-slate-500/12 text-slate-600 border-slate-300/60',
-        activeText: 'text-slate-700',
-        softGlow: 'bg-slate-300/30'
     }
 };
 

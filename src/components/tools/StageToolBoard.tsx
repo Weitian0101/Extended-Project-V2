@@ -4,19 +4,20 @@ import { useProjectData } from '@/hooks/useProjectData';
 import { ToolCard } from '@/components/tools/ToolCard';
 import { SessionWorkspace } from '@/components/tools/SessionWorkspace';
 import { StageId, MethodCard, ToolRun } from '@/types';
-import { Button } from '@/components/ui/Button';
 import { Clock } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface StageToolBoardProps {
+    projectId: string;
+    projectName: string;
     stage: StageId;
     colorTheme: 'green' | 'red' | 'yellow' | 'blue' | 'gray';
     headerTitle: string;
     headerDescription: string;
 }
 
-export function StageToolBoard({ stage, colorTheme, headerTitle, headerDescription }: StageToolBoardProps) {
-    const { project, updateProject } = useProjectData();
+export function StageToolBoard({ projectId, projectName, stage, colorTheme, headerTitle, headerDescription }: StageToolBoardProps) {
+    const { project, updateProject } = useProjectData(projectId, projectName);
     const [activeCard, setActiveCard] = useState<MethodCard | null>(null);
     const [activeRunId, setActiveRunId] = useState<string | null>(null);
 

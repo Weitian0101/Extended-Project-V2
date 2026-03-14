@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MethodCard, MethodStep, ToolRun } from '@/types';
+import { MethodCard, ToolFieldMap, ToolFieldValue, ToolRun } from '@/types';
 import { Button } from '@/components/ui/Button';
-import { ChevronLeft, ChevronRight, Play, Sparkles, Plus, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { mockAI } from '@/lib/mockAI'; // Assuming we'll expand this
+import { ChevronLeft, ChevronRight, Sparkles, Plus, X } from 'lucide-react';
+import { aiGateway } from '@/lib/services/aiGateway';
 
 interface SessionWorkspaceProps {
     card: MethodCard;
@@ -14,8 +13,9 @@ interface SessionWorkspaceProps {
 
 export function SessionWorkspace({ card, existingRun, onSave, onBack }: SessionWorkspaceProps) {
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
-    const [runData, setRunData] = useState<Record<string, any>>({});
+    const [runData, setRunData] = useState<ToolFieldMap>({});
     const [isAiLoading, setIsAiLoading] = useState(false);
+    const [draftIdea, setDraftIdea] = useState('');
 
     useEffect(() => {
         if (existingRun) {
@@ -29,9 +29,9 @@ export function SessionWorkspace({ card, existingRun, onSave, onBack }: SessionW
     const totalSteps = steps.length;
 
     // --- State Helpers ---
-    const getStepData = (stepId: string) => runData[stepId];
+    const getStepData = (stepId: string): ToolFieldValue => runData[stepId] ?? null;
 
-    const updateStepData = (stepId: string, val: any) => {
+    const updateStepData = (stepId: string, val: ToolFieldValue) => {
         const newData = { ...runData, [stepId]: val };
         setRunData(newData);
         // Auto-save on change
@@ -56,30 +56,55 @@ export function SessionWorkspace({ card, existingRun, onSave, onBack }: SessionW
         }
     };
 
-    // --- AI Action (Mock) ---
+    const addIdea = () => {
+        const trimmedIdea = draftIdea.trim();
+        if (!trimmedIdea || currentStep.type !== 'diverge') {
+            return;
+        }
+
+        const currentItems = Array.isArray(getStepData(currentStep.id))
+            ? (getStepData(currentStep.id) as string[])
+            : [];
+
+        updateStepData(currentStep.id, [...currentItems, trimmedIdea]);
+        setDraftIdea('');
+    };
+
+    // --- AI Action ---
     const handleAiAction = async () => {
         setIsAiLoading(true);
-        // Simulate delay
-        setTimeout(() => {
-            const currentVal = getStepData(currentStep.id);
+        try {
+            const response = await aiGateway.stepAssist({
+                methodId: card.id,
+                methodTitle: card.title,
+                stage: card.stage,
+                project: {
+                    name: card.title,
+                    background: card.purpose,
+                    objectives: currentStep.facilitatorText || '',
+                    assumptions: ''
+                },
+                stepId: currentStep.id,
+                stepTitle: currentStep.title,
+                stepType: currentStep.type,
+                facilitatorText: currentStep.facilitatorText,
+                currentValue: getStepData(currentStep.id)
+            });
 
-            if (currentStep.type === 'diverge') {
-                // Generate items
-                const currentList = Array.isArray(currentVal) ? currentVal : [];
-                const newItems = [...currentList, "AI Idea 1", "AI Idea 2", "AI Idea 3"];
-                updateStepData(currentStep.id, newItems);
-            } else if (currentStep.type === 'input') {
-                // Refine/Critique text
-                const text = typeof currentVal === 'string' ? currentVal : "";
-                updateStepData(currentStep.id, text + "\n\n[AI Facilitator]: Consider adding more detail here about the 'Why'.");
-            }
+            updateStepData(currentStep.id, response.nextValue);
+        } catch (error) {
+            console.error('Failed to run local AI step assist', error);
+        } finally {
             setIsAiLoading(false);
-        }, 1500);
+        }
     };
 
     // --- Renderers ---
     const renderContent = () => {
         const value = getStepData(currentStep.id);
+        const textValue = typeof value === 'string' || typeof value === 'number'
+            ? String(value)
+            : '';
 
         if (currentStep.type === 'diverge') {
             const items: string[] = Array.isArray(value) ? value : [];
@@ -103,19 +128,16 @@ export function SessionWorkspace({ card, existingRun, onSave, onBack }: SessionW
                             type="text"
                             className="flex-1 border p-2 rounded"
                             placeholder={currentStep.placeholder}
+                            value={draftIdea}
+                            onChange={(e) => setDraftIdea(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                    const val = e.currentTarget.value.trim();
-                                    if (val) {
-                                        updateStepData(currentStep.id, [...items, val]);
-                                        e.currentTarget.value = '';
-                                    }
+                                    e.preventDefault();
+                                    addIdea();
                                 }
                             }}
                         />
-                        <Button variant="secondary" size="sm" onClick={() => {
-                            // Trigger input add manually if needed
-                        }}>
+                        <Button variant="secondary" size="sm" onClick={addIdea}>
                             <Plus className="w-4 h-4 mr-2" /> Add
                         </Button>
                     </div>
@@ -128,7 +150,7 @@ export function SessionWorkspace({ card, existingRun, onSave, onBack }: SessionW
             <textarea
                 className="w-full h-64 p-4 text-lg border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:outline-none transition-all resize-none font-medium text-gray-700 leading-relaxed"
                 placeholder={currentStep.placeholder}
-                value={value || ''}
+                value={textValue}
                 onChange={(e) => updateStepData(currentStep.id, e.target.value)}
             />
         );

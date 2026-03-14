@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { ProjectData } from '@/types';
-import { Button } from '@/components/ui/Button';
 import { Bot, Send, X, Layers, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { aiGateway } from '@/lib/services/aiGateway';
+
+interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 interface ProjectOverviewProps {
     project: ProjectData;
@@ -13,9 +17,46 @@ export function ProjectOverview({ project, onUpdateContext }: ProjectOverviewPro
     const { context } = project;
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [chatInput, setChatInput] = useState('');
+    const [messages, setMessages] = useState<ChatMessage[]>([
+        {
+            role: 'assistant',
+            content: 'Hello! I am here to help you frame the project. Ask for help clarifying the challenge, audience, or constraints.'
+        }
+    ]);
+    const [isSending, setIsSending] = useState(false);
 
     const handleChange = (field: keyof typeof context, value: string) => {
         onUpdateContext({ [field]: value });
+    };
+
+    const handleChatSubmit = async () => {
+        const trimmedInput = chatInput.trim();
+        if (!trimmedInput || isSending) return;
+
+        setIsSending(true);
+        setChatInput('');
+        setMessages((current) => [...current, { role: 'user', content: trimmedInput }]);
+
+        try {
+            const response = await aiGateway.facilitatorChat({
+                methodId: 'project-context',
+                methodTitle: 'Project Context',
+                stage: project.currentStage,
+                project: context,
+                message: trimmedInput,
+                history: []
+            });
+
+            setMessages((current) => [...current, { role: 'assistant', content: response.reply }]);
+        } catch (error) {
+            console.error('Failed to run project context coach', error);
+            setMessages((current) => [...current, {
+                role: 'assistant',
+                content: 'I could not prepare a response just now. Try again, or continue refining the project context manually.'
+            }]);
+        } finally {
+            setIsSending(false);
+        }
     };
 
     return (
@@ -125,9 +166,21 @@ export function ProjectOverview({ project, onUpdateContext }: ProjectOverviewPro
                             <button onClick={() => setIsChatOpen(false)} className="text-slate-400 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
                         </div>
                         <div className="h-64 p-4 bg-[var(--panel)] overflow-y-auto text-sm text-[var(--foreground-soft)] leading-relaxed">
-                            <div className="bg-blue-100/80 p-3 rounded-lg rounded-tl-none inline-block max-w-[90%] text-slate-800 mb-2">
-                                Hello! I'm here to help you define the project. A clear context helps me generate better ideas later. Need help articulating the challenge?
-                            </div>
+                            {messages.map((message, index) => (
+                                <div
+                                    key={`${message.role}-${index}`}
+                                    className={message.role === 'assistant'
+                                        ? 'bg-blue-100/80 p-3 rounded-lg rounded-tl-none inline-block max-w-[90%] text-slate-800 mb-2 whitespace-pre-wrap'
+                                        : 'ml-auto mb-2 block max-w-[90%] rounded-lg rounded-tr-none bg-slate-900 p-3 text-white whitespace-pre-wrap'}
+                                >
+                                    {message.content}
+                                </div>
+                            ))}
+                            {isSending && (
+                                <div className="bg-blue-100/80 p-3 rounded-lg rounded-tl-none inline-block max-w-[90%] text-slate-800 mb-2">
+                                    Thinking through the framing...
+                                </div>
+                            )}
                         </div>
                         <div className="p-3 border-t border-[var(--panel-border)] bg-[var(--panel-strong)] flex gap-2">
                             <input
@@ -135,8 +188,16 @@ export function ProjectOverview({ project, onUpdateContext }: ProjectOverviewPro
                                 placeholder="Ask for help..."
                                 value={chatInput}
                                 onChange={e => setChatInput(e.target.value)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        event.preventDefault();
+                                        void handleChatSubmit();
+                                    }
+                                }}
                             />
-                            <button className="text-blue-600 hover:text-blue-700 bg-blue-50 p-2 rounded-lg"><Send className="w-4 h-4" /></button>
+                            <button onClick={() => void handleChatSubmit()} className="text-blue-600 hover:text-blue-700 bg-blue-50 p-2 rounded-lg disabled:opacity-60" disabled={!chatInput.trim() || isSending}>
+                                <Send className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 )}

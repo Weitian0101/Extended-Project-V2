@@ -14,13 +14,18 @@ import { cn } from '@/lib/utils';
 type BrowsableStage = Extract<StageId, 'explore' | 'imagine' | 'implement' | 'tell-story'>;
 
 interface StageMethodViewProps {
+    projectId: string;
+    projectName: string;
     stage: BrowsableStage;
     stageTitle: string;
     entryHeadline: string;
     entrySummary: string;
+    guideEyebrow?: string;
     guideTitle: string;
     guideDescription: string;
     methodsDescription: string;
+    previewButtonLabel?: string;
+    guideActionLabel?: string;
     guideImages: [string, string];
     entryImages?: [string, string];
 }
@@ -122,17 +127,22 @@ const STAGE_THEMES: Record<BrowsableStage, {
 };
 
 export function StageMethodView({
+    projectId,
+    projectName,
     stage,
     stageTitle,
     entryHeadline,
     entrySummary,
+    guideEyebrow = 'Facilitator Guide',
     guideTitle,
     guideDescription,
     methodsDescription,
+    previewButtonLabel = 'Preview Guide',
+    guideActionLabel = 'View Guide',
     guideImages,
     entryImages
 }: StageMethodViewProps) {
-    const { project, updateProject } = useProjectData();
+    const { project, updateProject } = useProjectData(projectId, projectName);
     const [viewState, setViewState] = useState<'entry' | 'tools' | 'workspace'>('entry');
     const [showGuide, setShowGuide] = useState(false);
     const [activeMethod, setActiveMethod] = useState<MethodCard | null>(null);
@@ -305,7 +315,7 @@ export function StageMethodView({
                                     Open {stageName} Atlas <ArrowRight className="ml-2 h-4 w-4" />
                                 </Button>
                                 <Button size="lg" variant="secondary" onClick={() => setShowGuide(true)}>
-                                    Preview Guide <BookOpen className="ml-2 h-4 w-4" />
+                                    {previewButtonLabel} <BookOpen className="ml-2 h-4 w-4" />
                                 </Button>
                             </div>
                         </div>
@@ -332,7 +342,7 @@ export function StageMethodView({
                                             {methods.length} methods loaded
                                         </div>
                                         <Button variant="secondary" onClick={() => setShowGuide(true)}>
-                                            View Guide <ScrollText className="ml-2 h-4 w-4" />
+                                            {guideActionLabel} <ScrollText className="ml-2 h-4 w-4" />
                                         </Button>
                                     </div>
                                     <div className="mt-6 flex flex-wrap gap-2">
@@ -375,7 +385,7 @@ export function StageMethodView({
                                                 <BookOpen className="w-7 h-7 text-white" />
                                             </div>
                                             <div>
-                                                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/72">Facilitator Guide</div>
+                                                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/72">{guideEyebrow}</div>
                                                 <h3 className="mt-2 text-2xl font-display font-semibold">{guideTitle}</h3>
                                                 <p className={cn('mt-2 max-w-2xl text-sm leading-relaxed lg:text-base', theme.bannerText)}>
                                                     {guideDescription}
@@ -383,7 +393,7 @@ export function StageMethodView({
                                             </div>
                                         </div>
                                         <div className={cn('inline-flex w-fit rounded-full bg-white/90 px-5 py-2 text-sm font-semibold shadow-sm', theme.buttonText)}>
-                                            View Guide
+                                            {guideActionLabel}
                                         </div>
                                     </div>
                                 </div>

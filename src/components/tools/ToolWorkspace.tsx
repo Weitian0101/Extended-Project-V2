@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { MethodCard, ToolRun } from '@/types';
+import React, { useState } from 'react';
+import { MethodCard, ToolFieldMap, ToolFieldValue, ToolRun } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { ChevronLeft, Save, Lightbulb } from 'lucide-react';
 
 interface ToolWorkspaceProps {
     card: MethodCard;
     existingRun?: ToolRun;
-    onSave: (answers: Record<string, any>) => void;
+    onSave: (answers: ToolFieldMap) => void;
     onBack: () => void;
 }
 
 export function ToolWorkspace({ card, existingRun, onSave, onBack }: ToolWorkspaceProps) {
-    const [answers, setAnswers] = useState<Record<string, any>>({});
+    const [answers, setAnswers] = useState<ToolFieldMap>(() => existingRun?.answers || {});
 
-    useEffect(() => {
-        if (existingRun) {
-            setAnswers(existingRun.answers || {});
-        }
-    }, [existingRun]);
+    const getTextValue = (id: string) => {
+        const value = answers[id];
+        return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+    };
 
-    const handleChange = (id: string, value: any) => {
-        setAnswers(prev => ({ ...prev, [id]: value }));
+    const handleChange = (id: string, value: ToolFieldValue) => {
+        setAnswers((prev) => ({ ...prev, [id]: value }));
     };
 
     const handleToggleCheckbox = (id: string, option: string) => {
@@ -37,8 +36,6 @@ export function ToolWorkspace({ card, existingRun, onSave, onBack }: ToolWorkspa
     };
 
     const template = card.template || [];
-    const currentAnswers = answers || {};
-
     return (
         <div className="flex flex-col h-full bg-white">
             {/* Header */}
@@ -83,7 +80,7 @@ export function ToolWorkspace({ card, existingRun, onSave, onBack }: ToolWorkspa
                                     type="text"
                                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     placeholder={step.placeholder}
-                                    value={answers[step.id] || ''}
+                                    value={getTextValue(step.id)}
                                     onChange={(e) => handleChange(step.id, e.target.value)}
                                 />
                             )}
@@ -92,7 +89,7 @@ export function ToolWorkspace({ card, existingRun, onSave, onBack }: ToolWorkspa
                                 <textarea
                                     className="w-full p-3 border border-gray-300 rounded-md h-32 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     placeholder={step.placeholder}
-                                    value={answers[step.id] || ''}
+                                    value={getTextValue(step.id)}
                                     onChange={(e) => handleChange(step.id, e.target.value)}
                                 />
                             )}
@@ -100,11 +97,11 @@ export function ToolWorkspace({ card, existingRun, onSave, onBack }: ToolWorkspa
                             {step.type === 'select' && step.options && (
                                 <select
                                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-                                    value={answers[step.id] || ''}
+                                    value={getTextValue(step.id)}
                                     onChange={(e) => handleChange(step.id, e.target.value)}
                                 >
                                     <option value="">-- Select an option --</option>
-                                    {step.options.map(opt => (
+                                    {step.options.map((opt) => (
                                         <option key={opt} value={opt}>{opt}</option>
                                     ))}
                                 </select>
@@ -112,7 +109,7 @@ export function ToolWorkspace({ card, existingRun, onSave, onBack }: ToolWorkspa
 
                             {step.type === 'checkbox' && step.options && (
                                 <div className="space-y-2">
-                                    {step.options.map(opt => {
+                                    {step.options.map((opt) => {
                                         const isChecked = (answers[step.id] as string[])?.includes(opt);
                                         return (
                                             <label key={opt} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
