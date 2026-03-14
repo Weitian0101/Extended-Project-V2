@@ -262,8 +262,8 @@ function PlanCheckoutDialogInner({
         >
             <div className="absolute inset-0" onClick={isSubmitting ? undefined : onClose} />
 
-            <div className="relative z-10 flex min-h-full items-start justify-center px-4 py-4 lg:items-center lg:py-6">
-                <div className="grid w-full max-w-6xl gap-6 rounded-[34px] border border-white/70 bg-white p-4 shadow-[0_32px_90px_rgba(15,23,42,0.2)] lg:max-h-[calc(100vh-3rem)] lg:grid-cols-[1.05fr_0.95fr] lg:overflow-hidden lg:p-6">
+            <div className="relative z-10 flex min-h-full items-start justify-center px-4 py-4 2xl:items-center 2xl:py-6">
+                <div className="grid w-full max-w-6xl gap-6 rounded-[34px] border border-white/70 bg-white p-4 shadow-[0_32px_90px_rgba(15,23,42,0.2)] lg:h-[calc(100vh-2rem)] lg:max-h-[calc(100vh-2rem)] lg:grid-cols-[1.05fr_0.95fr] lg:overflow-hidden lg:p-6 2xl:h-auto 2xl:max-h-[calc(100vh-3rem)]">
                     <div className="flex flex-col rounded-[28px] border border-slate-200 bg-slate-50/90 p-5 lg:min-h-0 lg:p-6">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <button

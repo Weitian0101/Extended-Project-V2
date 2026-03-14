@@ -207,7 +207,8 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                     <button
                         type="button"
                         onClick={() => setIsReferencePreviewOpen(true)}
-                        className="group relative flex h-full w-full items-center justify-center overflow-hidden px-1 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                        className="group relative flex h-full w-full cursor-zoom-in items-center justify-center overflow-hidden px-1 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                        aria-label="Preview reference image"
                     >
                         <div className="relative h-full w-full animate-reference-page-in">
                             <Image
@@ -220,10 +221,6 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                                 unoptimized
                             />
                         </div>
-                        <span className="pointer-events-none absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/58 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/82 backdrop-blur-sm">
-                            <Expand className="h-3.5 w-3.5" />
-                            Open large view
-                        </span>
                     </button>
                 </div>
 

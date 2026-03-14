@@ -32,12 +32,12 @@ const STAGE_CARDS = [
 ];
 
 const PARTNER_LOGOS = [
-    { src: "/images/Partner/worldreader.avif", alt: "Worldreader", width: 160, height: 60 },
-    { src: "/images/Partner/unfccc_undp.avif", alt: "UNFCCC UNDP", width: 220, height: 70 },
-    { src: "/images/Partner/LBS.avif", alt: "London Business School", width: 140, height: 80 },
-    { src: "/images/Partner/LoughboroughUniversity.avif", alt: "Loughborough University", width: 200, height: 70 },
-    { src: "/images/Partner/EU-Commission.avif", alt: "EU Commission", width: 140, height: 70 },
-    { src: "/images/Partner/LSE.avif", alt: "LSE", width: 140, height: 70 },
+    { src: "/images/Partner/worldreader.avif", alt: "Worldreader", width: 180, height: 64, imageClassName: 'scale-[1.08]' },
+    { src: "/images/Partner/unfccc_undp.avif", alt: "UNFCCC UNDP", width: 246, height: 74, imageClassName: 'scale-[1.08]' },
+    { src: "/images/Partner/LBS.avif", alt: "London Business School", width: 158, height: 84, imageClassName: 'scale-[1.1]' },
+    { src: "/images/Partner/LoughboroughUniversity.avif", alt: "Loughborough University", width: 226, height: 74, imageClassName: 'scale-[1.12]' },
+    { src: "/images/Partner/EU-Commission.avif", alt: "EU Commission", width: 156, height: 74, imageClassName: 'scale-[1.14]' },
+    { src: "/images/Partner/LSE.avif", alt: "LSE", width: 156, height: 74, imageClassName: 'scale-[1.16]' },
     { src: "/images/Partner/Arla.avif", alt: "Arla", width: 190, height: 82, imageClassName: 'scale-[1.06]' },
     { src: "/images/Partner/JustEat.avif", alt: "Just Eat", width: 188, height: 82, imageClassName: 'scale-[1.04]' },
     { src: "/images/Partner/JohnLewisPartnership.avif", alt: "John Lewis Partnership", width: 250, height: 82, imageClassName: 'scale-[1.08]' },
@@ -249,15 +249,15 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                     <div className="relative mt-10 overflow-hidden">
                         <div className="absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[var(--panel)] to-transparent" />
                         <div className="absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[var(--panel)] to-transparent" />
-                        <div className="marquee-track flex min-w-max items-center gap-8 lg:gap-10">
+                        <div className="marquee-track flex min-w-max items-center gap-5 lg:gap-6">
                             {[...PARTNER_LOGOS, ...PARTNER_LOGOS].map((logo, index) => {
-                                const mobileWidth = Math.round((logo.width / logo.height) * 64);
-                                const desktopWidth = Math.round((logo.width / logo.height) * 70);
+                                const mobileWidth = Math.round((logo.width / logo.height) * 66);
+                                const desktopWidth = Math.round((logo.width / logo.height) * 74);
 
                                 return (
                                 <div
                                     key={`${logo.alt}-${index}`}
-                                    className="relative h-16 w-[var(--logo-width)] shrink-0 opacity-75 transition-opacity duration-300 hover:opacity-100 lg:h-[4.35rem] lg:w-[var(--logo-width-lg)]"
+                                    className="relative h-[4.15rem] w-[var(--logo-width)] shrink-0 opacity-78 transition-opacity duration-300 hover:opacity-100 lg:h-[4.65rem] lg:w-[var(--logo-width-lg)]"
                                     style={{ '--logo-width': `${mobileWidth}px`, '--logo-width-lg': `${desktopWidth}px` } as React.CSSProperties}
                                 >
                                     <Image
@@ -306,7 +306,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 }
 
                 .marquee-track {
-                    animation: marquee 32s linear infinite;
+                    animation: marquee 46s linear infinite;
                 }
             `}</style>
         </div>
