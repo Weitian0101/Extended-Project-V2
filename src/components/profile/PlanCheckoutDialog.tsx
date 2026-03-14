@@ -27,10 +27,12 @@ interface PlanCheckoutDialogProps {
     currentPaymentMethodLabel: string;
     isSubmitting?: boolean;
     onClose: () => void;
+    onSuccessComplete?: () => void;
     onSubmit: (draft: MembershipCheckoutDraft) => void | Promise<void>;
 }
 
 type CheckoutStep = 'details' | 'review' | 'success';
+type CheckoutMode = 'plan-change' | 'downgrade' | 'payment-method';
 
 const DEFAULT_COUNTRY = 'United Kingdom';
 
@@ -166,9 +168,17 @@ function PlanCheckoutDialogInner({
     currentPaymentMethodLabel,
     isSubmitting = false,
     onClose,
+    onSuccessComplete,
     onSubmit
 }: Omit<PlanCheckoutDialogProps, 'open' | 'targetTier'> & { targetTier: MembershipTier }) {
     const resolvedTier = targetTier;
+    const [checkoutMode] = useState<CheckoutMode>(() => {
+        if (resolvedTier === currentTier) {
+            return 'payment-method';
+        }
+
+        return resolvedTier === 'free' ? 'downgrade' : 'plan-change';
+    });
     const [step, setStep] = useState<CheckoutStep>('details');
     const [draft, setDraft] = useState<MembershipCheckoutDraft>(() => buildInitialDraft(
         resolvedTier,
@@ -183,7 +193,7 @@ function PlanCheckoutDialogInner({
     const planPrice = getMembershipPrice(draft.tier, draft.billingCycle);
     const yearlySavings = getMembershipYearlySavings(draft.tier);
     const needsPayment = draft.tier !== 'free';
-    const isUpdatingPaymentMethodOnly = resolvedTier === currentTier;
+    const isUpdatingPaymentMethodOnly = checkoutMode === 'payment-method';
 
     const validateDetails = () => {
         if (!draft.billingEmail.trim() || !draft.billingEmail.includes('@')) {
@@ -245,15 +255,102 @@ function PlanCheckoutDialogInner({
 
     const heading = isUpdatingPaymentMethodOnly
         ? 'Update payment method'
-        : draft.tier === 'free'
+        : checkoutMode === 'downgrade'
             ? 'Confirm plan change'
             : `Checkout for ${plan.title}`;
 
     const subtitle = isUpdatingPaymentMethodOnly
         ? 'Replace the default card used for future renewals and invoice recovery.'
-        : draft.tier === 'free'
+        : checkoutMode === 'downgrade'
             ? 'Review the downgrade details before switching your workspace billing.'
             : 'Enter your billing details, review the order summary, and confirm the new plan.';
+    const completionAction = onSuccessComplete || onClose;
+    const successHeading = isUpdatingPaymentMethodOnly
+        ? 'Payment method updated'
+        : checkoutMode === 'downgrade'
+            ? 'Plan updated'
+            : 'Payment successful';
+    const successMessage = isUpdatingPaymentMethodOnly
+        ? `Your account now uses ${maskCardNumber(draft.cardNumber)} for future renewals.`
+        : checkoutMode === 'downgrade'
+            ? 'Your workspace has moved to the Free plan. Paid invoices remain in your billing history.'
+            : `Thank you. Your workspace is now on the ${plan.title} plan with ${draft.billingCycle} billing.`;
+
+    if (step === 'success') {
+        return (
+            <div
+                className="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-950/50 backdrop-blur-sm"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+                <div className="absolute inset-0" onClick={completionAction} />
+
+                <div className="relative z-10 flex min-h-full items-center justify-center px-4 py-6">
+                    <div className="relative w-full max-w-3xl overflow-hidden rounded-[38px] border border-white/70 bg-white p-6 shadow-[0_36px_100px_rgba(15,23,42,0.24)] lg:p-10">
+                        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                            {[
+                                { left: '7%', top: '10%', color: 'bg-sky-400', delay: '0ms', rotate: '-12deg' },
+                                { left: '17%', top: '6%', color: 'bg-fuchsia-400', delay: '180ms', rotate: '14deg' },
+                                { left: '29%', top: '14%', color: 'bg-emerald-400', delay: '320ms', rotate: '-18deg' },
+                                { left: '74%', top: '8%', color: 'bg-amber-400', delay: '120ms', rotate: '12deg' },
+                                { left: '84%', top: '13%', color: 'bg-rose-400', delay: '260ms', rotate: '-10deg' },
+                                { left: '92%', top: '9%', color: 'bg-violet-400', delay: '420ms', rotate: '18deg' }
+                            ].map((piece, index) => (
+                                <span
+                                    key={`${piece.left}-${piece.top}-${index}`}
+                                    className={`absolute h-16 w-3 rounded-full ${piece.color} opacity-80 animate-bounce`}
+                                    style={{
+                                        left: piece.left,
+                                        top: piece.top,
+                                        transform: `rotate(${piece.rotate})`,
+                                        animationDelay: piece.delay,
+                                        animationDuration: '1.8s'
+                                    }}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="relative mx-auto max-w-xl text-center">
+                            <div className="mx-auto inline-flex h-20 w-20 items-center justify-center rounded-full bg-[linear-gradient(135deg,#22c55e,#16a34a)] text-white shadow-[0_22px_50px_rgba(34,197,94,0.28)]">
+                                <ShieldCheck className="h-9 w-9" />
+                            </div>
+                            <div className="mt-8 inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                                {successHeading}
+                            </div>
+                            <h2 className="mt-6 text-4xl font-display font-semibold text-slate-950 lg:text-5xl">Congratulations</h2>
+                            <p className="mt-4 text-base leading-relaxed text-slate-600">
+                                {successMessage}
+                            </p>
+
+                            <div className="mt-8 grid gap-4 rounded-[28px] border border-slate-200 bg-slate-50 p-5 text-left sm:grid-cols-3">
+                                <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Plan</div>
+                                    <div className="mt-2 text-base font-semibold text-slate-950">{plan.title}</div>
+                                </div>
+                                <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Billing</div>
+                                    <div className="mt-2 text-base font-semibold capitalize text-slate-950">{draft.billingCycle}</div>
+                                </div>
+                                <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                        {isUpdatingPaymentMethodOnly ? 'Payment method' : 'Total confirmed'}
+                                    </div>
+                                    <div className="mt-2 text-base font-semibold text-slate-950">
+                                        {isUpdatingPaymentMethodOnly ? maskCardNumber(draft.cardNumber) : formatCurrency(planPrice)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex justify-center">
+                                <Button type="button" onClick={completionAction}>
+                                    Return to account
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div
@@ -431,7 +528,7 @@ function PlanCheckoutDialogInner({
                                 <div className="rounded-[24px] border border-emerald-100 bg-emerald-50 px-4 py-4 text-sm leading-relaxed text-emerald-800">
                                     {isUpdatingPaymentMethodOnly
                                         ? 'The updated card becomes the default payment method for future renewals and invoice recovery.'
-                                        : draft.tier === 'free'
+                                        : checkoutMode === 'downgrade'
                                             ? 'Your workspace changes to the Free plan immediately after confirmation. Paid invoices stay in your billing history.'
                                             : 'Your new plan starts immediately after confirmation and renews automatically until changed.'}
                                 </div>
@@ -443,7 +540,7 @@ function PlanCheckoutDialogInner({
                                             ? 'Processing...'
                                             : isUpdatingPaymentMethodOnly
                                                 ? 'Save payment method'
-                                                : draft.tier === 'free'
+                                                : checkoutMode === 'downgrade'
                                                     ? 'Confirm change'
                                                     : `Activate ${plan.title}`}
                                     </Button>
@@ -451,26 +548,6 @@ function PlanCheckoutDialogInner({
                                 </div>
                             )}
 
-                            {step === 'success' && (
-                                <div className="rounded-[28px] border border-emerald-100 bg-emerald-50 p-6">
-                                <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white">
-                                    <ShieldCheck className="h-6 w-6" />
-                                </div>
-                                <h3 className="mt-5 text-2xl font-display font-semibold text-slate-950">
-                                    {isUpdatingPaymentMethodOnly ? 'Payment method updated' : `${plan.title} is ready`}
-                                </h3>
-                                <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
-                                    {isUpdatingPaymentMethodOnly
-                                        ? `The default payment method is now ${maskCardNumber(draft.cardNumber)}.`
-                                        : draft.tier === 'free'
-                                            ? 'Your workspace has moved to the Free plan.'
-                                            : `Your workspace is now set to the ${plan.title} plan on ${draft.billingCycle} billing.`}
-                                </p>
-                                <div className="mt-6 flex flex-wrap gap-3">
-                                    <Button type="button" onClick={onClose}>Return to billing</Button>
-                                </div>
-                                </div>
-                            )}
                         </div>
                     </div>
 
@@ -553,14 +630,6 @@ export function PlanCheckoutDialog(props: PlanCheckoutDialogProps) {
 
     return (
         <PlanCheckoutDialogInner
-            key={[
-                targetTier,
-                props.currentTier,
-                props.initialBillingCycle,
-                props.initialBillingEmail,
-                props.initialCompany,
-                props.initialCardholderName
-            ].join(':')}
             currentTier={props.currentTier}
             targetTier={targetTier}
             initialBillingCycle={props.initialBillingCycle}
@@ -570,6 +639,7 @@ export function PlanCheckoutDialog(props: PlanCheckoutDialogProps) {
             currentPaymentMethodLabel={props.currentPaymentMethodLabel}
             isSubmitting={props.isSubmitting}
             onClose={props.onClose}
+            onSuccessComplete={props.onSuccessComplete}
             onSubmit={props.onSubmit}
         />
     );

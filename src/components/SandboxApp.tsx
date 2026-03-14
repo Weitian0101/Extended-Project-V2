@@ -131,6 +131,7 @@ export function SandboxApp({
                                 compact
                                 name={profile.name}
                                 title={profile.accountRole || profile.title}
+                                tier={profile.subscriptionTier}
                                 onClick={onOpenProfile}
                             />
                             <Button variant="secondary" onClick={onExit} className="hidden lg:inline-flex">

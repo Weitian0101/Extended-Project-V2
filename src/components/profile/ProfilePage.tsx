@@ -5,6 +5,7 @@ import { ArrowLeft, Building2, CreditCard, Mail, MapPin, PencilLine, ReceiptText
 
 import { MembershipPage } from '@/components/profile/MembershipPage';
 import { PlanCheckoutDialog } from '@/components/profile/PlanCheckoutDialog';
+import { MembershipBadge, getMembershipMeta } from '@/components/ui/MembershipBadge';
 import { BrandLockup } from '@/components/ui/BrandLockup';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -63,7 +64,7 @@ function derivePaymentMethodLabel(checkout: MembershipCheckoutDraft) {
     return `Visa ending in ${last4}`;
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
     return (
         <div className="rounded-[18px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground-muted)]">{label}</div>
@@ -77,6 +78,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
     const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
     const [membershipCycle, setMembershipCycle] = useState<BillingCycle>(profile.billingCycle);
     const [checkoutTier, setCheckoutTier] = useState<MembershipTier | null>(null);
+    const [checkoutReturnView, setCheckoutReturnView] = useState<ProfileView>('billing');
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [draft, setDraft] = useState({
         name: profile.name,
@@ -119,6 +121,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
 
     const handleSelectPlan = (tier: MembershipTier) => {
         setStatusMessage(null);
+        setCheckoutReturnView('billing');
         setCheckoutTier(tier);
     };
 
@@ -162,6 +165,8 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
     };
 
     const currentPlan = getMembershipPlan(profile.subscriptionTier);
+    const membershipMeta = getMembershipMeta(profile.subscriptionTier);
+    const MembershipIcon = membershipMeta.Icon;
 
     return (
         <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
@@ -193,13 +198,19 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                     <div className="eyebrow">Profile</div>
                                     <h1 className="mt-4 text-4xl font-display font-semibold text-[var(--foreground)] lg:text-5xl">{profile.name}</h1>
                                     <p className="mt-3 max-w-xl text-base leading-relaxed text-[var(--foreground-soft)]">{profile.title}</p>
+                                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                                        <MembershipBadge tier={profile.subscriptionTier} variant="solid" size="md" showMemberLabel />
+                                        <span className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm font-medium text-[var(--foreground-soft)]">
+                                            {formatSubscriptionStatus(profile.subscriptionStatus)} / {profile.billingCycle}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="rounded-[30px] border border-[var(--panel-border)] bg-[var(--panel)] p-6">
                                     <div className="grid gap-4 md:grid-cols-4">
                                         <DetailRow label="Email" value={profile.email} />
                                         <DetailRow label="Workspace" value={profile.workspace} />
-                                        <DetailRow label="Plan" value={currentPlan.title} />
+                                        <DetailRow label="Plan" value={<MembershipBadge tier={profile.subscriptionTier} size="xs" showMemberLabel />} />
                                         <DetailRow label="Billing" value={profile.billingCycle} />
                                     </div>
                                 </div>
@@ -255,8 +266,8 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                 className="group surface-panel rounded-[30px] p-6 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(15,23,42,0.1)]"
                             >
                                 <div className="flex items-center justify-between">
-                                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                                        <CreditCard className="h-5 w-5" />
+                                    <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl border text-white shadow-[0_18px_38px_rgba(15,23,42,0.1)] ${membershipMeta.solidClassName}`}>
+                                        <MembershipIcon className="h-5 w-5" />
                                     </div>
                                     <span className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-1 text-xs font-semibold text-[var(--foreground-muted)]">
                                         Manage
@@ -264,7 +275,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                 </div>
                                 <div className="mt-5 text-2xl font-display font-semibold text-[var(--foreground)]">Billing & subscription</div>
                                 <div className="mt-5 space-y-3 text-sm text-[var(--foreground-soft)]">
-                                    <DetailRow label="Plan" value={currentPlan.title} />
+                                    <DetailRow label="Plan" value={<MembershipBadge tier={profile.subscriptionTier} size="xs" showMemberLabel />} />
                                     <DetailRow label="Status" value={formatSubscriptionStatus(profile.subscriptionStatus)} />
                                     <DetailRow label="Current total" value={formatMoney(getMembershipPrice(profile.subscriptionTier, profile.billingCycle), 'USD')} />
                                 </div>
@@ -393,9 +404,13 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
 
                         <div className="grid gap-5 lg:grid-cols-3">
                             <div className="surface-panel rounded-[24px] p-5">
-                                <CreditCard className="h-5 w-5 text-sky-500" />
+                                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl border text-white shadow-[0_16px_34px_rgba(15,23,42,0.1)] ${membershipMeta.solidClassName}`}>
+                                    <MembershipIcon className="h-5 w-5" />
+                                </div>
                                 <div className="mt-4 text-sm font-semibold text-[var(--foreground)]">Plan</div>
-                                <div className="mt-3 text-2xl font-display font-semibold text-[var(--foreground)]">{currentPlan.title}</div>
+                                <div className="mt-3">
+                                    <MembershipBadge tier={profile.subscriptionTier} size="sm" showMemberLabel />
+                                </div>
                                 <div className="mt-2 text-sm text-[var(--foreground-soft)]">
                                     {formatSubscriptionStatus(profile.subscriptionStatus)} / {profile.billingCycle}
                                 </div>
@@ -455,7 +470,10 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                     <Button
                                         variant="secondary"
                                         className="w-full justify-center"
-                                        onClick={() => setCheckoutTier(profile.subscriptionTier)}
+                                        onClick={() => {
+                                            setCheckoutReturnView('billing');
+                                            setCheckoutTier(profile.subscriptionTier);
+                                        }}
                                         disabled={profile.subscriptionTier === 'free'}
                                     >
                                         Update Payment Method
@@ -482,7 +500,6 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
             </main>
 
             <PlanCheckoutDialog
-                key={checkoutTier ? `${checkoutTier}-${membershipCycle}-${profile.paymentMethodLabel}` : 'checkout-closed'}
                 open={checkoutTier !== null}
                 currentTier={profile.subscriptionTier}
                 targetTier={checkoutTier}
@@ -493,6 +510,10 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                 currentPaymentMethodLabel={profile.paymentMethodLabel}
                 isSubmitting={isUpdatingPlan}
                 onClose={() => setCheckoutTier(null)}
+                onSuccessComplete={() => {
+                    setCheckoutTier(null);
+                    setView(checkoutReturnView);
+                }}
                 onSubmit={handleCheckoutSubmit}
             />
         </div>

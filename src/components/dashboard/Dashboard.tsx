@@ -122,6 +122,7 @@ export function Dashboard({
                             compact
                             name={profile.name}
                             title={profile.accountRole || profile.title}
+                            tier={profile.subscriptionTier}
                             onClick={onOpenProfile}
                         />
                         <button onClick={onLogout} className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-red-600">
