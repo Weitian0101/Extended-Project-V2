@@ -15,6 +15,7 @@ import { ProfilePage } from '@/components/profile/ProfilePage';
 import { DEFAULT_USER } from '@/data/workspaceSeed';
 import { RemoteWorkspaceShell } from '@/components/app/RemoteWorkspaceShell';
 import { isRemoteBackendEnabled } from '@/lib/config/backend';
+import { loadWorkspaceBrowserState, useWorkspaceBrowserHistory } from '@/hooks/useWorkspaceBrowserHistory';
 import {
   clearWorkspaceSession,
   exportWorkspaceSnapshot,
@@ -55,15 +56,30 @@ function HomeShell() {
   useEffect(() => {
     const savedSession = loadWorkspaceSession();
     const savedWorkspace = loadWorkspaceShell();
-    const restoredView = savedSession.view === 'logging_out' ? 'landing' : savedSession.view;
+    const restoredNavigationState = loadWorkspaceBrowserState({
+      view: savedSession.view === 'logging_out' ? 'landing' : savedSession.view,
+      activeProjectId: savedSession.activeProjectId
+    });
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setView(restoredView);
-    setActiveProjectId(savedSession.activeProjectId);
+    setView(restoredNavigationState.view);
+    setActiveProjectId(restoredNavigationState.activeProjectId);
     setProjects(savedWorkspace.projects);
     setProfile(savedWorkspace.profile);
     setIsWorkspaceHydrated(true);
   }, []);
+
+  useWorkspaceBrowserHistory({
+    state: {
+      view,
+      activeProjectId
+    },
+    isReady: isWorkspaceHydrated,
+    onNavigate: (nextState) => {
+      setView(nextState.view);
+      setActiveProjectId(nextState.activeProjectId);
+    }
+  });
 
   useEffect(() => {
     if (!isWorkspaceHydrated) return;

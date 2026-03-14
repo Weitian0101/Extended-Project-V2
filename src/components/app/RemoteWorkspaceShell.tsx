@@ -11,6 +11,7 @@ import { ProfilePage } from '@/components/profile/ProfilePage';
 import { SandboxApp } from '@/components/SandboxApp';
 import { DEFAULT_USER } from '@/data/workspaceSeed';
 import { WorkspaceExportDto } from '@/lib/contracts/api';
+import { loadWorkspaceBrowserState, useWorkspaceBrowserHistory } from '@/hooks/useWorkspaceBrowserHistory';
 import { clearWorkspaceSession, loadWorkspaceSession, saveWorkspaceSession } from '@/lib/services/mvpWorkspace';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { AppViewState, PermissionLevel, UserProfileData, WorkspaceProject } from '@/types';
@@ -88,12 +89,45 @@ export function RemoteWorkspaceShell() {
     const [authError, setAuthError] = useState<string | null>(null);
     const [workspaceStatus, setWorkspaceStatus] = useState<string | null>(null);
     const [profileSaving, setProfileSaving] = useState(false);
+    const [isNavigationHydrated, setIsNavigationHydrated] = useState(false);
 
     useEffect(() => {
         const savedSession = loadWorkspaceSession();
-        setView(savedSession.view === 'logging_out' ? 'landing' : savedSession.view);
-        setActiveProjectId(savedSession.activeProjectId);
+        const restoredNavigationState = loadWorkspaceBrowserState({
+            view: savedSession.view === 'logging_out' ? 'landing' : savedSession.view,
+            activeProjectId: savedSession.activeProjectId
+        });
+
+        setView(restoredNavigationState.view);
+        setActiveProjectId(restoredNavigationState.activeProjectId);
+        setIsNavigationHydrated(true);
     }, []);
+
+    useWorkspaceBrowserHistory({
+        state: {
+            view,
+            activeProjectId
+        },
+        isReady: isNavigationHydrated && !authLoading,
+        onNavigate: (nextState) => {
+            if (!authLoading) {
+                if (!sessionUser && nextState.view !== 'landing' && nextState.view !== 'auth') {
+                    setView('landing');
+                    setActiveProjectId(null);
+                    return;
+                }
+
+                if (sessionUser && (nextState.view === 'landing' || nextState.view === 'auth')) {
+                    setView('dashboard');
+                    setActiveProjectId(null);
+                    return;
+                }
+            }
+
+            setView(nextState.view);
+            setActiveProjectId(nextState.activeProjectId);
+        }
+    });
 
     useEffect(() => {
         const bootstrapAuth = async () => {
