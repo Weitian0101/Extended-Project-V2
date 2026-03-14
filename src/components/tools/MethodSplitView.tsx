@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ArrowDownCircle, Bot, ChevronLeft, Send, Sparkles, X, Zap } from 'lucide-react';
+import { ArrowDownCircle, Bot, ChevronLeft, Expand, Send, Sparkles, X, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -66,6 +66,7 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
     const [isFacilitatorOpen, setIsFacilitatorOpen] = useState(false);
     const [chatInput, setChatInput] = useState('');
     const [isMobileAiPanelOpen, setIsMobileAiPanelOpen] = useState(false);
+    const [isReferencePreviewOpen, setIsReferencePreviewOpen] = useState(false);
     const hasPersistedResponsesRef = useRef(false);
     const onSaveRef = useRef(onSave);
 
@@ -89,6 +90,22 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
     }, [responses]);
 
     const activeReferencePage = referencePages.find(page => page.id === activeReferencePageId) || referencePages[0];
+
+    useEffect(() => {
+        if (!isReferencePreviewOpen) {
+            return;
+        }
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsReferencePreviewOpen(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isReferencePreviewOpen]);
 
     const buildAiResponse = (prompt: string) => {
         const activeContext = [
@@ -168,7 +185,7 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
             <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--body-top),var(--body-bottom))]"></div>
             <div className={cn('absolute inset-0 bg-gradient-to-br opacity-90', theme.accentGradient)}></div>
 
-            <div className="relative w-full lg:w-[58%] h-full bg-[linear-gradient(180deg,#09111f,#0d1728)] border-r border-white/8 flex flex-col overflow-hidden shrink-0">
+            <div className="relative h-full w-full shrink-0 border-r border-white/10 bg-[linear-gradient(180deg,#09111f,#0d1728)] shadow-[inset_-1px_0_0_rgba(255,255,255,0.04)] lg:w-[62%] flex flex-col overflow-hidden">
                 <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,rgba(148,163,184,0.6)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.6)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none"></div>
                 <div className={cn('absolute top-[-8%] right-[-10%] h-[22rem] w-[22rem] rounded-full blur-[90px] pointer-events-none', theme.accentGlow)}></div>
 
@@ -186,23 +203,34 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                     <p className="mt-3 text-sm lg:text-base text-slate-200 max-w-xl leading-relaxed">{card.purpose}</p>
                 </div>
 
-                <div className="relative flex-1 min-h-[24rem] w-full lg:min-h-0">
-                    <div key={activeReferencePage.id} className="absolute inset-0 animate-reference-page-in">
-                        <Image
-                            src={activeReferencePage.image}
-                            alt="Method Reference"
-                            fill
-                            sizes="(min-width: 1024px) 58vw, 100vw"
-                            style={{ objectFit: 'contain' }}
-                            className="p-2 md:p-4 lg:p-5 xl:p-6"
-                            unoptimized
-                        />
-                    </div>
+                <div className="relative flex flex-1 min-h-[24rem] w-full items-center justify-center overflow-hidden px-2 lg:min-h-0 lg:px-0">
+                    <button
+                        type="button"
+                        onClick={() => setIsReferencePreviewOpen(true)}
+                        className="group relative flex h-full w-full items-center justify-center overflow-hidden px-1 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                    >
+                        <div className="relative h-full w-full animate-reference-page-in">
+                            <Image
+                                src={activeReferencePage.image}
+                                alt="Method Reference"
+                                fill
+                                sizes="(min-width: 1024px) 62vw, 100vw"
+                                style={{ objectFit: 'contain', objectPosition: 'center' }}
+                                className="p-2 md:p-3 lg:p-4 xl:p-5 transition-transform duration-200 group-hover:scale-[1.015]"
+                                unoptimized
+                            />
+                        </div>
+                        <span className="pointer-events-none absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/58 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/82 backdrop-blur-sm">
+                            <Expand className="h-3.5 w-3.5" />
+                            Open large view
+                        </span>
+                    </button>
                 </div>
 
-                {referencePages.length > 1 && (
-                    <div className="px-4 pb-4 lg:px-6">
-                        <div className="flex flex-wrap gap-2 justify-center">
+                <div className="px-4 pb-4 lg:px-6">
+                    <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-between">
+                        {referencePages.length > 1 ? (
+                            <div className="flex flex-wrap justify-center gap-2">
                             {referencePages.map(page => (
                                 <button
                                     key={page.id}
@@ -217,9 +245,21 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                                     {page.label}
                                 </button>
                             ))}
-                        </div>
+                            </div>
+                        ) : (
+                            <div />
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={() => setIsReferencePreviewOpen(true)}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200 backdrop-blur-sm transition-colors hover:bg-white/12"
+                        >
+                            <Expand className="h-3.5 w-3.5" />
+                            Open large view
+                        </button>
                     </div>
-                )}
+                </div>
 
                 <div className="bg-black/22 border-t border-white/8 px-4 py-3 lg:px-6 text-[11px] lg:text-xs text-center text-slate-400">
                     Reference Card: {card.title} / {activeReferencePage.label}
@@ -229,7 +269,7 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
             <div
                 className={cn(
                     'relative surface-panel-strong flex flex-col transition-transform duration-300 ease-in-out border-t shadow-[0_-12px_40px_rgba(15,23,42,0.12)]',
-                    'lg:w-[42%] lg:h-full lg:translate-y-0 lg:static lg:shadow-none',
+                    'lg:w-[38%] lg:h-full lg:translate-y-0 lg:static lg:shadow-none',
                     'absolute bottom-0 left-0 right-0 h-[82%] z-40 rounded-t-[28px]',
                     isMobileAiPanelOpen ? 'translate-y-0' : 'translate-y-[110%]'
                 )}
@@ -406,6 +446,70 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                     </div>
                 )}
             </div>
+
+            {isReferencePreviewOpen && (
+                <div className="absolute inset-0 z-[70] flex items-center justify-center bg-slate-950/86 p-4 backdrop-blur-md">
+                    <button
+                        type="button"
+                        aria-label="Close enlarged reference"
+                        className="absolute inset-0"
+                        onClick={() => setIsReferencePreviewOpen(false)}
+                    />
+
+                    <div className="relative z-10 flex h-full max-h-[min(92vh,72rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[30px] border border-white/12 bg-[linear-gradient(180deg,#0a1323,#0c1728)] shadow-[0_30px_80px_rgba(2,6,23,0.5)]">
+                        <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4 text-white lg:px-6">
+                            <div>
+                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/58">Reference Preview</div>
+                                <div className="mt-1 text-base font-semibold lg:text-lg">{card.title}</div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsReferencePreviewOpen(false)}
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/6 text-white transition-colors hover:bg-white/12"
+                                aria-label="Close enlarged reference"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="relative flex-1 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.05),transparent_45%)] p-4 lg:p-6">
+                            <div className="relative h-full w-full overflow-auto rounded-[24px] border border-white/8 bg-slate-950/30">
+                                <div className="relative mx-auto h-full min-h-[36rem] w-full max-w-[96rem]">
+                                    <Image
+                                        src={activeReferencePage.image}
+                                        alt={`${card.title} enlarged reference`}
+                                        fill
+                                        sizes="100vw"
+                                        style={{ objectFit: 'contain', objectPosition: 'center' }}
+                                        className="p-3 lg:p-6"
+                                        unoptimized
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {referencePages.length > 1 && (
+                            <div className="flex flex-wrap justify-center gap-2 border-t border-white/10 px-4 py-4">
+                                {referencePages.map(page => (
+                                    <button
+                                        key={`${page.id}-preview`}
+                                        type="button"
+                                        onClick={() => setActiveReferencePageId(page.id)}
+                                        className={cn(
+                                            'rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all lg:text-sm',
+                                            page.id === activeReferencePage.id
+                                                ? `${theme.accentSolid} border-transparent text-white shadow-[0_14px_28px_rgba(15,23,42,0.18)]`
+                                                : 'border-white/12 bg-white/6 text-white/78 hover:bg-white/10'
+                                        )}
+                                    >
+                                        {page.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { BookOpen, ChevronLeft, ChevronRight, Compass, Hammer, Layers, Lightbulb, X } from 'lucide-react';
 
 import { BrandLockup } from '@/components/ui/BrandLockup';
@@ -89,8 +90,8 @@ export function Sidebar({
 
             <aside
                 className={cn(
-                    'fixed left-0 top-0 z-50 flex h-screen w-80 shrink-0 flex-col overflow-hidden border-r transition-[transform,width] duration-300 lg:relative lg:translate-x-0',
-                    isDark ? 'border-white/8' : 'border-slate-200/80',
+                    'fixed left-0 top-0 z-50 flex h-screen w-80 shrink-0 flex-col overflow-hidden border-r shadow-[14px_0_36px_rgba(15,23,42,0.07)] transition-[transform,width] duration-300 lg:relative lg:translate-x-0',
+                    isDark ? 'border-white/10 shadow-[14px_0_36px_rgba(2,6,23,0.3)]' : 'border-slate-300/70',
                     isOpen ? 'translate-x-0' : '-translate-x-full',
                     isCollapsed ? 'lg:w-[6.5rem]' : 'lg:w-80'
                 )}
@@ -98,8 +99,8 @@ export function Sidebar({
                 <div className={cn(
                     'absolute inset-0',
                     isDark
-                        ? 'bg-[linear-gradient(180deg,#081120,#0a1424_36%,#0b1728_100%)]'
-                        : 'bg-[linear-gradient(180deg,#ffffff,#f8fbff_38%,#f3f7fb_100%)]'
+                        ? 'bg-[linear-gradient(180deg,#07101d,#0b1628_34%,#0d192d_100%)]'
+                        : 'bg-[linear-gradient(180deg,#fbfdff,#f3f7fc_38%,#edf3fa_100%)]'
                 )} />
                 <div className={cn('absolute right-[-24%] top-[-12%] h-[320px] w-[320px] rounded-full blur-[90px] opacity-40', activeAccent.softGlow)} />
                 <div className={cn(
@@ -107,7 +108,7 @@ export function Sidebar({
                     isDark ? '' : 'opacity-[0.04]'
                 )} />
 
-                <div className={cn('relative z-10 border-b p-7 pb-5', isDark ? 'border-white/8' : 'border-slate-200/80', isCollapsed && 'lg:px-4 lg:py-5')}>
+                <div className={cn('relative z-10 border-b p-7 pb-5', isDark ? 'border-white/10' : 'border-slate-300/70', isCollapsed && 'lg:px-4 lg:py-5')}>
                     <div className="absolute right-4 top-4 lg:hidden">
                         <button onClick={onClose} className={cn('p-2 transition-colors', isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-900')}>
                             <X className="h-6 w-6" />
@@ -133,7 +134,7 @@ export function Sidebar({
 
                     <div className={cn(
                         'rounded-[28px] border p-4 backdrop-blur-xl',
-                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/80 bg-white/75',
+                        isDark ? 'border-white/10 bg-white/[0.05]' : 'border-slate-300/70 bg-white/88',
                         isCollapsed && 'lg:flex lg:items-center lg:justify-center lg:px-3'
                     )}>
                         {isCollapsed ? (
@@ -141,15 +142,24 @@ export function Sidebar({
                                 type="button"
                                 onClick={onGoDashboard}
                                 className={cn(
-                                    'flex h-14 w-14 items-center justify-center rounded-[22px] border text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5',
+                                    'flex h-14 w-14 items-center justify-center overflow-hidden rounded-[22px] border transition-all duration-200 hover:-translate-y-0.5',
                                     isDark
                                         ? 'border-white/10 bg-white/[0.06] text-white'
-                                        : 'border-slate-200/80 bg-white text-slate-900'
+                                        : 'border-slate-300/70 bg-white text-slate-900'
                                 )}
                                 title="Back to dashboard"
                                 aria-label="Back to dashboard"
                             >
-                                IS
+                                <div className="relative h-9 w-9">
+                                    <Image
+                                        src="/images/logo.png"
+                                        alt="Academy of Design Thinking"
+                                        fill
+                                        sizes="36px"
+                                        style={{ objectFit: 'contain', objectPosition: 'center' }}
+                                        className={isDark ? '' : 'mix-blend-multiply'}
+                                    />
+                                </div>
                             </button>
                         ) : (
                             <>
@@ -221,7 +231,7 @@ export function Sidebar({
                     })}
                 </nav>
 
-                <div className={cn('relative z-10 border-t px-6 py-5', isDark ? 'border-white/8 bg-black/5' : 'border-slate-200/80 bg-white/40', isCollapsed && 'lg:px-4')}>
+                <div className={cn('relative z-10 border-t px-6 py-5', isDark ? 'border-white/10 bg-black/10' : 'border-slate-300/70 bg-white/55', isCollapsed && 'lg:px-4')}>
                     <div className={cn('flex items-center gap-3', isCollapsed && 'lg:justify-center')}>
                         <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white shadow-lg', activeAccent.indicator)}>
                             AI

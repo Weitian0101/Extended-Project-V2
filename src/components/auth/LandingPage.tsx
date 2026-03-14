@@ -38,13 +38,13 @@ const PARTNER_LOGOS = [
     { src: "/images/Partner/LoughboroughUniversity.avif", alt: "Loughborough University", width: 200, height: 70 },
     { src: "/images/Partner/EU-Commission.avif", alt: "EU Commission", width: 140, height: 70 },
     { src: "/images/Partner/LSE.avif", alt: "LSE", width: 140, height: 70 },
-    { src: "/images/Partner/Arla.avif", alt: "Arla", width: 180, height: 74 },
-    { src: "/images/Partner/JustEat.avif", alt: "Just Eat", width: 176, height: 72 },
-    { src: "/images/Partner/JohnLewisPartnership.avif", alt: "John Lewis Partnership", width: 220, height: 70 },
-    { src: "/images/Partner/AssociatedBritishFoods.avif", alt: "Associated British Foods", width: 200, height: 70 },
-    { src: "/images/Partner/AmericanExpress.avif", alt: "American Express", width: 210, height: 70 },
-    { src: "/images/Partner/LloydsBank.avif", alt: "Lloyds Bank", width: 200, height: 74 },
-    { src: "/images/Partner/spar-atlantico.avif", alt: "SPAR Atlantico", width: 160, height: 70 }
+    { src: "/images/Partner/Arla.avif", alt: "Arla", width: 190, height: 82, imageClassName: 'scale-[1.06]' },
+    { src: "/images/Partner/JustEat.avif", alt: "Just Eat", width: 188, height: 82, imageClassName: 'scale-[1.04]' },
+    { src: "/images/Partner/JohnLewisPartnership.avif", alt: "John Lewis Partnership", width: 250, height: 82, imageClassName: 'scale-[1.08]' },
+    { src: "/images/Partner/AssociatedBritishFoods.avif", alt: "Associated British Foods", width: 188, height: 88, imageClassName: 'scale-[1.28]' },
+    { src: "/images/Partner/AmericanExpress.avif", alt: "American Express", width: 230, height: 82, imageClassName: 'scale-[1.18]' },
+    { src: "/images/Partner/LloydsBank.avif", alt: "Lloyds Bank", width: 206, height: 82, imageClassName: 'scale-[1.04]' },
+    { src: "/images/Partner/spar-atlantico.avif", alt: "SPAR Atlantico", width: 174, height: 82, imageClassName: 'scale-[1.16]' }
 ];
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
@@ -249,21 +249,28 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                     <div className="relative mt-10 overflow-hidden">
                         <div className="absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[var(--panel)] to-transparent" />
                         <div className="absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[var(--panel)] to-transparent" />
-                        <div className="marquee-track flex min-w-max items-center gap-12">
-                            {[...PARTNER_LOGOS, ...PARTNER_LOGOS].map((logo, index) => (
+                        <div className="marquee-track flex min-w-max items-center gap-8 lg:gap-10">
+                            {[...PARTNER_LOGOS, ...PARTNER_LOGOS].map((logo, index) => {
+                                const mobileWidth = Math.round((logo.width / logo.height) * 64);
+                                const desktopWidth = Math.round((logo.width / logo.height) * 70);
+
+                                return (
                                 <div
                                     key={`${logo.alt}-${index}`}
-                                    className="relative flex h-20 w-[12rem] shrink-0 items-center justify-center rounded-[24px] border border-[var(--panel-border)] bg-white/85 px-5 py-4 opacity-80 shadow-[0_18px_32px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:opacity-100"
+                                    className="relative h-16 w-[var(--logo-width)] shrink-0 opacity-75 transition-opacity duration-300 hover:opacity-100 lg:h-[4.35rem] lg:w-[var(--logo-width-lg)]"
+                                    style={{ '--logo-width': `${mobileWidth}px`, '--logo-width-lg': `${desktopWidth}px` } as React.CSSProperties}
                                 >
                                     <Image
                                         src={logo.src}
                                         alt={logo.alt}
-                                        width={logo.width}
-                                        height={logo.height}
-                                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                        fill
+                                        sizes="(min-width: 1024px) 220px, 180px"
+                                        style={{ objectFit: 'contain', objectPosition: 'center' }}
+                                        className={logo.imageClassName}
                                     />
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </section>

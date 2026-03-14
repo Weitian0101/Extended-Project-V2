@@ -256,39 +256,43 @@ function PlanCheckoutDialogInner({
             : 'Enter your billing details, review the order summary, and confirm the new plan.';
 
     return (
-        <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-slate-950/40 px-4 py-4 backdrop-blur-sm lg:items-center lg:py-6">
+        <div
+            className="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-950/40 backdrop-blur-sm touch-pan-y"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+        >
             <div className="absolute inset-0" onClick={isSubmitting ? undefined : onClose} />
 
-            <div className="relative z-10 grid max-h-[calc(100vh-2rem)] w-full max-w-6xl gap-6 overflow-y-auto rounded-[34px] border border-white/70 bg-white p-4 shadow-[0_32px_90px_rgba(15,23,42,0.2)] lg:max-h-[calc(100vh-3rem)] lg:grid-cols-[1.05fr_0.95fr] lg:overflow-hidden lg:p-6">
-                <div className="flex min-h-0 flex-col rounded-[28px] border border-slate-200 bg-slate-50/90 p-5 lg:p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <button
-                            type="button"
-                            onClick={step === 'details' ? onClose : () => setStep('details')}
-                            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            {step === 'details' ? 'Close checkout' : 'Back to details'}
-                        </button>
-                        <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                            {step === 'details' ? 'Step 1 of 3' : step === 'review' ? 'Step 2 of 3' : 'Step 3 of 3'}
-                        </div>
-                    </div>
-
-                    <div className="mt-6">
-                        <h2 className="text-3xl font-display font-semibold text-slate-950">{heading}</h2>
-                        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">{subtitle}</p>
-                    </div>
-
-                    <div className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
-                        {error && (
-                            <div className="rounded-[18px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                                {error}
+            <div className="relative z-10 flex min-h-full items-start justify-center px-4 py-4 lg:items-center lg:py-6">
+                <div className="grid w-full max-w-6xl gap-6 rounded-[34px] border border-white/70 bg-white p-4 shadow-[0_32px_90px_rgba(15,23,42,0.2)] lg:max-h-[calc(100vh-3rem)] lg:grid-cols-[1.05fr_0.95fr] lg:overflow-hidden lg:p-6">
+                    <div className="flex flex-col rounded-[28px] border border-slate-200 bg-slate-50/90 p-5 lg:min-h-0 lg:p-6">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <button
+                                type="button"
+                                onClick={step === 'details' ? onClose : () => setStep('details')}
+                                className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                {step === 'details' ? 'Close checkout' : 'Back to details'}
+                            </button>
+                            <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                {step === 'details' ? 'Step 1 of 3' : step === 'review' ? 'Step 2 of 3' : 'Step 3 of 3'}
                             </div>
-                        )}
+                        </div>
 
-                        {step === 'details' && (
-                            <div className="space-y-5">
+                        <div className="mt-6">
+                            <h2 className="text-3xl font-display font-semibold text-slate-950">{heading}</h2>
+                            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">{subtitle}</p>
+                        </div>
+
+                        <div className="mt-6 pr-1 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+                            {error && (
+                                <div className="rounded-[18px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    {error}
+                                </div>
+                            )}
+
+                            {step === 'details' && (
+                                <div className="space-y-5">
                                 <Section title="Billing cycle">
                                     <div className="flex flex-wrap items-center justify-between gap-3">
                                         <div className="text-sm text-slate-500">Choose the cadence you want the new plan to renew on.</div>
@@ -403,11 +407,11 @@ function PlanCheckoutDialogInner({
                                     <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
                                     <Button type="button" onClick={handleContinue}>Continue to review</Button>
                                 </div>
-                            </div>
-                        )}
+                                </div>
+                            )}
 
-                        {step === 'review' && (
-                            <div className="space-y-5">
+                            {step === 'review' && (
+                                <div className="space-y-5">
                                 <Section title="Review your billing details">
                                     <div className="grid gap-4 md:grid-cols-2">
                                         {[
@@ -444,11 +448,11 @@ function PlanCheckoutDialogInner({
                                                     : `Activate ${plan.title}`}
                                     </Button>
                                 </div>
-                            </div>
-                        )}
+                                </div>
+                            )}
 
-                        {step === 'success' && (
-                            <div className="rounded-[28px] border border-emerald-100 bg-emerald-50 p-6">
+                            {step === 'success' && (
+                                <div className="rounded-[28px] border border-emerald-100 bg-emerald-50 p-6">
                                 <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white">
                                     <ShieldCheck className="h-6 w-6" />
                                 </div>
@@ -465,16 +469,16 @@ function PlanCheckoutDialogInner({
                                 <div className="mt-6 flex flex-wrap gap-3">
                                     <Button type="button" onClick={onClose}>Return to billing</Button>
                                 </div>
-                            </div>
-                        )}
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                <div className="min-h-0 overflow-y-auto rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#0f172a,#111827)] p-5 text-white lg:p-6">
-                    <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-sky-200">
-                        <ReceiptText className="h-4 w-4" />
-                        Order summary
-                    </div>
+                    <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#0f172a,#111827)] p-5 text-white lg:min-h-0 lg:overflow-y-auto lg:p-6">
+                        <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-sky-200">
+                            <ReceiptText className="h-4 w-4" />
+                            Order summary
+                        </div>
 
                     <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-5">
                         <div className="flex items-start justify-between gap-3">
@@ -522,15 +526,16 @@ function PlanCheckoutDialogInner({
                         </div>
                     )}
 
-                    <div className="mt-5 rounded-[24px] border border-white/10 bg-white/5 p-5">
-                        <div className="text-sm font-semibold text-white">Included in this plan</div>
-                        <div className="mt-4 space-y-3 text-sm text-slate-300">
-                            {plan.features.map((feature) => (
-                                <div key={feature} className="flex items-start gap-3">
-                                    <div className="mt-1 h-2.5 w-2.5 rounded-full bg-sky-400" />
-                                    <span>{feature}</span>
-                                </div>
-                            ))}
+                        <div className="mt-5 rounded-[24px] border border-white/10 bg-white/5 p-5">
+                            <div className="text-sm font-semibold text-white">Included in this plan</div>
+                            <div className="mt-4 space-y-3 text-sm text-slate-300">
+                                {plan.features.map((feature) => (
+                                    <div key={feature} className="flex items-start gap-3">
+                                        <div className="mt-1 h-2.5 w-2.5 rounded-full bg-sky-400" />
+                                        <span>{feature}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
