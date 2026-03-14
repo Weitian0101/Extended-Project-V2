@@ -4,7 +4,7 @@ import React from 'react';
 import { ArrowLeft, Building2, ShieldCheck, Sparkles, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
-import { MEMBERSHIP_PLANS } from '@/lib/membership';
+import { getMembershipPrice, getMembershipYearlySavings, MEMBERSHIP_PLANS } from '@/lib/membership';
 import { BillingCycle, MembershipTier } from '@/types';
 
 interface MembershipPageProps {
@@ -12,6 +12,7 @@ interface MembershipPageProps {
     billingCycle: BillingCycle;
     isUpdatingPlan?: boolean;
     onBack: () => void;
+    onBillingCycleChange: (cycle: BillingCycle) => void;
     onSelectPlan: (tier: MembershipTier) => void | Promise<void>;
 }
 
@@ -53,7 +54,14 @@ function getActionLabel(tier: MembershipTier, currentTier: MembershipTier) {
     return 'Switch to Business';
 }
 
-export function MembershipPage({ currentTier, billingCycle, isUpdatingPlan = false, onBack, onSelectPlan }: MembershipPageProps) {
+export function MembershipPage({
+    currentTier,
+    billingCycle,
+    isUpdatingPlan = false,
+    onBack,
+    onBillingCycleChange,
+    onSelectPlan
+}: MembershipPageProps) {
     return (
         <section className="relative overflow-hidden rounded-[38px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-6 lg:p-8">
             <div
@@ -81,8 +89,44 @@ export function MembershipPage({ currentTier, billingCycle, isUpdatingPlan = fal
                     <h2 className="text-4xl font-display font-semibold text-[var(--foreground)] lg:text-5xl">Membership</h2>
                     <p className="mt-3 text-base leading-relaxed text-[var(--foreground-soft)]">
                         Choose the plan shape that matches your solo work, consulting practice, or delivery team.
-                        Pricing is shown in {billingCycle} billing.
+                        Review pricing, compare seat access, and continue into checkout when you are ready.
                     </p>
+                </div>
+
+                <div className="mt-8 flex flex-col gap-4 rounded-[28px] border border-[var(--panel-border)] bg-white/75 p-4 shadow-[0_18px_36px_rgba(15,23,42,0.06)] lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <div className="text-sm font-semibold text-slate-950">Billing cadence</div>
+                        <div className="mt-1 text-sm leading-relaxed text-slate-500">
+                            Annual billing keeps the checkout flow the same, while locking in two months of savings on every paid plan.
+                        </div>
+                    </div>
+
+                    <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+                        <button
+                            type="button"
+                            onClick={() => onBillingCycleChange('monthly')}
+                            className={[
+                                'rounded-full px-4 py-2 text-sm font-semibold transition-all',
+                                billingCycle === 'monthly'
+                                    ? 'bg-[linear-gradient(135deg,#0ea5e9,#2563eb)] text-white shadow-[0_12px_26px_rgba(37,99,235,0.2)]'
+                                    : 'text-slate-500 hover:text-slate-900'
+                            ].join(' ')}
+                        >
+                            Monthly
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onBillingCycleChange('yearly')}
+                            className={[
+                                'rounded-full px-4 py-2 text-sm font-semibold transition-all',
+                                billingCycle === 'yearly'
+                                    ? 'bg-[linear-gradient(135deg,#0ea5e9,#2563eb)] text-white shadow-[0_12px_26px_rgba(37,99,235,0.2)]'
+                                    : 'text-slate-500 hover:text-slate-900'
+                            ].join(' ')}
+                        >
+                            Yearly
+                        </button>
+                    </div>
                 </div>
 
                 <div className="mt-10 grid gap-5 xl:grid-cols-4">
@@ -91,6 +135,8 @@ export function MembershipPage({ currentTier, billingCycle, isUpdatingPlan = fal
                         const accent = PLAN_ACCENTS[plan.id];
                         const eyebrow = PLAN_EYEBROWS[plan.id];
                         const isCurrent = plan.id === currentTier;
+                        const displayedPrice = getMembershipPrice(plan.id, billingCycle);
+                        const yearlySavings = getMembershipYearlySavings(plan.id);
 
                         return (
                             <div
@@ -115,9 +161,14 @@ export function MembershipPage({ currentTier, billingCycle, isUpdatingPlan = fal
 
                                 <div className="mt-10 flex items-end gap-2 text-slate-950">
                                     <span className="text-lg font-medium">US$</span>
-                                    <span className="text-5xl font-display font-semibold">{billingCycle === 'yearly' ? plan.priceMonthly * 10 : plan.priceMonthly}</span>
+                                    <span className="text-5xl font-display font-semibold">{displayedPrice}</span>
                                     <span className="pb-1 text-xl text-slate-400">/{billingCycle === 'yearly' ? 'year' : 'month'}</span>
                                 </div>
+                                {billingCycle === 'yearly' && displayedPrice > 0 && (
+                                    <div className="mt-3 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                                        Save US${yearlySavings} each year
+                                    </div>
+                                )}
 
                                 <Button
                                     type="button"

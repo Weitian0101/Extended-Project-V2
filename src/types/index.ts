@@ -80,6 +80,20 @@ export interface BillingInvoice {
     issuedAt: string;
 }
 
+export interface MembershipCheckoutDraft {
+    tier: MembershipTier;
+    billingCycle: BillingCycle;
+    billingEmail: string;
+    company: string;
+    country: string;
+    postalCode: string;
+    taxId: string;
+    cardholderName: string;
+    cardNumber: string;
+    expiry: string;
+    cvc: string;
+}
+
 export interface ProjectInvite {
     id: string;
     email: string;

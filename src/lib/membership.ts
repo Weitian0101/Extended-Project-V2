@@ -73,6 +73,10 @@ export function getMembershipPrice(tier: MembershipTier, billingCycle: BillingCy
     return billingCycle === 'yearly' ? monthly * 10 : monthly;
 }
 
+export function getMembershipYearlySavings(tier: MembershipTier) {
+    return MEMBERSHIP_PLANS[tier].priceMonthly * 2;
+}
+
 function buildInvoiceId(tier: MembershipTier, date: Date) {
     return `invoice-${tier}-${date.toISOString().slice(0, 7)}`;
 }

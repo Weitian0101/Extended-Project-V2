@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Building2, CreditCard, Mail, MapPin, PencilLine, ReceiptText, Smartphone } from 'lucide-react';
 
 import { MembershipPage } from '@/components/profile/MembershipPage';
+import { PlanCheckoutDialog } from '@/components/profile/PlanCheckoutDialog';
 import { BrandLockup } from '@/components/ui/BrandLockup';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { buildMembershipProfile, getMembershipPlan } from '@/lib/membership';
-import { MembershipTier, UserProfileData } from '@/types';
+import { buildMembershipProfile, getMembershipPlan, getMembershipPrice } from '@/lib/membership';
+import { BillingCycle, MembershipCheckoutDraft, MembershipTier, UserProfileData } from '@/types';
 
 interface ProfilePageProps {
     profile: UserProfileData;
@@ -52,6 +53,16 @@ function formatSubscriptionStatus(status: UserProfileData['subscriptionStatus'])
     }
 }
 
+function derivePaymentMethodLabel(checkout: MembershipCheckoutDraft) {
+    if (checkout.tier === 'free') {
+        return 'No payment method required';
+    }
+
+    const digits = checkout.cardNumber.replace(/\D/g, '');
+    const last4 = digits.slice(-4) || '0000';
+    return `Visa ending in ${last4}`;
+}
+
 function DetailRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="rounded-[18px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3">
@@ -64,6 +75,9 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false }: ProfilePageProps) {
     const [view, setView] = useState<ProfileView>('overview');
     const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
+    const [membershipCycle, setMembershipCycle] = useState<BillingCycle>(profile.billingCycle);
+    const [checkoutTier, setCheckoutTier] = useState<MembershipTier | null>(null);
+    const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [draft, setDraft] = useState({
         name: profile.name,
         title: profile.title,
@@ -74,19 +88,74 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
         billingEmail: profile.billingEmail
     });
 
+    useEffect(() => {
+        setDraft({
+            name: profile.name,
+            title: profile.title,
+            phone: profile.phone,
+            location: profile.location,
+            workspace: profile.workspace,
+            company: profile.company,
+            billingEmail: profile.billingEmail
+        });
+        setMembershipCycle(profile.billingCycle);
+    }, [
+        profile.billingCycle,
+        profile.billingEmail,
+        profile.company,
+        profile.location,
+        profile.name,
+        profile.phone,
+        profile.title,
+        profile.workspace
+    ]);
+
     const handleSave = async () => {
+        setStatusMessage(null);
         await onUpdateProfile(draft);
+        setStatusMessage('Profile changes saved.');
         setView('overview');
     };
 
-    const handleSelectPlan = async (tier: MembershipTier) => {
+    const handleSelectPlan = (tier: MembershipTier) => {
+        setStatusMessage(null);
+        setCheckoutTier(tier);
+    };
+
+    const handleCheckoutSubmit = async (checkout: MembershipCheckoutDraft) => {
         setIsUpdatingPlan(true);
+        setStatusMessage(null);
 
         try {
+            const isPaymentMethodUpdate = checkout.tier === profile.subscriptionTier
+                && checkout.billingCycle === profile.billingCycle;
+            const membershipUpdates = isPaymentMethodUpdate
+                ? {
+                    subscriptionTier: profile.subscriptionTier,
+                    billingCycle: profile.billingCycle,
+                    subscriptionStatus: profile.subscriptionStatus,
+                    renewalDate: profile.renewalDate,
+                    paymentMethodLabel: derivePaymentMethodLabel(checkout),
+                    billingInvoices: profile.billingInvoices
+                }
+                : buildMembershipProfile(
+                    checkout.tier,
+                    checkout.billingCycle,
+                    'active',
+                    derivePaymentMethodLabel(checkout)
+                );
+
             await onUpdateProfile({
-                ...buildMembershipProfile(tier, profile.billingCycle, 'active'),
-                billingEmail: profile.billingEmail
+                company: checkout.company,
+                billingEmail: checkout.billingEmail,
+                ...membershipUpdates
             });
+            setMembershipCycle(checkout.billingCycle);
+            setStatusMessage(
+                isPaymentMethodUpdate
+                    ? 'Payment method updated.'
+                    : `${getMembershipPlan(checkout.tier).title} plan confirmed.`
+            );
         } finally {
             setIsUpdatingPlan(false);
         }
@@ -110,6 +179,12 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
             </header>
 
             <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8 lg:py-10">
+                {statusMessage && (
+                    <div className="mb-6 rounded-[22px] border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+                        {statusMessage}
+                    </div>
+                )}
+
                 {view === 'overview' && (
                     <>
                         <section className="surface-panel-strong rounded-[36px] p-6 lg:p-10">
@@ -121,10 +196,11 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                 </div>
 
                                 <div className="rounded-[30px] border border-[var(--panel-border)] bg-[var(--panel)] p-6">
-                                    <div className="grid gap-4 md:grid-cols-3">
+                                    <div className="grid gap-4 md:grid-cols-4">
                                         <DetailRow label="Email" value={profile.email} />
                                         <DetailRow label="Workspace" value={profile.workspace} />
                                         <DetailRow label="Plan" value={currentPlan.title} />
+                                        <DetailRow label="Billing" value={profile.billingCycle} />
                                     </div>
                                 </div>
                             </div>
@@ -190,7 +266,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                 <div className="mt-5 space-y-3 text-sm text-[var(--foreground-soft)]">
                                     <DetailRow label="Plan" value={currentPlan.title} />
                                     <DetailRow label="Status" value={formatSubscriptionStatus(profile.subscriptionStatus)} />
-                                    <DetailRow label="Included seats" value={`${currentPlan.includedSeats}`} />
+                                    <DetailRow label="Current total" value={formatMoney(getMembershipPrice(profile.subscriptionTier, profile.billingCycle), 'USD')} />
                                 </div>
                             </button>
                         </section>
@@ -311,7 +387,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                             </button>
                             <h2 className="mt-4 text-3xl font-display font-semibold text-[var(--foreground)]">Billing & subscription</h2>
                             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--foreground-soft)]">
-                                Review your plan, payment details, and recent invoices.
+                                Review your plan, payment details, renewal cadence, and billing history.
                             </p>
                         </div>
 
@@ -322,6 +398,9 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                 <div className="mt-3 text-2xl font-display font-semibold text-[var(--foreground)]">{currentPlan.title}</div>
                                 <div className="mt-2 text-sm text-[var(--foreground-soft)]">
                                     {formatSubscriptionStatus(profile.subscriptionStatus)} / {profile.billingCycle}
+                                </div>
+                                <div className="mt-3 text-sm font-semibold text-[var(--foreground)]">
+                                    {formatMoney(getMembershipPrice(profile.subscriptionTier, profile.billingCycle), 'USD')}
                                 </div>
                             </div>
                             <div className="surface-panel rounded-[24px] p-5">
@@ -371,16 +450,18 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                 <div className="text-sm font-semibold text-[var(--foreground)]">Subscription actions</div>
                                 <div className="mt-4 space-y-3">
                                     <Button className="w-full justify-center" onClick={() => setView('membership')}>
-                                        View Membership Plans
+                                        Change Plan
                                     </Button>
-                                    <Button className="w-full justify-center" disabled>
-                                        Manage Plan
-                                    </Button>
-                                    <Button variant="secondary" className="w-full justify-center" disabled>
-                                        Billing Portal
-                                    </Button>
-                                    <Button variant="outline" className="w-full justify-center" disabled>
+                                    <Button
+                                        variant="secondary"
+                                        className="w-full justify-center"
+                                        onClick={() => setCheckoutTier(profile.subscriptionTier)}
+                                        disabled={profile.subscriptionTier === 'free'}
+                                    >
                                         Update Payment Method
+                                    </Button>
+                                    <Button variant="outline" className="w-full justify-center" onClick={() => setView('membership')}>
+                                        Compare Plans
                                     </Button>
                                 </div>
                             </div>
@@ -391,13 +472,29 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                 {view === 'membership' && (
                     <MembershipPage
                         currentTier={profile.subscriptionTier}
-                        billingCycle={profile.billingCycle}
+                        billingCycle={membershipCycle}
                         isUpdatingPlan={isUpdatingPlan}
-                        onBack={() => setView('overview')}
+                        onBack={() => setView('billing')}
+                        onBillingCycleChange={setMembershipCycle}
                         onSelectPlan={handleSelectPlan}
                     />
                 )}
             </main>
+
+            <PlanCheckoutDialog
+                key={checkoutTier ? `${checkoutTier}-${membershipCycle}-${profile.paymentMethodLabel}` : 'checkout-closed'}
+                open={checkoutTier !== null}
+                currentTier={profile.subscriptionTier}
+                targetTier={checkoutTier}
+                initialBillingCycle={membershipCycle}
+                initialBillingEmail={profile.billingEmail}
+                initialCompany={profile.company}
+                initialCardholderName={profile.name}
+                currentPaymentMethodLabel={profile.paymentMethodLabel}
+                isSubmitting={isUpdatingPlan}
+                onClose={() => setCheckoutTier(null)}
+                onSubmit={handleCheckoutSubmit}
+            />
         </div>
     );
 }
