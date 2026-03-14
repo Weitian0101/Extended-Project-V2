@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { BookOpen, Compass, Hammer, Layers, Lightbulb, X } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Compass, Hammer, Layers, Lightbulb, X } from 'lucide-react';
 
 import { BrandLockup } from '@/components/ui/BrandLockup';
 import { useAppTheme } from '@/components/ui/AppThemeProvider';
@@ -13,7 +13,9 @@ interface SidebarProps {
     onSetStage: (stage: StageId) => void;
     onGoDashboard?: () => void;
     isOpen?: boolean;
+    isCollapsed?: boolean;
     onClose?: () => void;
+    onToggleCollapse?: () => void;
 }
 
 const STAGE_ACCENTS: Record<StageId, {
@@ -62,7 +64,15 @@ const NAV_ITEMS = [
     { id: 'tell-story', label: 'Tell Story', icon: BookOpen, description: 'Share the journey' }
 ] as const;
 
-export function Sidebar({ currentStage, onSetStage, onGoDashboard, isOpen = true, onClose }: SidebarProps) {
+export function Sidebar({
+    currentStage,
+    onSetStage,
+    onGoDashboard,
+    isOpen = true,
+    isCollapsed = false,
+    onClose,
+    onToggleCollapse
+}: SidebarProps) {
     const { theme } = useAppTheme();
     const activeAccent = STAGE_ACCENTS[currentStage];
     const isDark = theme === 'dark';
@@ -79,9 +89,10 @@ export function Sidebar({ currentStage, onSetStage, onGoDashboard, isOpen = true
 
             <aside
                 className={cn(
-                    'fixed left-0 top-0 z-50 flex h-screen w-80 shrink-0 flex-col overflow-hidden border-r transition-transform duration-300 lg:relative lg:translate-x-0',
+                    'fixed left-0 top-0 z-50 flex h-screen w-80 shrink-0 flex-col overflow-hidden border-r transition-[transform,width] duration-300 lg:relative lg:translate-x-0',
                     isDark ? 'border-white/8' : 'border-slate-200/80',
-                    isOpen ? 'translate-x-0' : '-translate-x-full'
+                    isOpen ? 'translate-x-0' : '-translate-x-full',
+                    isCollapsed ? 'lg:w-[6.5rem]' : 'lg:w-80'
                 )}
             >
                 <div className={cn(
@@ -96,25 +107,62 @@ export function Sidebar({ currentStage, onSetStage, onGoDashboard, isOpen = true
                     isDark ? '' : 'opacity-[0.04]'
                 )} />
 
-                <div className={cn('relative z-10 border-b p-7 pb-5', isDark ? 'border-white/8' : 'border-slate-200/80')}>
+                <div className={cn('relative z-10 border-b p-7 pb-5', isDark ? 'border-white/8' : 'border-slate-200/80', isCollapsed && 'lg:px-4 lg:py-5')}>
                     <div className="absolute right-4 top-4 lg:hidden">
                         <button onClick={onClose} className={cn('p-2 transition-colors', isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-900')}>
                             <X className="h-6 w-6" />
                         </button>
                     </div>
 
+                    <div className="absolute right-4 top-4 z-20 hidden lg:block">
+                        <button
+                            type="button"
+                            onClick={onToggleCollapse}
+                            className={cn(
+                                'inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200 hover:-translate-y-0.5',
+                                isDark
+                                    ? 'border-white/10 bg-white/[0.04] text-slate-300 hover:text-white'
+                                    : 'border-slate-200/80 bg-white text-slate-500 hover:text-slate-900'
+                            )}
+                            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        >
+                            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                        </button>
+                    </div>
+
                     <div className={cn(
                         'rounded-[28px] border p-4 backdrop-blur-xl',
-                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/80 bg-white/75'
+                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/80 bg-white/75',
+                        isCollapsed && 'lg:flex lg:items-center lg:justify-center lg:px-3'
                     )}>
-                        <BrandLockup compact onClick={onGoDashboard} />
-                        <div className={cn('mt-4 text-[10px] uppercase tracking-[0.24em]', isDark ? 'text-slate-500' : 'text-slate-400')}>
-                            Innovation Toolkit
-                        </div>
+                        {isCollapsed ? (
+                            <button
+                                type="button"
+                                onClick={onGoDashboard}
+                                className={cn(
+                                    'flex h-14 w-14 items-center justify-center rounded-[22px] border text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5',
+                                    isDark
+                                        ? 'border-white/10 bg-white/[0.06] text-white'
+                                        : 'border-slate-200/80 bg-white text-slate-900'
+                                )}
+                                title="Back to dashboard"
+                                aria-label="Back to dashboard"
+                            >
+                                IS
+                            </button>
+                        ) : (
+                            <>
+                                <BrandLockup compact onClick={onGoDashboard} />
+                                <div className={cn('mt-4 text-[10px] uppercase tracking-[0.24em]', isDark ? 'text-slate-500' : 'text-slate-400')}>
+                                    Innovation Toolkit
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 
-                <nav className="relative z-10 mt-6 flex-1 space-y-3 overflow-y-auto px-4">
+                <nav className={cn('relative z-10 mt-6 flex-1 space-y-3 overflow-y-auto px-4', isCollapsed && 'lg:px-3')}>
                     {NAV_ITEMS.map((item) => {
                         const Icon = item.icon;
                         const isActive = currentStage === item.id;
@@ -127,6 +175,8 @@ export function Sidebar({ currentStage, onSetStage, onGoDashboard, isOpen = true
                                     onSetStage(item.id as StageId);
                                     if (onClose) onClose();
                                 }}
+                                title={isCollapsed ? item.label : undefined}
+                                aria-label={item.label}
                                 className={cn(
                                     'group relative flex w-full items-center gap-4 rounded-2xl border px-4 py-4 text-left transition-all duration-300 ease-out',
                                     isActive
@@ -135,7 +185,8 @@ export function Sidebar({ currentStage, onSetStage, onGoDashboard, isOpen = true
                                             : 'border-slate-200 bg-white shadow-[0_14px_30px_rgba(15,23,42,0.08)]'
                                         : isDark
                                             ? 'border-transparent text-slate-400 hover:border-white/8 hover:bg-white/[0.04] hover:text-white'
-                                            : 'border-transparent text-slate-500 hover:border-slate-200/80 hover:bg-white/80 hover:text-slate-900'
+                                            : 'border-transparent text-slate-500 hover:border-slate-200/80 hover:bg-white/80 hover:text-slate-900',
+                                    isCollapsed && 'lg:justify-center lg:px-3'
                                 )}
                             >
                                 {isActive && (
@@ -155,28 +206,32 @@ export function Sidebar({ currentStage, onSetStage, onGoDashboard, isOpen = true
                                     <Icon className="h-5 w-5" />
                                 </div>
 
-                                <div className="text-left">
-                                    <div className={cn('mb-1 text-sm font-semibold leading-none font-display', isActive ? accent.activeText : isDark ? 'text-slate-100' : 'text-slate-800')}>
-                                        {item.label}
+                                {!isCollapsed && (
+                                    <div className="text-left">
+                                        <div className={cn('mb-1 text-sm font-semibold leading-none font-display', isActive ? accent.activeText : isDark ? 'text-slate-100' : 'text-slate-800')}>
+                                            {item.label}
+                                        </div>
+                                        <div className={cn('text-[10px] uppercase tracking-[0.16em]', isActive ? accent.activeText : isDark ? 'text-slate-500' : 'text-slate-400')}>
+                                            {item.description}
+                                        </div>
                                     </div>
-                                    <div className={cn('text-[10px] uppercase tracking-[0.16em]', isActive ? accent.activeText : isDark ? 'text-slate-500' : 'text-slate-400')}>
-                                        {item.description}
-                                    </div>
-                                </div>
+                                )}
                             </button>
                         );
                     })}
                 </nav>
 
-                <div className={cn('relative z-10 border-t px-6 py-5', isDark ? 'border-white/8 bg-black/5' : 'border-slate-200/80 bg-white/40')}>
-                    <div className="flex items-center gap-3">
+                <div className={cn('relative z-10 border-t px-6 py-5', isDark ? 'border-white/8 bg-black/5' : 'border-slate-200/80 bg-white/40', isCollapsed && 'lg:px-4')}>
+                    <div className={cn('flex items-center gap-3', isCollapsed && 'lg:justify-center')}>
                         <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white shadow-lg', activeAccent.indicator)}>
                             AI
                         </div>
-                        <div>
-                            <div className={cn('text-xs font-medium', isDark ? 'text-white' : 'text-slate-900')}>AI facilitator</div>
-                            <div className={cn('text-[10px] uppercase tracking-[0.18em]', isDark ? 'text-slate-500' : 'text-slate-400')}>Context aware</div>
-                        </div>
+                        {!isCollapsed && (
+                            <div>
+                                <div className={cn('text-xs font-medium', isDark ? 'text-white' : 'text-slate-900')}>AI facilitator</div>
+                                <div className={cn('text-[10px] uppercase tracking-[0.18em]', isDark ? 'text-slate-500' : 'text-slate-400')}>Context aware</div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </aside>

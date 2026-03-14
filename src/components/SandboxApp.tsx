@@ -43,6 +43,7 @@ export function SandboxApp({
 }: SandboxAppProps) {
     const { project, updateProject, isLoaded } = useProjectData(projectSummary.id, projectSummary.name);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
 
     if (!isLoaded) {
@@ -95,7 +96,9 @@ export function SandboxApp({
                 onSetStage={handleSetStage}
                 onGoDashboard={onExit}
                 isOpen={sidebarOpen}
+                isCollapsed={sidebarCollapsed}
                 onClose={() => setSidebarOpen(false)}
+                onToggleCollapse={() => setSidebarCollapsed((current) => !current)}
             />
 
             <div className="relative flex flex-1 flex-col overflow-hidden">

@@ -37,7 +37,14 @@ const PARTNER_LOGOS = [
     { src: "/images/Partner/LBS.avif", alt: "London Business School", width: 140, height: 80 },
     { src: "/images/Partner/LoughboroughUniversity.avif", alt: "Loughborough University", width: 200, height: 70 },
     { src: "/images/Partner/EU-Commission.avif", alt: "EU Commission", width: 140, height: 70 },
-    { src: "/images/Partner/LSE.avif", alt: "LSE", width: 140, height: 70 }
+    { src: "/images/Partner/LSE.avif", alt: "LSE", width: 140, height: 70 },
+    { src: "/images/Partner/Arla.avif", alt: "Arla", width: 180, height: 74 },
+    { src: "/images/Partner/JustEat.avif", alt: "Just Eat", width: 176, height: 72 },
+    { src: "/images/Partner/JohnLewisPartnership.avif", alt: "John Lewis Partnership", width: 220, height: 70 },
+    { src: "/images/Partner/AssociatedBritishFoods.avif", alt: "Associated British Foods", width: 200, height: 70 },
+    { src: "/images/Partner/AmericanExpress.avif", alt: "American Express", width: 210, height: 70 },
+    { src: "/images/Partner/LloydsBank.avif", alt: "Lloyds Bank", width: 200, height: 74 },
+    { src: "/images/Partner/spar-atlantico.avif", alt: "SPAR Atlantico", width: 160, height: 70 }
 ];
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
@@ -244,13 +251,16 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                         <div className="absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[var(--panel)] to-transparent" />
                         <div className="marquee-track flex min-w-max items-center gap-12">
                             {[...PARTNER_LOGOS, ...PARTNER_LOGOS].map((logo, index) => (
-                                <div key={`${logo.alt}-${index}`} className="relative h-16 w-auto shrink-0 opacity-75 transition-opacity duration-300 hover:opacity-100">
+                                <div
+                                    key={`${logo.alt}-${index}`}
+                                    className="relative flex h-20 w-[12rem] shrink-0 items-center justify-center rounded-[24px] border border-[var(--panel-border)] bg-white/85 px-5 py-4 opacity-80 shadow-[0_18px_32px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:opacity-100"
+                                >
                                     <Image
                                         src={logo.src}
                                         alt={logo.alt}
                                         width={logo.width}
                                         height={logo.height}
-                                        style={{ width: 'auto', height: '100%', objectFit: 'contain' }}
+                                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                     />
                                 </div>
                             ))}

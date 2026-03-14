@@ -420,7 +420,7 @@ export function StageMethodView({
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-4">
+                                    <div className="grid grid-cols-1 gap-7 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                                         {section.methods.map(method => (
                                             <div
                                                 key={method.id}
@@ -432,25 +432,25 @@ export function StageMethodView({
                                                 )}
                                             >
                                                 <div className={cn('absolute inset-x-0 top-0 h-1 bg-gradient-to-r opacity-0 transition-opacity group-hover:opacity-100', theme.banner)} />
-                                                <div className={cn('relative h-52 border-b', theme.softBg, theme.border)}>
+                                                <div className={cn('relative h-72 border-b', theme.softBg, theme.border)}>
                                                     <Image
                                                         src={method.image}
                                                         alt={method.title}
                                                         fill
-                                                        sizes="(min-width: 1280px) 22vw, (min-width: 768px) 42vw, 100vw"
+                                                        sizes="(min-width: 1536px) 20vw, (min-width: 1280px) 28vw, (min-width: 768px) 42vw, 100vw"
                                                         style={{ objectFit: 'contain' }}
-                                                        className="p-4 transition-transform duration-300 group-hover:scale-[1.03]"
+                                                        className="p-4 transition-transform duration-300 group-hover:scale-[1.04]"
                                                         unoptimized
                                                     />
                                                 </div>
-                                                <div className="p-6">
+                                                <div className="p-5">
                                                     <div className={cn('flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em]', theme.accentText)}>
                                                         <span>{String(methodIndexMap.get(method.id) || 0).padStart(2, '0')}</span>
                                                         <span>{section.title}</span>
                                                     </div>
                                                     <h3 className="mt-3 text-xl font-display font-semibold leading-tight text-[var(--foreground)]">{method.title}</h3>
-                                                    <p className="mt-3 min-h-[4rem] line-clamp-3 text-sm leading-relaxed text-[var(--foreground-soft)]">{method.purpose}</p>
-                                                    <div className={cn('mt-5 flex items-center font-semibold opacity-0 transition-opacity group-hover:opacity-100', theme.hoverText)}>
+                                                    <p className="mt-3 min-h-[3.5rem] line-clamp-2 text-sm leading-relaxed text-[var(--foreground-soft)]">{method.purpose}</p>
+                                                    <div className={cn('mt-4 flex items-center font-semibold opacity-0 transition-opacity group-hover:opacity-100', theme.hoverText)}>
                                                         <Play className="mr-2 h-4 w-4" />
                                                         Start Method
                                                     </div>
