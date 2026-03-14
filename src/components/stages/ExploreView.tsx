@@ -1,17 +1,26 @@
 import React from 'react';
 
 import { StageMethodView } from '@/components/stages/StageMethodView';
+import { ProjectHubData } from '@/types';
 
 interface ExploreViewProps {
     projectId: string;
     projectName: string;
+    hub: ProjectHubData;
+    isHubLoading?: boolean;
+    onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
+    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
 }
 
-export function ExploreView({ projectId, projectName }: ExploreViewProps) {
+export function ExploreView({ projectId, projectName, hub, isHubLoading = false, onCreateHubRecord, onUpdateHubRecord }: ExploreViewProps) {
     return (
         <StageMethodView
             projectId={projectId}
             projectName={projectName}
+            hub={hub}
+            isHubLoading={isHubLoading}
+            onCreateHubRecord={onCreateHubRecord}
+            onUpdateHubRecord={onUpdateHubRecord}
             stage="explore"
             stageTitle="Explore Stage"
             entryHeadline="Understand the people, context, and real problem before moving into ideas."

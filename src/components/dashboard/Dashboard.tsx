@@ -11,7 +11,7 @@ import { ProfilePanel } from '@/components/ui/ProfilePanel';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { getDashboardSummaryRows, getMembershipPlan } from '@/lib/membership';
 import { cn } from '@/lib/utils';
-import { ProjectInvite, TeamMember, UserProfileData, WorkspaceProject } from '@/types';
+import { ProjectInvite, TeamMember, UserProfileData, WorkspaceCollaborationOverview, WorkspaceProject } from '@/types';
 
 interface DashboardProps {
     runtimeMode?: 'local-mvp' | 'remote-supabase';
@@ -32,10 +32,26 @@ interface DashboardProps {
     onUpdateMemberPermission?: (projectId: string, memberId: string, permission: TeamMember['permission']) => Promise<void>;
     workspaceStatus?: string | null;
     workspaceError?: string | null;
+    collaborationOverview?: WorkspaceCollaborationOverview;
 }
 
 function getOwner(project: WorkspaceProject): TeamMember | undefined {
     return project.members.find((member) => member.id === project.ownerId) || project.members[0];
+}
+
+function formatStageLabel(stage?: WorkspaceProject['currentStage']) {
+    if (!stage) {
+        return 'Overview';
+    }
+
+    return stage
+        .split('-')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+}
+
+function formatSignal(value?: string | null, fallback = 'Not set') {
+    return value || fallback;
 }
 
 export function Dashboard({
@@ -53,7 +69,8 @@ export function Dashboard({
     onInviteMember,
     onUpdateMemberPermission,
     workspaceStatus,
-    workspaceError
+    workspaceError,
+    collaborationOverview
 }: DashboardProps) {
     const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
     const [menuProjectId, setMenuProjectId] = useState<string | null>(null);
@@ -250,6 +267,31 @@ export function Dashboard({
                     </div>
                 </section>
 
+                {collaborationOverview && (
+                    <section className="mb-10 grid gap-4 xl:grid-cols-4">
+                        <OverviewPanel
+                            title="Needs Review"
+                            items={collaborationOverview.needsReview.map((item) => `${item.projectName}: ${item.title}`)}
+                            emptyState="No cards, artifacts, or decisions are waiting for review."
+                        />
+                        <OverviewPanel
+                            title="Upcoming Sessions"
+                            items={collaborationOverview.upcomingSessions.map((item) => `${item.projectName}: ${item.title}`)}
+                            emptyState="Nothing scheduled yet."
+                        />
+                        <OverviewPanel
+                            title="Assigned To Me"
+                            items={collaborationOverview.assignedTasks.map((item) => `${item.projectName}: ${item.title}`)}
+                            emptyState="No open tasks assigned yet."
+                        />
+                        <OverviewPanel
+                            title="Recent Activity"
+                            items={collaborationOverview.recentActivity.map((item) => `${item.actorName}: ${item.message}`)}
+                            emptyState="Activity will appear once the team starts collaborating."
+                        />
+                    </section>
+                )}
+
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {projects.map((project) => {
                         const owner = getOwner(project);
@@ -351,6 +393,18 @@ export function Dashboard({
 
                                 <p className="mt-6 text-sm leading-relaxed text-slate-500">{project.summary}</p>
 
+                                <div className="mt-5 flex flex-wrap gap-2">
+                                    <ProjectChip label={`Stage: ${formatStageLabel(project.currentStage)}`} />
+                                    <ProjectChip label={`${project.pendingReviewCount || 0} review`} />
+                                    <ProjectChip label={`${project.openTasksCount || 0} tasks`} />
+                                    <ProjectChip label={`${project.unresolvedThreadsCount || 0} threads`} />
+                                </div>
+
+                                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                                    <SignalTile label="Next session" value={formatSignal(project.nextSessionAt, 'Nothing scheduled')} />
+                                    <SignalTile label="Last activity" value={formatSignal(project.lastActivityAt, project.updated)} />
+                                </div>
+
                                 <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
                                     <div className="text-sm text-slate-500">
                                         Owner: <span className="font-medium text-slate-800">{owner?.name || 'User'}</span>
@@ -379,6 +433,43 @@ export function Dashboard({
                     setSettingsProject(null);
                 }}
             />
+        </div>
+    );
+}
+
+function OverviewPanel({ title, items, emptyState }: { title: string; items: string[]; emptyState: string }) {
+    return (
+        <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_16px_38px_rgba(15,23,42,0.05)]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">{title}</div>
+            <div className="mt-4 space-y-3">
+                {items.length === 0 && (
+                    <div className="rounded-[18px] border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-relaxed text-slate-500">
+                        {emptyState}
+                    </div>
+                )}
+                {items.map((item) => (
+                    <div key={item} className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        {item}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function ProjectChip({ label }: { label: string }) {
+    return (
+        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
+            {label}
+        </div>
+    );
+}
+
+function SignalTile({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</div>
+            <div className="mt-1 text-sm text-slate-700">{value}</div>
         </div>
     );
 }

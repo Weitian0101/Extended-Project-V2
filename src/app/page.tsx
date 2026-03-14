@@ -40,6 +40,7 @@ function HomeShell() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [projects, setProjects] = useState<WorkspaceProject[]>(DEFAULT_PROJECTS);
   const [profile, setProfile] = useState<UserProfileData>(DEFAULT_USER);
+  const [collaborationOverview, setCollaborationOverview] = useState(loadWorkspaceShell().collaborationOverview);
   const [profileReturnView, setProfileReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
   const [workspaceStatus, setWorkspaceStatus] = useState<string | null>(null);
   const [isWorkspaceHydrated, setIsWorkspaceHydrated] = useState(false);
@@ -66,6 +67,7 @@ function HomeShell() {
     setActiveProjectId(restoredNavigationState.activeProjectId);
     setProjects(savedWorkspace.projects);
     setProfile(savedWorkspace.profile);
+    setCollaborationOverview(savedWorkspace.collaborationOverview);
     setIsWorkspaceHydrated(true);
   }, []);
 
@@ -144,6 +146,10 @@ function HomeShell() {
   };
 
   const handleExitSandbox = () => {
+    const savedWorkspace = loadWorkspaceShell();
+    setProjects(savedWorkspace.projects);
+    setProfile(savedWorkspace.profile);
+    setCollaborationOverview(savedWorkspace.collaborationOverview);
     setActiveProjectId(null);
     setView('dashboard');
   };
@@ -180,6 +186,7 @@ function HomeShell() {
 
       setProjects(importedWorkspace.projects);
       setProfile(importedWorkspace.profile);
+      setCollaborationOverview(importedWorkspace.collaborationOverview);
       setActiveProjectId(null);
       setView('dashboard');
       setWorkspaceStatus(`Imported ${importedWorkspace.projects.length} project${importedWorkspace.projects.length === 1 ? '' : 's'} from backup.`);
@@ -213,6 +220,7 @@ function HomeShell() {
           onExportWorkspace={handleExportWorkspace}
           onImportWorkspace={handleImportWorkspace}
           workspaceStatus={workspaceStatus}
+          collaborationOverview={collaborationOverview}
         />
       );
 
@@ -239,6 +247,7 @@ function HomeShell() {
           onExportWorkspace={handleExportWorkspace}
           onImportWorkspace={handleImportWorkspace}
           workspaceStatus={workspaceStatus}
+          collaborationOverview={collaborationOverview}
         />
       );
 

@@ -2,16 +2,16 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { BookOpen, ChevronLeft, ChevronRight, Compass, Hammer, Layers, Lightbulb, X } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Compass, Hammer, Home, Layers, Lightbulb, X } from 'lucide-react';
 
 import { BrandLockup } from '@/components/ui/BrandLockup';
 import { useAppTheme } from '@/components/ui/AppThemeProvider';
 import { cn } from '@/lib/utils';
-import { StageId } from '@/types';
+import { ProjectSurface, StageId } from '@/types';
 
 interface SidebarProps {
-    currentStage: StageId;
-    onSetStage: (stage: StageId) => void;
+    currentSurface: ProjectSurface;
+    onSetSurface: (surface: ProjectSurface) => void;
     onGoDashboard?: () => void;
     isOpen?: boolean;
     isCollapsed?: boolean;
@@ -57,7 +57,15 @@ const STAGE_ACCENTS: Record<StageId, {
     }
 };
 
+const HUB_ACCENT = {
+    indicator: 'bg-violet-400 shadow-[0_0_18px_rgba(167,139,250,0.32)]',
+    activeIcon: 'bg-violet-500/12 text-violet-700 border-violet-200/80',
+    activeText: 'text-violet-700',
+    softGlow: 'bg-violet-300/26'
+};
+
 const NAV_ITEMS = [
+    { id: 'hub', label: 'Project Hub', icon: Home, description: 'Coordinate the work' },
     { id: 'overview', label: 'Project Context', icon: Layers, description: 'Set the stage' },
     { id: 'explore', label: 'Explore', icon: Compass, description: 'Broaden horizons' },
     { id: 'imagine', label: 'Imagine', icon: Lightbulb, description: 'Generate ideas' },
@@ -66,8 +74,8 @@ const NAV_ITEMS = [
 ] as const;
 
 export function Sidebar({
-    currentStage,
-    onSetStage,
+    currentSurface,
+    onSetSurface,
     onGoDashboard,
     isOpen = true,
     isCollapsed = false,
@@ -75,7 +83,7 @@ export function Sidebar({
     onToggleCollapse
 }: SidebarProps) {
     const { theme } = useAppTheme();
-    const activeAccent = STAGE_ACCENTS[currentStage];
+    const activeAccent = currentSurface === 'hub' ? HUB_ACCENT : STAGE_ACCENTS[currentSurface];
     const isDark = theme === 'dark';
 
     return (
@@ -175,14 +183,14 @@ export function Sidebar({
                 <nav className={cn('relative z-10 mt-6 flex-1 space-y-3 overflow-y-auto px-4', isCollapsed && 'lg:px-3')}>
                     {NAV_ITEMS.map((item) => {
                         const Icon = item.icon;
-                        const isActive = currentStage === item.id;
-                        const accent = STAGE_ACCENTS[item.id as StageId];
+                        const isActive = currentSurface === item.id;
+                        const accent = item.id === 'hub' ? HUB_ACCENT : STAGE_ACCENTS[item.id as StageId];
 
                         return (
                             <button
                                 key={item.id}
                                 onClick={() => {
-                                    onSetStage(item.id as StageId);
+                                    onSetSurface(item.id as ProjectSurface);
                                     if (onClose) onClose();
                                 }}
                                 title={isCollapsed ? item.label : undefined}

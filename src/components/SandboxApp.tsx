@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Menu, Settings2 } from 'lucide-react';
 
 import { ProjectSettingsDialog } from '@/components/dashboard/ProjectSettingsDialog';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { ProjectHub } from '@/components/project/ProjectHub';
 import { ExploreView } from '@/components/stages/ExploreView';
 import { ImagineView } from '@/components/stages/ImagineView';
 import { ImplementView } from '@/components/stages/ImplementView';
@@ -14,8 +15,9 @@ import { AvatarCluster } from '@/components/ui/AvatarCluster';
 import { Button } from '@/components/ui/Button';
 import { ProfilePanel } from '@/components/ui/ProfilePanel';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useProjectHubData } from '@/hooks/useProjectHubData';
 import { useProjectData } from '@/hooks/useProjectData';
-import { ProjectInvite, StageId, TeamMember, UserProfileData, WorkspaceProject } from '@/types';
+import { ProjectInvite, ProjectSurface, StageId, TeamMember, UserProfileData, WorkspaceProject } from '@/types';
 
 interface SandboxAppProps {
     project: WorkspaceProject;
@@ -42,16 +44,50 @@ export function SandboxApp({
     onUpdateMemberPermission
 }: SandboxAppProps) {
     const { project, updateProject, isLoaded } = useProjectData(projectSummary.id, projectSummary.name);
+    const {
+        hub,
+        isLoading: isHubLoading,
+        error: hubError,
+        updateBrief,
+        createRecord,
+        updateRecord,
+        deleteRecord
+    } = useProjectHubData({
+        projectId: projectSummary.id,
+        projectName: projectSummary.name,
+        profile,
+        context: project.context
+    });
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [currentSurface, setCurrentSurface] = useState<ProjectSurface>('hub');
+
+    const handleCreateHubRecord = async <
+        TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'
+    >(resource: TResource, payload: Record<string, unknown>) => createRecord(resource, payload as never);
+
+    const handleUpdateHubRecord = async <
+        TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'
+    >(resource: TResource, id: string, payload: Record<string, unknown>) => updateRecord(resource, id, payload as never);
+
+    useEffect(() => {
+        void createRecord('presence', {
+            surface: currentSurface,
+            objectType: currentSurface === 'hub' ? 'brief' : null,
+            objectId: currentSurface === 'hub' ? projectSummary.id : null
+        });
+    }, [createRecord, currentSurface, projectSummary.id]);
 
     if (!isLoaded) {
         return <div className="flex h-screen items-center justify-center bg-[var(--background)] font-display text-[var(--foreground-muted)]">Loading project...</div>;
     }
 
-    const handleSetStage = (stage: StageId) => {
-        updateProject({ currentStage: stage });
+    const handleSetSurface = (surface: ProjectSurface) => {
+        if (surface !== 'hub') {
+            updateProject({ currentStage: surface as StageId });
+        }
+        setCurrentSurface(surface);
         setSidebarOpen(false);
     };
 
@@ -73,17 +109,72 @@ export function SandboxApp({
     };
 
     const renderStage = () => {
-        switch (project.currentStage) {
+        switch (currentSurface) {
+            case 'hub':
+                return (
+                    <ProjectHub
+                        project={project}
+                        projectSummary={projectSummary}
+                        profile={profile}
+                        hub={hub}
+                        isLoading={isHubLoading}
+                        error={hubError}
+                        onUpdateBrief={updateBrief}
+                        onCreateRecord={handleCreateHubRecord}
+                        onUpdateRecord={handleUpdateHubRecord}
+                        onDeleteRecord={async (resource, id) => {
+                            await deleteRecord(resource, id);
+                        }}
+                        onOpenStage={(stage) => handleSetSurface(stage)}
+                        onSyncContext={handleUpdateContext}
+                    />
+                );
             case 'overview':
                 return <ProjectOverview project={project} onUpdateContext={handleUpdateContext} />;
             case 'explore':
-                return <ExploreView projectId={projectSummary.id} projectName={project.context.name} />;
+                return (
+                    <ExploreView
+                        projectId={projectSummary.id}
+                        projectName={project.context.name}
+                        hub={hub}
+                        isHubLoading={isHubLoading}
+                        onCreateHubRecord={handleCreateHubRecord}
+                        onUpdateHubRecord={handleUpdateHubRecord}
+                    />
+                );
             case 'imagine':
-                return <ImagineView projectId={projectSummary.id} projectName={project.context.name} />;
+                return (
+                    <ImagineView
+                        projectId={projectSummary.id}
+                        projectName={project.context.name}
+                        hub={hub}
+                        isHubLoading={isHubLoading}
+                        onCreateHubRecord={handleCreateHubRecord}
+                        onUpdateHubRecord={handleUpdateHubRecord}
+                    />
+                );
             case 'implement':
-                return <ImplementView projectId={projectSummary.id} projectName={project.context.name} />;
+                return (
+                    <ImplementView
+                        projectId={projectSummary.id}
+                        projectName={project.context.name}
+                        hub={hub}
+                        isHubLoading={isHubLoading}
+                        onCreateHubRecord={handleCreateHubRecord}
+                        onUpdateHubRecord={handleUpdateHubRecord}
+                    />
+                );
             case 'tell-story':
-                return <TellStoryView projectId={projectSummary.id} projectName={project.context.name} />;
+                return (
+                    <TellStoryView
+                        projectId={projectSummary.id}
+                        projectName={project.context.name}
+                        hub={hub}
+                        isHubLoading={isHubLoading}
+                        onCreateHubRecord={handleCreateHubRecord}
+                        onUpdateHubRecord={handleUpdateHubRecord}
+                    />
+                );
             default:
                 return <ProjectOverview project={project} onUpdateContext={handleUpdateContext} />;
         }
@@ -92,8 +183,8 @@ export function SandboxApp({
     return (
         <div className="relative flex h-screen overflow-hidden bg-[var(--background)]">
             <Sidebar
-                currentStage={project.currentStage}
-                onSetStage={handleSetStage}
+                currentSurface={currentSurface}
+                onSetSurface={handleSetSurface}
                 onGoDashboard={onExit}
                 isOpen={sidebarOpen}
                 isCollapsed={sidebarCollapsed}

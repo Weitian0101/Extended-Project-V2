@@ -1,4 +1,14 @@
-import { AiResponseEntry, MethodStep, ProjectContext, ProjectData, ToolFieldValue, UserProfileData, WorkspaceProject } from '@/types';
+import {
+    AiResponseEntry,
+    MethodStep,
+    ProjectContext,
+    ProjectData,
+    ProjectHubData,
+    ToolFieldValue,
+    UserProfileData,
+    WorkspaceCollaborationOverview,
+    WorkspaceProject
+} from '@/types';
 
 export type RuntimeMode = 'local-mvp' | 'remote-supabase';
 export type ResponseSource = 'local-mock' | 'remote-supabase';
@@ -7,6 +17,7 @@ export type WorkspaceExportVersion = 'local-mvp-v1' | 'remote-supabase-v1';
 export interface WorkspaceShellDto {
     projects: WorkspaceProject[];
     profile: UserProfileData;
+    collaborationOverview?: WorkspaceCollaborationOverview;
 }
 
 export interface WorkspaceExportDto {
@@ -15,6 +26,7 @@ export interface WorkspaceExportDto {
     exportedAt: string;
     workspace: WorkspaceShellDto;
     projectDocuments: ProjectData[];
+    projectHubs: ProjectHubData[];
 }
 
 export interface AuthSessionDto {

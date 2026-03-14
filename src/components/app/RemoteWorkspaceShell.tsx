@@ -10,7 +10,7 @@ import { Dashboard } from '@/components/dashboard/Dashboard';
 import { ProfilePage } from '@/components/profile/ProfilePage';
 import { SandboxApp } from '@/components/SandboxApp';
 import { DEFAULT_USER } from '@/data/workspaceSeed';
-import { WorkspaceExportDto } from '@/lib/contracts/api';
+import { WorkspaceExportDto, WorkspaceShellDto } from '@/lib/contracts/api';
 import { loadWorkspaceBrowserState, useWorkspaceBrowserHistory } from '@/hooks/useWorkspaceBrowserHistory';
 import { clearWorkspaceSession, loadWorkspaceSession, saveWorkspaceSession } from '@/lib/services/mvpWorkspace';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -20,10 +20,7 @@ type CredentialMode = 'signin' | 'register';
 type AuthActionHint = 'resend-confirmation';
 
 interface WorkspaceResponse {
-    workspace: {
-        projects: WorkspaceProject[];
-        profile: UserProfileData;
-    };
+    workspace: WorkspaceShellDto;
 }
 
 interface InviteMemberResponse {
@@ -82,6 +79,7 @@ export function RemoteWorkspaceShell() {
     const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
     const [projects, setProjects] = useState<WorkspaceProject[]>([]);
     const [profile, setProfile] = useState<UserProfileData>(DEFAULT_USER);
+    const [collaborationOverview, setCollaborationOverview] = useState<WorkspaceShellDto['collaborationOverview']>();
     const [profileReturnView, setProfileReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
     const [sessionUser, setSessionUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
@@ -172,6 +170,7 @@ export function RemoteWorkspaceShell() {
                 clearWorkspaceSession();
                 setProjects([]);
                 setProfile(DEFAULT_USER);
+                setCollaborationOverview(undefined);
                 setActiveProjectId(null);
                 setWorkspaceLoading(false);
                 setView((currentView) => (
@@ -191,6 +190,7 @@ export function RemoteWorkspaceShell() {
 
                 setProjects(data.workspace.projects);
                 setProfile(data.workspace.profile);
+                setCollaborationOverview(data.workspace.collaborationOverview);
                 setView((currentView) => (
                     currentView === 'landing' || currentView === 'auth' || currentView === 'logging_out'
                         ? 'dashboard'
@@ -213,6 +213,7 @@ export function RemoteWorkspaceShell() {
         const data = await parseApiResponse<WorkspaceResponse>(response);
         setProjects(data.workspace.projects);
         setProfile(data.workspace.profile);
+        setCollaborationOverview(data.workspace.collaborationOverview);
     };
 
     const getEmailRegistrationStatus = async (email: string) => {
@@ -596,6 +597,7 @@ export function RemoteWorkspaceShell() {
                     onUpdateMemberPermission={handleUpdateMemberPermission}
                     workspaceStatus={workspaceStatus}
                     workspaceError={authError}
+                    collaborationOverview={collaborationOverview}
                 />
             );
 
@@ -605,6 +607,7 @@ export function RemoteWorkspaceShell() {
                     project={activeProject}
                     profile={profile}
                     onExit={() => {
+                        void refreshWorkspace();
                         setActiveProjectId(null);
                         setView('dashboard');
                     }}
@@ -634,6 +637,7 @@ export function RemoteWorkspaceShell() {
                     onUpdateMemberPermission={handleUpdateMemberPermission}
                     workspaceStatus={workspaceStatus}
                     workspaceError={authError}
+                    collaborationOverview={collaborationOverview}
                 />
             );
 

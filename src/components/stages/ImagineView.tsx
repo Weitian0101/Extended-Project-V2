@@ -1,17 +1,26 @@
 import React from 'react';
 
 import { StageMethodView } from '@/components/stages/StageMethodView';
+import { ProjectHubData } from '@/types';
 
 interface ImagineViewProps {
     projectId: string;
     projectName: string;
+    hub: ProjectHubData;
+    isHubLoading?: boolean;
+    onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
+    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
 }
 
-export function ImagineView({ projectId, projectName }: ImagineViewProps) {
+export function ImagineView({ projectId, projectName, hub, isHubLoading = false, onCreateHubRecord, onUpdateHubRecord }: ImagineViewProps) {
     return (
         <StageMethodView
             projectId={projectId}
             projectName={projectName}
+            hub={hub}
+            isHubLoading={isHubLoading}
+            onCreateHubRecord={onCreateHubRecord}
+            onUpdateHubRecord={onUpdateHubRecord}
             stage="imagine"
             stageTitle="Imagine Stage"
             entryHeadline="Open up possibilities before deciding which ideas deserve investment."

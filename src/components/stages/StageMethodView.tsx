@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/Button';
 import { MethodSplitView } from '@/components/tools/MethodSplitView';
 import { useProjectData } from '@/hooks/useProjectData';
-import { MethodCard, StageId, ToolRun } from '@/types';
+import { MethodCard, ProjectHubData, StageId, ToolRun } from '@/types';
 import { METHOD_LIBRARY } from '@/data/methodLibrary';
 import { STAGE_GUIDE_GROUPS } from '@/data/stageGuides';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,10 @@ type BrowsableStage = Extract<StageId, 'explore' | 'imagine' | 'implement' | 'te
 interface StageMethodViewProps {
     projectId: string;
     projectName: string;
+    hub: ProjectHubData;
+    isHubLoading?: boolean;
+    onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
+    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
     stage: BrowsableStage;
     stageTitle: string;
     entryHeadline: string;
@@ -129,6 +133,10 @@ const STAGE_THEMES: Record<BrowsableStage, {
 export function StageMethodView({
     projectId,
     projectName,
+    hub,
+    isHubLoading = false,
+    onCreateHubRecord,
+    onUpdateHubRecord,
     stage,
     stageTitle,
     entryHeadline,
@@ -216,6 +224,10 @@ export function StageMethodView({
                 card={activeMethod}
                 context={project.context}
                 existingRun={run}
+                hub={hub}
+                isHubLoading={isHubLoading}
+                onCreateHubRecord={onCreateHubRecord}
+                onUpdateHubRecord={onUpdateHubRecord}
                 onSave={handleSaveRun}
                 onBack={() => setViewState('tools')}
             />

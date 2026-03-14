@@ -1,6 +1,12 @@
 import { DEFAULT_PROJECTS, DEFAULT_USER } from '@/data/workspaceSeed';
+import {
+    buildWorkspaceCollaborationOverview,
+    createEmptyProjectHubData,
+    getProjectHubMetrics,
+    normalizeProjectHubData
+} from '@/lib/collaboration';
 import { WorkspaceExportDto, WorkspaceShellDto } from '@/lib/contracts/api';
-import { AppViewState, ProjectData } from '@/types';
+import { AppViewState, ProjectData, ProjectHubData } from '@/types';
 
 const STORAGE_KEYS = {
     view: 'app_view',
@@ -19,6 +25,7 @@ export interface WorkspaceSessionState {
 const isBrowser = () => typeof window !== 'undefined';
 
 const getProjectStorageKey = (projectId: string) => `innovation_sandbox_authoritative_${projectId}`;
+const getProjectHubStorageKey = (projectId: string) => `innovation_sandbox_collaboration_${projectId}`;
 
 const createDefaultProject = (projectId: string, projectName?: string): ProjectData => ({
     id: projectId,
@@ -83,9 +90,22 @@ function normalizeProjectData(projectId: string, projectName?: string, raw?: unk
 }
 
 function normalizeWorkspaceShell(raw?: Partial<WorkspaceShellDto>): WorkspaceShellDto {
+    const projects = Array.isArray(raw?.projects) && raw.projects.length > 0 ? raw.projects : DEFAULT_PROJECTS;
+    const profile = raw?.profile ? { ...DEFAULT_USER, ...raw.profile } : DEFAULT_USER;
+    const hubs = Object.fromEntries(
+        projects.map((project) => [
+            project.id,
+            loadProjectHub(project.id, project.name, profile.id || 'user')
+        ])
+    );
+
     return {
-        projects: Array.isArray(raw?.projects) && raw.projects.length > 0 ? raw.projects : DEFAULT_PROJECTS,
-        profile: raw?.profile ? { ...DEFAULT_USER, ...raw.profile } : DEFAULT_USER
+        projects: projects.map((project) => ({
+            ...project,
+            ...getProjectHubMetrics(hubs[project.id])
+        })),
+        profile,
+        collaborationOverview: buildWorkspaceCollaborationOverview(projects, hubs, profile.id)
     };
 }
 
@@ -153,8 +173,31 @@ export function loadProjectDocument(projectId?: string, projectName?: string): P
     return normalizeProjectData(activeProjectId, projectName, raw);
 }
 
+export function loadProjectHub(projectId: string, projectName?: string, updatedBy = 'user'): ProjectHubData {
+    const projectDocument = loadProjectDocument(projectId, projectName);
+    const raw = isBrowser() ? readJson<unknown>(getProjectHubStorageKey(projectId), null) : null;
+    const fallback = createEmptyProjectHubData({
+        projectId,
+        updatedBy,
+        context: projectDocument.context,
+        briefDetails: {
+            teamRoles: '',
+            workingNorms: '',
+            keyLinks: '',
+            milestones: '',
+            successMetrics: ''
+        }
+    });
+
+    return normalizeProjectHubData(raw, fallback);
+}
+
 export function saveProjectDocument(project: ProjectData) {
     writeJson(getProjectStorageKey(project.id), project);
+}
+
+export function saveProjectHub(projectId: string, hub: ProjectHubData) {
+    writeJson(getProjectHubStorageKey(projectId), hub);
 }
 
 export function removeProjectDocument(projectId: string) {
@@ -163,6 +206,14 @@ export function removeProjectDocument(projectId: string) {
     }
 
     window.localStorage.removeItem(getProjectStorageKey(projectId));
+}
+
+export function removeProjectHub(projectId: string) {
+    if (!isBrowser()) {
+        return;
+    }
+
+    window.localStorage.removeItem(getProjectHubStorageKey(projectId));
 }
 
 export function exportWorkspaceSnapshot(shell?: WorkspaceShellDto): WorkspaceExportDto {
@@ -175,6 +226,9 @@ export function exportWorkspaceSnapshot(shell?: WorkspaceShellDto): WorkspaceExp
         workspace: resolvedShell,
         projectDocuments: resolvedShell.projects.map((project) =>
             loadProjectDocument(project.id, project.name)
+        ),
+        projectHubs: resolvedShell.projects.map((project) =>
+            loadProjectHub(project.id, project.name, resolvedShell.profile.id || 'user')
         )
     };
 }
@@ -202,18 +256,50 @@ export function importWorkspaceSnapshot(raw: unknown): WorkspaceShellDto {
         const matchingProject = nextShell.projects.find((project) => project.id === document.id);
         return normalizeProjectData(document.id, matchingProject?.name, document);
     }).filter((document): document is ProjectData => Boolean(document));
+    const importedHubs = Array.isArray(raw.projectHubs)
+        ? (raw.projectHubs as unknown[]).map((hub) => {
+            if (!isRecord(hub)) {
+                return null;
+            }
+
+            const brief = isRecord(hub.brief) ? hub.brief : null;
+            if (!brief || typeof brief.projectId !== 'string') {
+                return null;
+            }
+
+            const matchingProject = nextShell.projects.find((project) => project.id === brief.projectId);
+            return normalizeProjectHubData(
+                hub,
+                createEmptyProjectHubData({
+                    projectId: brief.projectId,
+                    updatedBy: nextShell.profile.id || 'user',
+                    context: loadProjectDocument(brief.projectId, matchingProject?.name).context
+                })
+            );
+        }).filter((hub): hub is ProjectHubData => Boolean(hub))
+        : [];
 
     saveWorkspaceShell(nextShell);
 
     for (const project of currentShell.projects) {
         if (!nextShell.projects.some((nextProject) => nextProject.id === project.id)) {
             removeProjectDocument(project.id);
+            removeProjectHub(project.id);
         }
     }
 
     for (const project of nextShell.projects) {
         const importedDocument = importedDocuments.find((document) => document.id === project.id);
+        const importedHub = importedHubs.find((hub) => hub.brief.projectId === project.id);
         saveProjectDocument(importedDocument || createDefaultProject(project.id, project.name));
+        saveProjectHub(
+            project.id,
+            importedHub || createEmptyProjectHubData({
+                projectId: project.id,
+                updatedBy: nextShell.profile.id || 'user',
+                context: (importedDocument || createDefaultProject(project.id, project.name)).context
+            })
+        );
     }
 
     clearWorkspaceSession();

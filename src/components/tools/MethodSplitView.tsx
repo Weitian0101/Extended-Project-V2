@@ -1,16 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ArrowDownCircle, Bot, ChevronLeft, Expand, Send, Sparkles, X, Zap } from 'lucide-react';
+import { ArrowDownCircle, Bot, ChevronLeft, Expand, Send, Sparkles, Workflow, X, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { MethodCard, ProjectContext, ToolRun } from '@/types';
+import { MethodCard, ProjectContext, ProjectHubData, ToolRun } from '@/types';
 import { aiGateway } from '@/lib/services/aiGateway';
 
 interface MethodSplitViewProps {
     card: MethodCard;
     context: ProjectContext;
     existingRun?: ToolRun;
+    hub: ProjectHubData;
+    isHubLoading?: boolean;
+    onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
+    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
     onSave: (run: Partial<ToolRun>) => void;
     onBack: () => void;
 }
@@ -60,13 +64,26 @@ const STAGE_THEMES = {
     }
 } as const;
 
-export function MethodSplitView({ card, context, existingRun, onSave, onBack }: MethodSplitViewProps) {
+export function MethodSplitView({
+    card,
+    context,
+    existingRun,
+    hub,
+    isHubLoading = false,
+    onCreateHubRecord,
+    onUpdateHubRecord,
+    onSave,
+    onBack
+}: MethodSplitViewProps) {
     const [responses, setResponses] = useState(existingRun?.aiResponses || []);
     const [isLoading, setIsLoading] = useState(false);
     const [isFacilitatorOpen, setIsFacilitatorOpen] = useState(false);
     const [chatInput, setChatInput] = useState('');
     const [isMobileAiPanelOpen, setIsMobileAiPanelOpen] = useState(false);
     const [isReferencePreviewOpen, setIsReferencePreviewOpen] = useState(false);
+    const [activePanel, setActivePanel] = useState<'ai' | 'team'>('ai');
+    const [threadDraft, setThreadDraft] = useState({ title: '', body: '', nextStep: '' });
+    const [captureDraft, setCaptureDraft] = useState({ type: 'artifact', title: '', summary: '', status: 'draft' });
     const hasPersistedResponsesRef = useRef(false);
     const onSaveRef = useRef(onSave);
 
@@ -91,6 +108,12 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
 
     const activeReferencePage = referencePages.find(page => page.id === activeReferencePageId) || referencePages[0];
     const activeReferenceIndex = referencePages.findIndex(page => page.id === activeReferencePage.id);
+    const runId = existingRun?.id || null;
+    const runThreads = runId ? hub.threads.filter((thread) => thread.entityType === 'tool-run' && thread.entityId === runId) : [];
+    const linkedCards = runId ? hub.cards.filter((item) => item.linkedRunId === runId) : [];
+    const linkedArtifacts = runId ? hub.artifacts.filter((item) => item.linkedRunId === runId) : [];
+    const linkedTasks = runId ? hub.tasks.filter((item) => item.linkedEntityType === 'tool-run' && item.linkedEntityId === runId) : [];
+    const linkedDecisions = runId ? hub.decisions.filter((item) => String(item.metadata.linkedRunId || '') === runId) : [];
 
     useEffect(() => {
         if (!isReferencePreviewOpen) {
@@ -179,6 +202,71 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleCreateThread = async () => {
+        if (!runId || !threadDraft.body.trim()) {
+            return;
+        }
+
+        await onCreateHubRecord('threads', {
+            entityType: 'tool-run',
+            entityId: runId,
+            title: threadDraft.title || `${card.title} follow-up`,
+            body: threadDraft.body,
+            nextStep: threadDraft.nextStep,
+            status: 'open'
+        });
+        setThreadDraft({ title: '', body: '', nextStep: '' });
+    };
+
+    const handleCaptureOutcome = async () => {
+        if (!runId || !captureDraft.title.trim()) {
+            return;
+        }
+
+        if (captureDraft.type === 'artifact') {
+            await onCreateHubRecord('artifacts', {
+                title: captureDraft.title,
+                summary: captureDraft.summary,
+                type: 'concept',
+                stage: card.stage,
+                status: captureDraft.status,
+                linkedRunId: runId
+            });
+        } else if (captureDraft.type === 'card') {
+            await onCreateHubRecord('cards', {
+                title: captureDraft.title,
+                summary: captureDraft.summary,
+                type: 'idea',
+                stage: card.stage,
+                status: 'ready-for-review',
+                linkedRunId: runId
+            });
+        } else if (captureDraft.type === 'task') {
+            await onCreateHubRecord('tasks', {
+                title: captureDraft.title,
+                details: captureDraft.summary,
+                stage: card.stage,
+                status: 'open',
+                linkedEntityType: 'tool-run',
+                linkedEntityId: runId
+            });
+        } else {
+            await onCreateHubRecord('decisions', {
+                title: captureDraft.title,
+                background: captureDraft.summary,
+                decision: '',
+                options: '',
+                rationale: '',
+                status: 'proposed',
+                metadata: {
+                    linkedRunId: runId
+                }
+            });
+        }
+
+        setCaptureDraft({ type: 'artifact', title: '', summary: '', status: 'draft' });
     };
 
     return (
@@ -275,21 +363,80 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                 )}
             >
                 <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-[var(--panel-border)]">
-                    <span className={cn('font-semibold flex items-center gap-2', theme.accentText)}>
-                        <Sparkles className="w-4 h-4" /> AI Actions
-                    </span>
+                    <div className="space-y-3">
+                        <span className={cn('font-semibold flex items-center gap-2', theme.accentText)}>
+                            {activePanel === 'ai' ? <Sparkles className="w-4 h-4" /> : <Workflow className="w-4 h-4" />}
+                            {activePanel === 'ai' ? 'AI Actions' : 'Team Collaboration'}
+                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setActivePanel('ai')}
+                                className={cn(
+                                    'rounded-full border px-3 py-1.5 text-xs font-medium',
+                                    activePanel === 'ai'
+                                        ? `${theme.accentSolid} border-transparent text-white`
+                                        : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
+                                )}
+                            >
+                                AI Facilitator
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActivePanel('team')}
+                                className={cn(
+                                    'rounded-full border px-3 py-1.5 text-xs font-medium',
+                                    activePanel === 'team'
+                                        ? `${theme.accentSolid} border-transparent text-white`
+                                        : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
+                                )}
+                            >
+                                Team
+                            </button>
+                        </div>
+                    </div>
                     <button onClick={() => setIsMobileAiPanelOpen(false)} className="p-2 rounded-full bg-[var(--panel)]">
                         <ArrowDownCircle className="w-5 h-5 text-[var(--foreground-muted)]" />
                     </button>
                 </div>
 
                 <div className="hidden lg:block border-b border-[var(--panel-border)] px-8 py-7 shrink-0">
-                    <div className={cn('text-[11px] uppercase tracking-[0.22em] font-semibold', theme.accentText)}>Prompt Board</div>
+                    <div className={cn('text-[11px] uppercase tracking-[0.22em] font-semibold', theme.accentText)}>
+                        {activePanel === 'ai' ? 'Prompt Board' : 'Team Collaboration'}
+                    </div>
                     <h3 className="mt-3 text-2xl font-display font-semibold text-[var(--foreground)]">{card.title}</h3>
                     <p className="mt-2 text-[var(--foreground-soft)] text-sm leading-relaxed">{card.purpose}</p>
+                    <div className="mt-4 flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setActivePanel('ai')}
+                            className={cn(
+                                'rounded-full border px-4 py-2 text-sm font-medium',
+                                activePanel === 'ai'
+                                    ? `${theme.accentSolid} border-transparent text-white`
+                                    : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
+                            )}
+                        >
+                            AI Facilitator
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActivePanel('team')}
+                            className={cn(
+                                'rounded-full border px-4 py-2 text-sm font-medium',
+                                activePanel === 'team'
+                                    ? `${theme.accentSolid} border-transparent text-white`
+                                    : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
+                            )}
+                        >
+                            Team Collaboration
+                        </button>
+                    </div>
                 </div>
 
                 <div className="scrollbar-none flex-1 overflow-y-auto p-6 lg:p-8 space-y-8">
+                    {activePanel === 'ai' && (
+                        <>
                     <div className={cn('rounded-[24px] border p-4 lg:p-5', theme.accentBorder, theme.accentSoft)}>
                         <div className="flex items-start justify-between gap-4">
                             <div>
@@ -351,6 +498,82 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                             </div>
                         )}
                     </div>
+                        </>
+                    )}
+
+                    {activePanel === 'team' && (
+                        <>
+                            <div className={cn('rounded-[24px] border p-4 lg:p-5', theme.accentBorder, theme.accentSoft)}>
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <div className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', theme.accentText)}>Outcome capture</div>
+                                        <div className="mt-2 text-base font-semibold text-[var(--foreground)]">Turn this method run into shared project work.</div>
+                                        <div className="mt-2 text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                            Capture artifacts, board cards, decisions, and tasks directly from the method so nothing gets lost after the session.
+                                        </div>
+                                    </div>
+                                    <div className={cn('rounded-full px-3 py-1 text-xs font-semibold', theme.accentSolid, 'text-white')}>
+                                        {isHubLoading ? 'Syncing' : 'Live'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <TeamMetric title="Threads" value={String(runThreads.length)} />
+                                <TeamMetric title="Linked Cards" value={String(linkedCards.length)} />
+                                <TeamMetric title="Artifacts" value={String(linkedArtifacts.length)} />
+                                <TeamMetric title="Decisions" value={String(linkedDecisions.length)} />
+                                <TeamMetric title="Tasks" value={String(linkedTasks.length)} />
+                            </div>
+
+                            <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-5">
+                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Capture Outcome</div>
+                                <div className="mt-4 space-y-3">
+                                    <select value={captureDraft.type} onChange={(event) => setCaptureDraft((current) => ({ ...current, type: event.target.value, status: event.target.value === 'artifact' ? 'draft' : current.status }))} className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]">
+                                        <option value="artifact">Artifact</option>
+                                        <option value="card">Board Card</option>
+                                        <option value="decision">Decision</option>
+                                        <option value="task">Task</option>
+                                    </select>
+                                    <input value={captureDraft.title} onChange={(event) => setCaptureDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Outcome title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
+                                    <textarea value={captureDraft.summary} onChange={(event) => setCaptureDraft((current) => ({ ...current, summary: event.target.value }))} placeholder="What should the team see or act on?" className="h-28 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
+                                    <Button onClick={() => void handleCaptureOutcome()}>Capture Outcome</Button>
+                                </div>
+                            </div>
+
+                            <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-5">
+                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Discussion Thread</div>
+                                <div className="mt-4 space-y-3">
+                                    <input value={threadDraft.title} onChange={(event) => setThreadDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Thread title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
+                                    <textarea value={threadDraft.body} onChange={(event) => setThreadDraft((current) => ({ ...current, body: event.target.value }))} placeholder="What needs feedback, review, or follow-up?" className="h-24 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
+                                    <input value={threadDraft.nextStep} onChange={(event) => setThreadDraft((current) => ({ ...current, nextStep: event.target.value }))} placeholder="Next step" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
+                                    <Button variant="secondary" onClick={() => void handleCreateThread()}>Add Thread</Button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {runThreads.length === 0 && (
+                                    <div className="rounded-[24px] border border-dashed border-[var(--panel-border)] bg-[var(--panel)] px-4 py-6 text-center text-sm italic text-[var(--foreground-muted)]">
+                                        No team threads are attached to this method yet.
+                                    </div>
+                                )}
+                                {runThreads.map((thread) => (
+                                    <div key={thread.id} className={cn('rounded-[24px] border bg-[var(--panel)] p-5', theme.accentBorder)}>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <div className="text-sm font-semibold text-[var(--foreground)]">{thread.title}</div>
+                                                <div className="mt-1 text-xs text-[var(--foreground-muted)]">{thread.status} • next: {thread.nextStep || 'Not set'}</div>
+                                            </div>
+                                            <Button size="sm" variant="secondary" onClick={() => void onUpdateHubRecord('threads', thread.id, { ...thread, status: thread.status === 'open' ? 'resolved' : 'open', version: thread.version })}>
+                                                {thread.status === 'open' ? 'Resolve' : 'Re-open'}
+                                            </Button>
+                                        </div>
+                                        <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground-soft)]">{thread.body}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -510,6 +733,15 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function TeamMetric({ title, value }: { title: string; value: string }) {
+    return (
+        <div className="rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">{title}</div>
+            <div className="mt-2 text-2xl font-display font-semibold text-[var(--foreground)]">{value}</div>
         </div>
     );
 }

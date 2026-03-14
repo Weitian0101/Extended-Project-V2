@@ -2,8 +2,13 @@ import { randomUUID } from 'crypto';
 
 import { WorkspaceExportDto } from '@/lib/contracts/api';
 import { buildMembershipProfile } from '@/lib/membership';
+import {
+    enrichWorkspaceProjectsWithHub,
+    getProjectHub,
+    saveProjectHubSnapshot
+} from '@/lib/server/projectHubRepository';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { PermissionLevel, ProjectData, ProjectInvite, TeamMember, ToolRun, UserProfileData, WorkspaceProject } from '@/types';
+import { PermissionLevel, ProjectData, ProjectHubData, ProjectInvite, TeamMember, ToolRun, UserProfileData, WorkspaceProject } from '@/types';
 
 interface ProfileRow {
     id: string;
@@ -35,6 +40,11 @@ interface ProjectRow {
     background: string;
     objectives: string;
     assumptions: string;
+    success_metrics?: string;
+    milestones?: string;
+    team_roles?: string;
+    working_norms?: string;
+    key_links?: string;
     created_at: string;
     updated_at: string;
 }
@@ -294,6 +304,7 @@ function mapProjectSummary(
         updated: formatUpdatedLabel(project.updated_at),
         updatedAt: project.updated_at,
         summary: project.summary,
+        currentStage: project.current_stage,
         members,
         pendingInvites: invites
     };
@@ -429,7 +440,13 @@ export async function getWorkspaceShell() {
     if (projectIds.length === 0) {
         return {
             profile: mapProfile(profileRow),
-            projects: [] as WorkspaceProject[]
+            projects: [] as WorkspaceProject[],
+            collaborationOverview: {
+                needsReview: [],
+                upcomingSessions: [],
+                assignedTasks: [],
+                recentActivity: []
+            }
         };
     }
 
@@ -493,10 +510,13 @@ export async function getWorkspaceShell() {
             invitesByProjectId.get(project.id) || []
         )
     );
+    const profile = mapProfile(profileRow);
+    const enrichedWorkspace = await enrichWorkspaceProjectsWithHub(projects, profile.id);
 
     return {
-        profile: mapProfile(profileRow),
-        projects
+        profile,
+        projects: enrichedWorkspace.projects,
+        collaborationOverview: enrichedWorkspace.collaborationOverview
     };
 }
 
@@ -899,16 +919,18 @@ export async function updateCurrentUserProfile(updates: Partial<UserProfileData>
 
 export async function exportWorkspaceSnapshotForCurrentUser(): Promise<WorkspaceExportDto> {
     const workspace = await getWorkspaceShell();
-    const projectDocuments = await Promise.all(
-        workspace.projects.map((project) => getProjectDocument(project.id))
-    );
+    const [projectDocuments, projectHubs] = await Promise.all([
+        Promise.all(workspace.projects.map((project) => getProjectDocument(project.id))),
+        Promise.all(workspace.projects.map((project) => getProjectHub(project.id)))
+    ]);
 
     return {
         version: 'remote-supabase-v1',
         mode: 'remote-supabase',
         exportedAt: new Date().toISOString(),
         workspace,
-        projectDocuments
+        projectDocuments,
+        projectHubs
     };
 }
 
@@ -926,6 +948,7 @@ export async function importWorkspaceSnapshotForCurrentUser(raw: unknown): Promi
     const rawWorkspace = raw.workspace;
     const rawProjects = Array.isArray(rawWorkspace.projects) ? rawWorkspace.projects : [];
     const rawDocuments = raw.projectDocuments;
+    const rawProjectHubs = Array.isArray(raw.projectHubs) ? raw.projectHubs : [];
 
     let importedProjects = 0;
     let importedMembers = 0;
@@ -950,6 +973,29 @@ export async function importWorkspaceSnapshotForCurrentUser(raw: unknown): Promi
         const matchingDocument = rawDocuments.find((document) => isRecord(document) && normalizeString(document.id) === sourceProjectId);
         const nextDocument = normalizeProjectDocument(matchingDocument, createdProject.id, projectName);
         await saveProjectDocument(createdProject.id, nextDocument);
+        const matchingHub = rawProjectHubs.find((hub) => (
+            isRecord(hub)
+            && isRecord(hub.brief)
+            && normalizeString(hub.brief.projectId) === sourceProjectId
+        ));
+        const nextHub = matchingHub as ProjectHubData | undefined;
+        if (nextHub) {
+            await saveProjectHubSnapshot(createdProject.id, {
+                ...nextHub,
+                brief: {
+                    ...nextHub.brief,
+                    projectId: createdProject.id
+                },
+                cards: nextHub.cards.map((item) => ({ ...item, projectId: createdProject.id })),
+                sessions: nextHub.sessions.map((item) => ({ ...item, projectId: createdProject.id })),
+                decisions: nextHub.decisions.map((item) => ({ ...item, projectId: createdProject.id })),
+                artifacts: nextHub.artifacts.map((item) => ({ ...item, projectId: createdProject.id })),
+                threads: nextHub.threads.map((item) => ({ ...item, projectId: createdProject.id })),
+                tasks: nextHub.tasks.map((item) => ({ ...item, projectId: createdProject.id })),
+                activity: nextHub.activity.map((item) => ({ ...item, projectId: createdProject.id })),
+                presence: nextHub.presence.map((item) => ({ ...item, projectId: createdProject.id }))
+            });
+        }
         importedProjects += 1;
 
         const processedEmails = new Set<string>([user.email.toLowerCase()]);
