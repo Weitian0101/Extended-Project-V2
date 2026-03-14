@@ -381,17 +381,23 @@ export function RemoteWorkspaceShell() {
 
     const handleCreateProject = async () => {
         setWorkspaceStatus(null);
-        const response = await fetch('/api/projects', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({})
-        });
-        const data = await parseApiResponse<{ project: WorkspaceProject }>(response);
-        setProjects((current) => [data.project, ...current]);
-        setActiveProjectId(data.project.id);
-        setView('sandbox');
+        setAuthError(null);
+
+        try {
+            const response = await fetch('/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            });
+            const data = await parseApiResponse<{ project: WorkspaceProject }>(response);
+            setProjects((current) => [data.project, ...current]);
+            setActiveProjectId(data.project.id);
+            setView('sandbox');
+        } catch (error) {
+            setAuthError(error instanceof Error ? error.message : 'Unable to create project.');
+        }
     };
 
     const handleUpdateProject = async (projectId: string, updates: Partial<WorkspaceProject>) => {
