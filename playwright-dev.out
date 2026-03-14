@@ -1,0 +1,12 @@
+
+> app@0.1.0 dev
+> next dev --port 3002
+
+▲ Next.js 16.1.3 (Turbopack)
+- Local:         http://localhost:3002
+- Network:       http://10.133.95.58:3002
+
+✓ Starting...
+✓ Ready in 1185ms
+ GET / 200 in 372ms (compile: 267ms, render: 105ms)
+ GET / 200 in 33ms (compile: 4ms, render: 29ms)

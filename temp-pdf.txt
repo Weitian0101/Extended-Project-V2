@@ -1,0 +1,4381 @@
+﻿BEYOND POST-ITS
+
+            Introduction
+Beyond Post-its is a flexible, powerful toolkit
+for creative problem-solving. You can use it any
+time you want to structure a design thinking or
+innovation session.
+Every card in this toolkit has a second side —
+your AI Extension — packed with ready-to-use
+prompts for ChatGPT (or your preferred AI tool).
+Why use them?
+Go further, faster — AI can instantly expand
+ideas, generate variations, and offer new
+perspectives.
+Unblock your thinking — Get fresh angles
+when you’re stuck.
+Save prep time — Prompts are pre-written for
+each tool.
+How to use the cards
+
+ Combine hands-on tools with AI to accelerate
+ creativity and clarity. Use them in any session
+ that blends physical collaboration with AI-
+ powered thinking.
+ How to use:
+ Use the Card Front during your workshop to
+ guide the group’s activity.
+ Flip to the AI Extensions on the Card Back to
+ access additional prompts and variations.
+ Scan the QR code to instantly open a pre-written
+ AI prompt in ChatGPT (or your chosen AI tool).
+ Use AI-generated outputs as inspiration — then
+ refine, adapt, or combine them with the team’s
+ ideas.
+          The Methods
+1. Break the Ice               1. Shift Gears
+2. Challenge the Brief         2. Use Ideation techniques
+3. Frame Wicked Problems       3. Energise the team
+4. Choose Research Methods     4. Set Ground rules
+5. Plan Research               5. Brainstorm Ideas
+6. Map Stakeholders            6. Brainwrite Ideas
+7. Explore Business Context    7. Reverse Solutions
+8. Explore External Context    8. Ask “What if?
+9. Interview Users             9. Sketch with Crazy 8s
+10. Immerse yourself           10. Select Ideas
+11. Observe Users              11. Priority using Grids
+12. Map Empathy                12. Create a concept
+13. Map User Journey           13. Receive/Give Feedback
+14. Build a Persona            14. Explore Types of Prototypes
+15. Create a Shared model      15. Choose Prototype tech
+16. Analyse and Synthesise     niques
+17. Draw Insights              16. Test with Users
+18. Define Problem Statement   17. Test the Concept
+19. Map Opportunity            18. Iterate the prototype
+20. Frame Opportunity          19. Co-iterate with Users
+Statement                      20. Run a Design Sprint
+
+
+
+1. Identify Assumptions        1. Use 4D Frame
+2. Frame Hypotheses            2. Discover the purpose
+3. Plan Experiments            3. Define the audience
+4. Set up experiments          4. Develop the content
+5. Test Desirability           5. Identify key messages
+6.Test Feasibility             6. Humanise Data
+7.Test Viability               7. Visualise Data
+8.Test Sustainability          8. Find Story in the data
+9 Use business lenses          9. Structure the story
+10. Go-to-market               10. Create a Storyboard
+11. Business model canvas      11. Begin Strong
+12. Value Proposition Canvas   12. Make meaning in the middle
+13. The 4P Model               13. End to Make it stick
+14. The 4C Model               13. Write crisp titles
+15. The Blueprint              15. Write recommendation
+16. Test the whole system      16. Deliver for impact
+17. Pilots                     17. Use Voice and Tone
+18. Launch                     18. Use Body Language
+19. Scale                      19. Design Presentation Slides
+20. Type of Scale              20. Rehearse and Refine
+The Process
+ DIVERGENT THINKING
+
+
+
+
+CONVERGENT THINKING
+               DIVERGENT THINKING
+
+
+
+
+1. Break the ice              13. Map User Journey
+2. Challenge the Brief        14. Build a Persona
+3. Frame Wicked Problems      15. Create a Shared model
+4. Choose Research Methods    16. Analyse and Synthesise
+5. Plan Research              with Affinity Diagram
+6. Map Stakeholders           17. Draw Insights
+7. Explore Business context   18. Define Problem State-
+8. Explore External Forces    ments
+9. Interview Users            19. Map Opportunities
+10. Immerse yourself          20. Frame Opportunity
+11. Observe Users             Statements
+12. Map Empathy
+
+
+             CONVERGENT THINKING
+       Guide for Facilitators – Explore Stage
+Expanding horizons and framing the right challenge
+The Explore Stage is about opening up the problem space. This
+is where teams broaden their perspective—understanding
+users, contexts, and challenges in depth—before narrowing
+down. It’s about seeing differently, asking better questions, and
+discovering fresh opportunities.
+
+                        Flow Overview
+
+             Frame the Challenge – set direction
+              Conduct Research – gather data
+          Build Empathy – see through users’ eyes
+           Analyse & Synthesise – make meaning
+           Define Problems – focus the challenge
+         Define Opportunities – shape where to play
+
+
+Facilitator Reminders:
+•Stay divergent first – let teams go wide before narrowing
+    down.
+•People first – keep the focus on users, not assumptions.
+•Make it visible – use maps, models, and diagrams to
+   create shared understanding.
+•Frame well – a sharp problem or opportunity statement
+    is half the solution.
+       Facilitator Playbook – Explore Stage
+1. Frame the Challenge
+•    Break the Ice - build openness and trust.
+•    Challenge the Brief -question assumptions, clarify scope.
+•    Frame Wicked Problems -identify complexity and tensions.
+
+2. Conduct Research
+•    Choose Research Methods – select based on depth and
+     scope.
+•    Plan Research – design interviews, immersions, or surveys.
+•    Map Stakeholders – identify who influences or is affected.
+•    Explore Business Context – review internal dynamics.
+•    Explore External Context – scan market, trends, regula-
+     tions.
+
+3. Build Empathy
+•    Conduct User Interviews – design conversations for insight.
+•    Immerse Yourself – experience the user’s world directly.
+•    Observe Users – watch real behaviour, not just reported
+     stories.
+
+4. Analyse & Synthesise
+•    Map Empathy – capture needs, pains, and gains.
+•    Build a Persona – humanise insights with archetypes.
+•    Create a Shared Model – align team perspectives.
+•    Cluster with an Affinity Diagram –identify themes in the
+     data.
+•    Map the User Journey – capture current and future scenar-
+     ios.
+•    Draw Insights – extract meaning from patterns.
+
+5. Define Problems
+•    Frame a Problem Statement – create a focused, human-cen-
+     tred challenge.
+
+6. Define Opportunities
+•    Map Opportunities – link insights to potential value.
+                                                                                 1
+
+          Break the Ice
+
+
+This is an icebreaker activity that takes the
+team through all the stages of the Design
+Thinking process in an accelerated and
+enjoyable way.
+Here are the instructions:
+“Teams, you have 15 minutes to make
+a wearable that will solve a problem for
+a particular group of users. Get ready to
+demonstrate it in a catwalk and an elevator
+pitch which should include: Problem/Solution/
+Benefit”
+Play some music, get a catwalk going and
+follow the activity with a discussion about the
+design process.
+
+
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+           Break the Ice
+            AI-Prompts
+
+Design engaging, purposeful openers with AI.
+• Given the workshop theme [insert], gen-
+    erate 5 creative icebreakers that connect
+    directly to the topic.
+• Suggest 3 inclusive activities that work
+    equally well for in-person, remote, and
+    hybrid teams.
+• Adapt this icebreaker [insert] for a group
+    of [number] participants with limited time
+    and space.
+• Create 5 playful but insight-generating
+    icebreakers that also surface participants’
+    assumptions about the challenge.
+• Propose a sequence of 3 escalating warm-
+    up activities to build trust and creative
+    energy.
+
+
+                                                                          AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                2
+             Challenge
+             The Brief
+
+The team has just received a challenge, a task,
+a problem to address. A good understanding
+of the complexity of the task is the first step to
+success. A good discussion at this stage aligns
+the team round the purpose.
+Here are some questions to guide the
+discussion:
+• Why is it important to address it?
+• What is some of the context of the challenge?
+• What is the ultimate impact if you solve it?
+• What constraints will you have while
+addressing the brief (business, design,
+technology, regulation)?
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+    Challenge The Brief
+       (AI prompts)
+
+Push beyond assumptions to reveal the true
+design opportunity.
+• Given this initial brief [insert], identify
+    at least 5 assumptions or constraints we
+    could challenge.
+
+•    Reframe the brief in 3 different ways: us-
+     er-centred, system-centred, and future-fo-
+     cused.
+
+•    Propose provocative “What if…” ques-
+     tions to open up new solution spaces.
+
+•    List potential blind spots in the brief and
+     suggest how to investigate them.
+
+
+
+
+                                                                             AI
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                                3
+
+          Frame
+     Wicked Problems
+
+You have just taken on a complex problem, one
+with many issues, many stakeholders, many
+unknowns. Visualising the complexity helps the
+team to reflect upon, discuss, and think how to
+tackle it.
+The following activity can help you visualise the
+complexity and decide on what you want to
+tackle first:
+❶ As a team, brainstorm the issues, people,
+themes, barriers this topic brings to mind.
+❷ Express that through a Poster, a collage, a
+rich story.
+❸ Discuss and choose your focus.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+      Wicked Problems
+        (AI prompts)
+
+Make complexity visible and find smart entry
+points.
+• Map the system: Given this challenge [in-
+    sert], list key actors, issues, policies, incen-
+    tives, and feedback loops
+
+•   Surface tensions: Identify 5 irreducible di-
+    lemmas and write one “How might we…” for
+    each.
+
+•   Define boundaries: Propose 3 scopes (nar-
+    row, medium, wide) and the trade-offs of
+    tackling each.
+
+•   Probe leverage: Suggest 5 “small changes,
+    big impact” interventions with hypotheses to
+
+
+
+
+                                                                            AI
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                                     4
+
+         Choose
+    Research Methods
+Your team is likely to have used many
+exploration methods and tools. Having a quick
+inventory is a good way of building on the
+knowledge and skills of your team. Here are the
+instructions for the activity:
+❶ Create a list of the methods and tools you are
+familiar with.
+❷ Feel free to choose from the list below or add
+your own:
+Interview/ Observation/ Immersion/ Lists/
+Visualisation / Journeys/ Desk Research/ Call
+Listening /Focus Groups/ Workshops/ Data
+Analysis/ Surveys/ Prototypes/ Show and
+Tell/Affinity Maps/ Empathy Maps/ Problem
+Statement Definition…
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+       Research Methods
+          (AI prompts)
+
+Select and adapt research methods with AI
+guidance.
+• Given our challenge [insert], suggest the
+    most relevant qualitative and quantitative
+    methods.
+
+•   Propose a blended method approach to
+    maximise insight depth and breadth.
+
+•   Identify innovative or less common re-
+    search methods suited to our context.
+
+•   Suggest ways to adapt chosen methods
+    for remote or hybrid research.
+
+•   Generate tips for sequencing methods for
+    optimal learning.
+
+
+                                                                          AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                    5
+
+         Plan Research
+
+Planning your research is a good step towards a
+great understanding of the people involved in the
+business context and the external factors.
+❶ Lead the team through a discussion of what
+we know, what we assume, what we do not
+know.
+❷ Then plan how you are going to find out what
+you do not know or how you will validate your
+assumptions.
+❸ Who are you going to talk to? Where and
+when? That’s your plan for the design research.
+❹ Visualise your Research Plan by using a
+MIndmap.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+         Plan Research
+          (AI prompts)
+
+Design smarter, more targeted research plans
+with AI.
+• Given our challenge [insert], outline goals,
+    methods, participants, and timeline.
+
+•   Suggest a mix of qualitative and quan-
+    titative methods to balance depth and
+    breadth.
+
+•   Identify possible biases and propose miti-
+    gations.
+
+•   Suggest how to adapt the plan if time or
+    budget is limited.
+
+
+
+
+                                                                          AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                 6
+              Map
+          Stakeholders
+Every challenge has got people in it. Identifying
+who they are, how they are involved, impacted,
+related is a great way of setting the scene for your
+human-centred research.
+Here is how you can lead the activity: As a team,
+brainstorm all the people who have a stake in the
+outcome of the challenge.
+                           ❶ Map them according
+                           to importance/proximity/
+                           influence.
+                           ❸ Discuss relationships,
+                           dependencies,
+                           influences, who you
+                           need to interview,
+                           consult, involve, and
+                           when.
+
+
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+      Map Stakeholders
+        (AI prompts)
+
+Map influence and relationships more strategi-
+cally with AI support.
+• Given this project context [insert], list all
+     possible stakeholders, including less obvi-
+     ous ones.
+
+•   Classify them by influence and interest
+    levels, explaining why.
+
+•   Suggest ways to engage each stakeholder
+    group effectively.
+
+•   Identify potential conflicts or alliances.
+
+•   Propose 3 creative ways to involve under-
+    represented stakeholders.
+
+                                                                 AI
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                                  7
+     Explore Business
+         Context
+
+Understand the business context where this
+innovation is taking place:
+• How does the business operate?
+• What processes and systems does the
+business have?
+• How is work organised, people and
+organisational design
+• What platforms (IT) do we have and how
+does data flow in it?
+• Who are our partners and suppliers?
+• What policies and regulations do we have?
+
+
+
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+       Explore Business
+            Context
+         (AI prompts)
+
+Use AI to analyse the business landscape more
+quickly and broadly.
+• Summarise current market trends, compet-
+    itors, and key drivers.
+
+•   Suggest 5–7 potential disruptors or shifts.
+
+•   Identify industry benchmarks and outlier
+    cases.
+
+•   Generate stakeholder questions to clarify
+    constraints and opportunities.
+
+•   Propose a visual framework linking user
+    needs to business objectives.
+
+
+
+
+                                                                          AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                      8
+
+     Explore External
+         Context
+
+Explore and Discuss the impact of Global
+trends and weak signals on your business:
+Technology Trends like Moore’s Law, Connectivity,
+Mobile, The Cloud
+Demography Trends: 5 generations at work, The
+aging population, Arrival of Zeds
+Societal Trends- Trust in institutions, Booms &
+Busts
+Environmental Trends- Circular econmy, Climate
+Change, Water, Energy
+Globalization- Emerging markets, 24/7 work
+
+
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+     Explore External
+          Context
+        (AI prompts)
+Scan technology, demography, society,
+environment, and globalisation for oppor-
+tunity.
+
+•   Trend brief: “For our space [insert], sum-
+    marise key shifts across Tech, Demogra-
+    phy, Societal trust/economy, Environment,
+    Globalisation; include weak signals.”
+
+•   Second order effects: “For each force, list
+    2–3 plausible ripple effects on user behav-
+    iour and business models.”
+
+•   Risk radar: “Identify 5 strategic risks
+    these forces introduce and propose a light-
+    weight way to monitor each.”
+
+
+
+                                                                           AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                 9
+         Conduct user
+          Interviews
+You are preparing to go out and talk to
+people in order to understand their needs,
+aspirations, frustrations. Who will you
+interview to get different perspectives? Where
+will you find them? Any logistics? What
+questions will you ask in order to uncover their
+needs and aspirations?
+Here are some tips:
+• Use open ended questions. / Use 5Whys.
+/ Ask about real examples./Ask non-leading
+questions
+• Listen!/ Try not to interrupt./ Try not to fill
+the silence./ Observe non-verbal cues.
+• Capture direct quotes.
+• Establish and maintain connection.
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+        Conduct User
+          Interviews
+         (AI prompts)
+
+Design richer interviews with AI-generated
+questions.
+• Based on this challenge [insert], generate
+    10 open-ended interview questions.
+
+•   Suggest counterintuitive questions to sur-
+    face hidden needs.
+
+•   Roleplay as the interviewee and answer
+    authentically.
+
+•   Propose follow-up questions from hypo-
+    thetical responses.
+
+•   Suggest activities to replace standard
+    Q&A for deeper engagement.
+
+
+
+                                                                           AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                              10
+
+     Immerse Yourself
+
+Immersion is a method that helps you walk
+in the user’s shoes. Here are some tips how to
+lead the team through it:
+❶ Discuss what stage in the service you will
+be immersed in, where and when you will go
+for it, risks involved, ethics of research.
+❷ Instruct people to go out in pairs and
+immerse in the experience; observe, take
+notes, photos, sketches, videos.
+❸ Capture your thoughts, frustrations,
+concerns on the go, as you experience them.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+      Immerse Yourself
+        (AI prompts)
+
+Dive deeper into the user’s world with AI-as-
+sisted prompts.
+• Suggest environments or activities to im-
+     merse in.
+
+•   Generate a sensory checklist (sights,
+    sounds, smells, touches).
+
+•   Propose role-play or simulation exercises.
+
+•   Recommend ways to document immersion
+    insights.
+
+•   Suggest reflective post-immersion ques-
+    tions.
+
+
+
+
+                                                                           AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                              11
+
+        Observe Users
+
+Observation is a key method for creating
+Empathy.
+The process goes from concrete to abstract,
+from observing what is happening, and
+understanding how it is happening to inferring
+why it is happening. Check your assumptions
+with users.
+
+
+  Concrete                                   Abstract
+ WHAT           HOW                        WHY
+
+ What is       How are                    Why are
+ happening,    people going               people acting
+ what are      about it?                  that way?
+ people doing?
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+        Observe Users
+         (AI prompts)
+
+Spot unseen patterns with AI-powered obser-
+vation prompts.
+
+•   Suggest behaviours, objects, or interac-
+    tions to focus on.
+
+•   Create a field note checklist.
+
+•   Predict patterns to watch for.
+
+•   Recommend visual mapping techniques.
+
+•   Suggest ways to synthesise observational
+    data.
+
+
+
+
+                                                                            AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                               12
+
+         Map Empathy
+
+You went out and interviewed people. Time
+to make sense of the data you collected.
+Empathy Map is a great tool for that. Place a
+photo or sketch of your persona in the middle
+of a flipchart sheet. Divide the sheet into four
+sections and start downloading your notes.
+Stand back, draw insights, frame problems.
+What did she “say”?         What did she think?
+
+
+
+
+What did she “do”?          What was she feeling?
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+        Map Empathy
+        (AI prompts)
+
+Uncover hidden insights by expanding empa-
+thy maps with AI.
+
+•   Generate a full empathy map from perso-
+    na description.
+
+•   Suggest unusual pains and gains.
+
+•   Roleplay a day in the persona’s life.
+
+•   Suggest 5 opportunity areas.
+
+•   Generate probing interview questions for
+    each quadrant.
+
+
+
+
+                                                                            AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                        13
+
+           Build A Persona
+
+A persona is a fictitional character that
+represents a group of people with similar
+needs. A Persona profile is based on research
+with real people. Here are a few tips how:
+
+                                ❶ Give your persona a
+                                name, place a photo
+                                ❷ Add demographic
+                                attributes,
+     Angela        Needs
+
+
+
+
+    Goals and     Preferences
+
+
+                                ❸ Add her aspirations,
+    aspirations
+
+
+
+
+                                goals, fears, frustations,
+                                needs, concerns.
+                                ❹ Add her preferences
+
+
+
+
+                                                                                             i n g. c o m
+                                                                               designthink
+                                    h t t p s : / / w w w. a c a d e m y o f
+      Build A Persona
+       (AI prompts)
+
+Generate richer, more nuanced personas with
+AI support.
+
+•   Create 3 distinct personas with names,
+    goals, pains, behaviours.
+
+•   Generate a day-in-the-life story.
+
+•   Suggest 5 unexpected interview questions.
+
+•   Brainstorm 10 features balancing desira-
+    bility, viability, feasibility.
+
+•   Roleplay as this persona reacting to a
+    product pitch.
+
+
+
+
+                                                                            AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                              14
+         Map the User
+           Journey
+Mapping customer or user’s experience is a
+great method to uncover insights and opportu-
+nities. You can use it when you want to under-
+stand the current “as is” journey or imagine a
+future “to be” scenario.
+
+
+
+
+How to use:
+❶ Choose the customer, user, or stakeholder
+journey you want to map.
+❷ Capture each stage, action, thought, and
+feeling in the current experience.
+❸ Spot pain points and delights — highlight
+where frustrations or successes occur.
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+         Map the User
+           Journey
+         (AI prompts)
+
+Expand both “as is” and “to be” journeys with
+richer detail and possibilities.
+
+•   Given our user [insert], generate a step-by-
+    step map of their current (“as is”) journey,
+    including actions, thoughts, emotions, and
+    pain points.
+
+•   Suggest hidden or overlooked touchpoints
+    that might be missed in manual mapping.
+
+•   Generate future (“to be”) scenarios that
+    remove pain points and amplify delight.
+
+•   Recommend metrics to track at each stage
+    of the journey for ongoing evaluation.
+
+
+
+
+                                                                            AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                               15
+
+           Create a
+         shared Model
+You went out, talked to people and gathered
+several perspectives on the challenge you are
+investigating. Time to make sense of it all.
+Building 3D models is a great way of externalising
+your thoughts and findings. You may use lego,
+pipe cleaners, plasticine, cardboard...
+                          ❶ Share the stories
+                          from the field with
+                          your team.
+                          ❷ Build a 3D model
+                          which represents the
+                          current state of affairs.
+                          Indicate barriers.
+                          ❸ Share the model.
+                          It is the story of the
+                          findings.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+       Create a Shared
+            Model
+        (AI prompts)
+
+Build common understanding through collabo-
+rative visualisation.
+
+•   “Suggest 3 alternative visual frameworks
+    (map, diagram, canvas) to represent the
+    same information.”
+
+•   “Highlight gaps or inconsistencies in the
+    shared model and propose clarifying ques-
+    tions.”
+
+•   “Generate example scenarios to test
+    whether the model holds true in practice.”
+
+•   “Propose ways to evolve the shared model
+    as we learn more during the project.”
+
+
+
+                                                                          AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                               16
+
+ Analyse and Synthesise
+ with Affinity Diagram
+You interviewed people and collected data. Time
+to analyse and synthesise. Affinity diagram is
+a great tool to help you do that. Here are some
+tips:
+
+                        ❶ Download your notes
+                        into post-its, place them
+                        in a flipchart paper.
+                        ❷ Share stories from the
+                        field with other members
+                        of the team.
+                        ❸ Group them according
+                        to affinity. Write a
+                        heading for each cluster.
+                        ❹ Stand back and
+                        frame the problems you
+                        uncovered.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+Analyse and Synthesise
+     (AI Prompts)
+
+Cluster ideas and insights more creatively with
+AI support.
+
+•   Suggest 5–7 thematic clusters and name
+    them.
+
+•   Recommend unusual grouping criteria.
+
+•   Generate concise labels.
+
+•   Suggest connections between clusters.
+
+•   Provide probing questions for each cluster.
+
+
+
+
+                                                                          AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                      17
+
+           Draw Insights
+
+After clustering data, building empathy maps,
+personas, and journey maps, it is time to draw
+insights. Insights are patterns, surprises, or
+tensions uncovered during analysis that reveal
+something about users, systems, or contexts.
+An insight is not just a fact—it’s the meaning
+behind the fact. Push teams to move from what
+they saw to why it matters. Use the Insight
+Canvas to move from “what you saw” to why it
+matters”.
+                     INSIGHT CANVAS
+ Observation            Interpretation                           Insight
+(what we saw/heard) (what it might mean) (why it matters)
+Example:
+“Users often skip      “Users may feel        “Users value speed
+                                              over clarity, and will
+reading instructions.” instructions are con-
+                       fusing or irrelevant.” avoid anything that
+                                              slows them down.”
+
+
+
+
+                                                                                             i n g. c o m
+                                                                               designthink
+                                    h t t p s : / / w w w. a c a d e m y o f
+          Draw Insights
+          (AI prompts)
+
+To help your team uncover insights, try these
+AI prompts:
+• “Here are clustered user quotes/observa-
+    tions: [paste notes]. What patterns, ten-
+    sions, or surprises do you see?”
+• “Reframe these observations as insight
+    statements that reveal why they matter,
+    not just what happened.”
+• “Generate 10 possible insights from this
+    data, phrased as human-centered truths
+    (e.g., ‘Users believe…’, ‘People struggle
+    when…’).”
+• “Which of these insights seem most im-
+    pactful for defining new opportunities?”
+
+
+
+
+                                                                           AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                18
+          Define
+    Problem Statement
+You looked at the data, clustered them, found
+patterns. Time to frame and re-frame the
+problems. This is a key moment in your design
+process. Here are some tips how to lead the team
+through this activity:
+❶ Stand back and ask the question: What does
+our user really need? (Problem statement is
+about Needs not Objects/Features)
+❷ Write and re-write the statement until it really
+captures the real problem you uncovered.
+A good framing should have both the need and
+your insight, e.g “She needs to communicate
+the value of design, so that the business
+understands and embraces it.”
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+           Define
+    Problem Statement
+       (AI prompts)
+
+Craft sharper, more inspiring problem state-
+ments with AI.
+
+•   Craft sharper, more inspiring problem
+    statements.
+
+•   Suggest statements that encourage radi-
+    cally different solutions.
+
+•   Rewrite focusing on emotion, behaviour,
+    or systemic impact.
+
+•   Generate opposite or reframed statements.
+
+•   Evaluate against clarity, inspiration, and
+    scope.
+
+
+                                                                             AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                               19
+           Map
+        Opportunities
+Identify and prioritise the most promising
+opportunities for innovation. Use it after map-
+ping the current (“as is”) and future (“to be”)
+journeys, or when you have many insights to
+organise.
+How to use:
+
+❶ Gather insights — collect pain points, de-
+lights, and ideas from journey maps, research,
+or testing.
+❷ Cluster themes — group similar insights to
+reveal opportunity areas.
+❸ Frame opportunities — rewrite clusters as
+“How might we…?” questions.
+❹ Prioritise — evaluate opportunities by
+impact, feasibility, alignment with goals and
+choose 2–3 opportunity spaces to explore
+further in ideation.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+             Map
+        Opportunities
+        (AI prompts)
+
+Prioritise opportunities in ways that spark bold
+solutions.
+• Suggest ways to cluster or categorise
+    insights into broader opportunity areas.
+• Propose prioritisation frameworks (impact
+    vs. effort, desirability vs. feasibility).
+• Generate extreme or “wild card” oppor-
+    tunity statements to spark breakthrough
+    ideas.
+• Recommend 2–3 opportunity areas that
+    balance quick wins with long-term innova-
+    tion.
+
+
+
+
+                                                                            AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                20
+             Frame
+          Opportunity
+           Statement
+
+Every problem is an opportunity for design.
+Turning the problem statement into an
+opportunity statement is your next step
+towards finding solutions. The “How Might
+We” question is a good formula for an
+opportunity statement:
+❶ Look at the problem statement and turn it
+into a question that starts with “How might
+we....
+❷ Version and reversion the “How might
+we...”, so that it is neither too narrow nor too
+broad.
+A good opportunity statement opens the
+space for a lot of solutions.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+       Frame
+Opportunity Statement
+         (AI prompts)
+Frame opportunities in ways that spark bold
+solutions.
+• Draft 5 “How might we…” statements
+    varying scope and approach.
+
+•   Frame from different stakeholder perspec-
+    tives.
+
+•   Generate extreme or unconventional state-
+    ments.
+
+•   Reframe focusing on emotional, functional,
+    or systemic aspects.
+
+•   Propose quick validation questions.
+
+
+
+
+                                                                          AI
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+ DIVERGENT THINKING
+
+
+
+
+CONVERGENT THINKING
+             DIVERGENT THINKING
+
+
+
+
+1. Shift Gears              12. Create a concept
+2. Use Ideation tech-       13. Exchabge Feedback
+niques                      14. Choose Prototype
+3. Energise the Team        Types
+4. Set Ground rules         15. Apply Prototype Tech-
+5. Brainstorm Ideas         niques
+6. Brainwrite Ideas         16. Test with Users
+7. Reverse Solutions        17. Test the Concept
+8. Ask: “What if? “         18. Iterate the prototype
+9. Sketch with Crazy 8s     19. Co-iterate with
+10. Select promising        Users
+Ideas                       20. Run a Design Sprint
+11. Prioritise using Grid
+
+            CONVERGENT THINKING
+       Guide for Facilitators – Imagine Stage
+               Generating, shaping, and testing ideas
+The Imagine Stage helps teams unlock creativity,
+develop ideas, and test them fast with users. The flow
+balances divergence and convergence: go wide to explore
+possibilities, then narrow to focus on the most promising
+concepts.
+
+                          Flow Overview
+
+       Shift Mindsets - create energy & set rules for ideation.
+     Generate Ideas- produce a wide range of options.
+               Select Ideas – filter and prioritise.
+           Create Concepts – make ideas tangible.
+ Prototype & Test – experiment, refine, and learn with users.
+
+
+Facilitator Reminders
+• Push for quantity before quality in early stages.
+• Use ground rules and energisers to keep energy high.
+• Remember: prototypes are learning tools, not finished
+products.
+• Keep users in the loop – co-create, test early, and refine.
+         Guide for Facilitators – Imagine Stage
+1. Shift Mindsets-Prepare the team for creativity.
+•    Shift Gears – signal the move into creative mode.
+•    Run an Energiser – energise and loosen the group.
+•    Set Ground Rules – align on how to ideate together.
+2. Generate Ideas (Diverge)
+•    Apply Ideation Techniques – pick methods to spark creativity.
+•    Brainstorm Ideas – generate freely within constraints.
+•    Brainwrite Together – brainwriting for inclusivity.
+•    Reverse the Solution- reverse assumptions to provoke insight.
+•    Ask “What If?” – unlock bold, imaginative scenarios.
+•    Sketch Crazy 8s – rapid sketching for volume.
+3. Select Ideas (Converge)
+•    Select Promising Ideas – shortlist collaboratively.
+•    Use a Priority Grid – apply clear criteria for focus.
+4. Create Concepts
+•    Create a Concept – combine and frame ideas into proposals.
+•    Exchange Feedback – refine concepts through quick loops.
+5. Prototype & Test
+•    Choose Prototype Types – pick low/high fidelity as needed.
+•    Apply Prototype Techniques – role-play, paper, digital, etc.
+•     Test the Concept – validate in more depth.
+•     Run Tests – gather quick user reactions.
+•     Iterate Ideas – improve through cycles of feedback.
+•     Co-iterate with Users – refine with active user input.
+•     Run a Design Sprint – compress into a rapid innovation cycle.
+                                                                               1
+
+
+            Shift Gears
+
+Switch mental gears to boost creativity and
+fresh thinking.
+You have brought a group of people together
+to generate lots of ideas. Here are some tips on
+how to facilitate the session:
+❶ Welcome and excite the team on the pur-
+pose of the session and what you expect to do
+with those ideas.
+❷ Use a warm up activity to shift mind gear.
+People have most likely been in their analytical
+mode until then.
+❸ Remind them of Ideation ground rules.
+
+❹ Split the team into subteams of maximum
+4 people. Give each team the HMW question.
+
+       Enjoy and Celebrate at the end!
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+           Shift Gears
+          (AI prompts)
+
+Switch mental gears to boost creativity.
+• Suggest 5 short energising activities to
+    shift from analytical to creative thinking.
+
+•   Given our workshop theme [insert],
+    design a 3-minute gear shift exercise that
+    ties directly to the topic.
+
+•   Propose alternative “reset” activities for
+    in-person, remote, and hybrid groups.
+
+•   Generate 3 “perspective-shift” prompts
+    that push participants to see the problem
+    in a new way.
+
+•   Create a playlist of 5 songs that set a
+
+
+                                                                              AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                               2
+               Run an
+              Energiser
+
+Boost group energy and readiness for creative
+work.
+Energisers are short, playful activities that
+reset the team’s energy, spark creativity, and
+strengthen group connection.
+Here are a few tips on how to use energisers:
+❶ Use at the start of a session, after breaks,
+or whenever energy dips.
+❷ Keep it short and snappy (3-10 min).
+❸ Choose activities that are inclusive, fun,
+and safe for all participants.
+❹ Link the energiser (lightly) to the workshop
+theme, so it warms up creative muscles
+without feeling random.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+     Run an Energiser
+       (AI prompts)
+Build energy, trust, and creative readiness.
+• Suggest 5 energisers tailored to a group
+    size of [insert number].
+
+•   Propose inclusive energisers that work
+    across cultures.
+
+•   Create 3 themed energisers linked to our
+    challenge context.
+
+•   Recommend quick energisers for mid-ses-
+    sion fatigue.
+
+•   Suggest reflection questions after the ener-
+    giser to connect it to the work ahead.
+
+
+
+                                                                               AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                 3
+
+              Set
+          Ground Rules
+Whatever ideation techniques you use, you need
+some ground rules to go by. I hear you asking
+“why”? Ground rules create a safe space where
+every one feels confident to share ideas.
+In ideation, quantity and openness matter more
+than polish or feasibility. By agreeing on simple
+rules, the team unlocks creativity, reduces fear of
+criticism, and ensures all voices are heard.
+Here’s a list:
+• Defer judgment- no idea is too wild in the
+moment, stretch beyond the obvious.
+• Stay Focused on topic- keep ideas tied to the
+challenge.
+• Go for quantity- the more the better.
+• Build on the ideas of the group- use “yes..and”.
+• One conversation at a time- listen actively.
+• Have fun. Enjoy!
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+      Set Ground Rules
+        (AI prompts)
+
+Set the tone for productive, respectful collabora-
+tion.
+• Tailored Rules: “We’re running an ideation
+     workshop with [describe participants: e.g.,
+     engineers, executives, students]. Suggest 8
+     ground rules that balance creativity with
+     psychological safety.”
+• Remote Workshops: “What ground rules
+     help creativity in online brainstorming ses-
+     sions, where participants use Miro or MU-
+     RAL?”
+• Culture Fit: “Reframe classic brainstorming
+     ground rules in a tone that fits [playful /
+     professional / startup / academic] environ-
+     ments.”
+• Short List: “Give me a condensed set of 4
+     memorable ground rules we can put on the
+     wall to guide our brainstorming.”
+                                                                               AI
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+                                                                               3
+       Apply Ideation
+        Techniques
+
+Use structured methods to spark a wide range
+of ideas.
+There are many techniques you can use in
+order to come up with lots of ideas.
+Here are a few you may try out with your
+team:
+• Brainstorming
+• Brainwriting
+• Crazy 8s- as used by Google Sprints
+• Reverse solution
+• Stormboard- a virtual Brianstorm platform
+• What if? scenarios
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+            Apply
+    Ideation Techniques
+        (AI prompts)
+Expand idea generation beyond the usual
+methods.
+• Based on our challenge [insert], suggest
+   5 ideation methods suited to small/large
+   groups.
+
+•   Recommend methods that push divergent
+    thinking in unexpected directions.
+
+•   Adapt a traditional technique for remote
+    collaboration.
+
+•   Generate an agenda that combines 2–3
+    techniques for maximum output in 30
+    minutes.
+
+
+
+                                                                             AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                     5
+
+      Brainstorm Ideas
+
+Brainstorming is a fast, collective way to gen-
+erate a wide range of ideas in a short time. By
+encouraging quantity, suspending judgment,
+and building on one another’s contributions,
+teams unlock unexpected solutions that no sin-
+gle person could have imagined alone.
+
+Top Tips:
+❶ Clearly state the problem, the opportunity
+in a concise “How might we…?” format.
+❷ Give the group a fixed time (e.g., 15–30
+minutes. Set a bold target (e.g., “Let’s aim for
+100 ideas in 20 minutes”) to push for volume.
+❸ Capture every idea, enforce ground rules,
+and keep pace lively.
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+     Brainstorm Ideas
+       (AI Prompts)
+
+Expand your idea pool and uncover
+unexpected directions.
+•“Generate 20 brainstorming prompts for the
+challenge: [insert your problem]. ”
+• “Suggest 10 brainstorming prompts for
+[insert challenge], but each idea must work
+under these constraints: [e.g., zero budget,
+only one day to implement, must use existing
+technology].”
+• “How would [teachers / athletes / children
+/ a competitor] brainstorm solutions to this
+challenge?”
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                6
+
+  Brainwrite Together
+
+Brainwriting gives everyone an equal voice
+by having participants write down ideas
+individually before sharing. Unlike verbal
+brainstorming, it reduces group pressure,
+prevents louder voices from dominating, and
+creates space for introverts to contribute their
+best thinking.
+By collecting ideas silently and then building
+on each other’s written thoughts, teams
+generate a broader and more diverse set of
+solutions. How to run is:
+❶ Place the “How might we...” question in
+the center of a flipchart.
+❷ Individually write 8 ideas in 8 minutes.
+Write one idea per post-it.
+❸ Circulate the ideas in your team and build
+on them or be triggered to come up with a few
+more ideas.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+    Brainwrite Together
+        (AI prompts)
+
+Capture diverse ideas quietly before group
+discussion.
+• Based on our challenge [insert], generate
+    5 BrainWriting DESIGN CONSTRAINTS to
+    spark ideas.
+
+•   Suggest variations for remote BrainWrit-
+    ing sessions.
+
+•   Propose time limits and rotation patterns
+    to maximise idea flow.
+
+•   Recommend ways to cluster and discuss
+    BrainWriting outputs.
+
+
+
+
+                                                                            AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                               7
+            Reverse
+          the Solution
+Reverse Solutions flips the problem on its
+head: instead of asking “How do we solve
+this?”, the team explores “How could we make
+this problem worse?”
+This playful inversion lowers the pressure to
+be right, sparks laughter, and often surfaces
+hidden assumptions. Once the “bad” solutions
+are on the table, flipping them back around
+reveals fresh, unconventional ideas that would
+otherwise stay hidden.
+❶ Start with “ how could we make it worse?”
+❷ Brainstorm as many answers to the ques-
+tions posed as possible.
+❸ After generating “bad” or “reverse” solu-
+tions, ask the team: What’s the opposite of
+this? How could this actually help us?
+❹ Assess your solutions. Are any of the ideas
+viable?
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+           Reverse
+         the Solutions
+         (AI prompts)
+Break habitual thinking by flipping the prob-
+lem.
+• Rewrite our problem as “How might we
+    make it worse?” and generate 10 bad solu-
+    tions.
+
+•   Flip each bad solution into a potential
+    good idea.
+
+•   Suggest unusual problem inversions to try.
+
+•   Recommend ways to combine reversed
+    solutions into fresh concepts.
+
+•   Propose criteria for spotting promising
+    ideas from reversals.
+
+
+                                                                            AI
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                8
+
+        Ask: “What If?”
+
+“What if?” scenarios spark imagination by
+inviting the team to suspend reality and
+explore possibilities without limits.
+By asking bold, hypothetical questions —
+“What if money was no object? What if users
+had superpowers? What if our product had
+to work in space?” — teams push beyond
+constraints and uncover radically new
+directions.
+After wild ideas emerge, ask “How could
+we adapt this to reality?” to translate
+imagination into usable concepts.
+This method is powerful for unlocking fresh
+perspectives, especially when current ideas feel
+too safe or incremental.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+          Ask “What If?”
+          (AI prompts)
+
+Unlock imagination with provocative scenari-
+os.
+• Generate 10 “What if…” questions that
+    challenge our assumptions.
+
+•   Create extreme and playful “What if”
+    prompts to stretch thinking.
+
+•   Suggest ways to connect “What if” scenar-
+    ios back to real constraints.
+
+•   Propose follow-up activities to explore
+    feasibility.
+
+•   Generate visual metaphors to express the
+    wildest “What if” ideas.
+
+
+                                                                               AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                              9
+
+      Sketch Crazy 8s
+
+A rapid ideation exercise where each participant
+sketches 8 distinct ideas in 8 minutes. The speed
+forces participants to push past their first,
+obvious concepts and tap into more unexpected,
+creative solutions.
+                       ❶ Fold an A4 sheet into
+                       8 sections.
+                       ❷ Set a timer for 8
+                       minutes.
+                       ❸ Draw one idea per
+                       section — no words
+                       needed, just quick
+                       sketches.
+                       ❹ Share and discuss the
+                       ideas to spot patterns or
+                       promising directions.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+    Sketch Crazy 8s
+      (AI prompts)
+
+Rapidly sketch multiple solutions.
+• Suggest eight different angles or variations
+    on our challenge: [insert challenge].
+
+•   Propose “constraint flips” (e.g., opposite
+    user, extreme budget, no tech) to stretch
+    thinking.
+
+•   Generate prompts to push beyond safe
+    ideas into wild or provocative territory.
+
+•   Recommend how to cluster and name
+    ideas after the exercise.
+
+•   Suggest adaptations of Crazy 8s for re-
+    mote or digital collaboration.
+
+
+                                                                             AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                              10
+          Select
+      Promising Ideas
+
+The team have come up with many ideas,
+first individually, then building on the ideas
+of each other, stretching them, going beyond
+the obvious. Time to Identify two or three
+opportunity spaces.
+Here are a few tips:
+❶ Organise the ideas into buckets, e.g
+new products, new service, environment,
+behaviour....
+❷ Look for further combinations,
+associations.
+❸ Select a few and work on them, stretch
+them further, turn them into Concepts.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+            Select
+      Promising Ideas
+        (AI prompts)
+Choose the most promising concepts to devel-
+op further.
+• Propose 3 quick selection methods for
+    narrowing a long idea list.
+
+•   Suggest criteria balancing desirability, fea-
+    sibility, viability, and sustainability.
+
+•   Given our shortlist [insert], score each
+    idea against these criteria.
+
+•   Recommend methods to involve users in
+    the selection process.
+
+•   Suggest a “wildcard” idea to keep in the
+    mix for inspiration.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                       Prioritise with
+                          2x2 Grid
+         A 2x2 grid is a simple but powerful way to evaluate and
+         prioritize ideas based on two chosen criteria. Common
+         pairs include impact vs. effort, desirability vs.
+         feasibility, or short-term vs. long-term benefit.
+         This visual approach makes decision-making clearer,
+         reduces debate, and helps the group move from a long
+         list of options to a focused set of priorities.
+
+
+   High
+          QUICK WINS     MAJOR PROJECT       • Choose Criteria with
+                                             Care: Ask, “What really
+                                             matters for this project?”
+IMPACT
+
+
+
+
+          FILL INS       THANKLESS TASKS
+                                             • Name the Quadrants:
+                                             This makes the grid
+                                             easier to interpret and
+         Low                          High   act on.
+                       EFFORT
+
+
+
+
+                                                                                                      i n g. c o m
+                                                                                        designthink
+                                             h t t p s : / / w w w. a c a d e m y o f
+       Prioritise with
+          2x2 Grid
+        (AI prompts)
+
+Visualise idea impact versus effort.
+• Based on our ideas [insert], place them on
+    a 2×2 priority grid (Impact vs. Effort).
+
+•   Suggest 3 alternative axes for evaluating
+    ideas (e.g., Speed to Market, Learning
+    Potential).
+
+•   Propose conversation prompts for each
+    quadrant to ensure balanced discussion.
+
+•   Recommend ways to revisit and update
+    the grid as assumptions change.
+
+•   Suggest follow-up actions for high-impact/
+    high-effort ideas.
+
+
+                                                                               AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                         12
+
+           Create A Concept
+
+You are now taking an idea from a post-it note
+and developing it very quickly into a rough
+concept. Use the concept poster template
+addressing four questions:
+
+Your idea-solution in one        ❶ Explain solution in
+                                 one sentence.
+                                 ❷ Describe how it will
+How        Draw your idea here   work. (key things, no
+will it                          details)
+                                 ❸ Who are people
+                                 impacted/involved?
+                                 ❹ How will this solu-
+                                 tion solve the problem?
+
+What benefits will               And visualise it!
+
+
+
+
+                                                                                               i n g. c o m
+                                                                                 designthink
+                                      h t t p s : / / w w w. a c a d e m y o f
+    Create A Concept
+      (AI prompts)
+
+Turn rough ideas into clear, shareable con-
+cepts.
+• Given an idea [insert], create a one-page
+    concept summary including title, user
+    need, key features, and benefits.
+
+•   Suggest ways to visually represent the
+    concept for quick understanding.
+
+•   Generate 3 variations of the concept for
+    different user segments.
+
+•   Identify possible risks and unknowns for
+    each variation.
+
+•   Propose questions to test with users before
+
+
+                                                                            AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                             12
+
+ Exchange Feedback
+
+You created several concepts. Time to share and
+get some feedback. Take them to members of
+your team first then out there with some real
+customers.
+Remember you are there to get honest feedback,
+not to sell the concept, (not yet).
+
+
+                       Key questions to guide
+                      the feedback:
+
+                      ❶ What works?
+                      ❷ What can be improved?
+                      ❸ Any questions?
+                      ❹ Any suggestions?
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+    Exchange Feedback
+        (AI Prompts)
+Exchange constructive input to strengthen ideas.
+• Generate 5 feedback prompts using the “I
+    like, I wish, What if” framework.
+
+•   Suggest methods for collecting feedback
+    anonymously and in real time.
+
+•   Propose ways to reframe negative feedback
+    into actionable insights.
+
+•   Recommend how to balance feedback from
+    users, team members, and stakeholders.
+
+•   Suggest a structured debrief activity to turn
+    feedback into clear next steps.
+
+
+
+
+                                                                              AI
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                14
+           Choose
+       Prototype Types
+Choose the right fidelity and format for each
+learning goal.
+There are several types of prototypes from rough
+and ready to high fidelity ones:
+• Rough and Ready prototypes. Using pen and
+paper, pipe cleaners, lego, plasticine, cardboard,
+makes it possible to test your solution very early
+on and iterate many times, very quickly.
+• Live prototypes. After many rough
+prototypes, it is time to test your idea in real
+market conditions to find out how viable and
+feasible it is. It can run for a few days or weeks.
+• Pilots are the next stage, where you bring the
+whole system to market and try it out for a few
+months in real conditions.
+
+
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+           Choose
+       Prototype Types
+         (AI Prompts)
+Use AI to enhance your concept testing process.
+• Given our objective [insert], recommend
+suitable prototype types (e.g., paper, digital,
+role-play).
+• Suggest the minimal level of fidelity needed to
+answer our question.
+• Propose creative prototype formats beyond the
+obvious.
+• Recommend how to combine multiple
+prototype types in one test.
+• Suggest ways to reuse or adapt prototypes for
+future tests.
+
+
+
+
+                                                                              AI
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                             15
+
+       Apply Prototype
+         Techniques
+There are many prototype techniques that can
+help you create from rough and ready to live high
+fidelity models. First decide what to prototype
+and why, then select a technique:
+• Draw, sketch, build.
+• Digital mock-ups for people-tech interactions
+• Journey mapping for key moments of the
+experience
+• Storyboard
+• Role play for people-people interactions
+• 3D models
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+         Apply
+ Prototype Techniques
+     (AI Prompts)
+Use practical methods to bring ideas to life
+quickly.
+• Based on our concept [insert], suggest step-
+by-step instructions for making a low-cost
+prototype.
+• Recommend tools and materials for different
+prototype types.
+• Propose time-saving hacks for building under
+tight deadlines.
+• Suggest how to make prototypes interactive for
+richer feedback.
+• Recommend a checklist for preparing
+prototypes for testing.
+
+
+
+                                                                               AI
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                             16
+
+
+      Test the Concept
+
+
+Validate whether the overall idea (value
+proposition, business model, positioning)
+resonates before investing heavily in prototyping.
+Key considerations:
+• Focus on the concept itself, not yet the details
+of execution.
+• Use concept boards, mock ads, pitch decks,
+or landing pages.
+• Gather early signals of interest, relevance,
+and willingness to engage/pay.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+   Test the Concept
+     (AI Prompt)
+
+•     Suggest lightweight ways (e.g., mock
+ads, concept boards, pitches) to validate
+interest, relevance, and willingness to pay.”
+❶Help me test an early concept with potential
+   users before I build a prototype.
+•      Suggest key questions to answer in the
+first round of testing.
+• Suggest how to adapt the concept based
+on test feedback.
+
+
+
+
+                                                                             AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                               17
+
+         Test with Users
+
+There is no better testing than with real people,
+in the real world, in order to find out what works,
+what doesn’t, what needs changing.
+To quickly check how people interact with a
+prototype and uncover usability, desirability, and
+feasibility issues:
+❶ Focus on real interactions with even rough
+prototypes.
+❷ Observe behaviours, not just opinions.
+❶❸ Use feedback loops to spot what works
+  and what blocks adoption.Quickly validate
+  assumptions with low-cost experiments
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+       Test with Users
+        (AI Prompts)
+Gather evidence from real users to improve the
+solution.
+• “Help me design a quick user test for
+my prototype. The goal is to learn about
+desirability, usability, and feasibility.
+• Suggest simple ways to capture both what
+users say and how they behave.”
+• Suggest a test plan covering participants,
+method, and success criteria.
+• Propose ways to capture both qualitative
+and quantitative feedback.
+• Propose a synthesis framework for test
+findings.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                              18
+          Iterate
+      the Prototype
+Improve your concept by learning from
+feedback and making quick adjustments. You
+use it after testing a prototype or concept,
+when you have new insights to build on.
+How to use:
+❶ Review feedback — capture what
+worked, what didn’t, and surprises.
+❷ Spot patterns — look for common themes
+across different testers.
+❸ Prioritise changes — choose the most
+critical improvements to make first.
+❹ Revise quickly and test again — adjust
+the prototype or concept without over-
+polishing and put the updated version back in
+front of users to validate improvements.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+          Iterate
+      the Prototype
+       (AI Prompt)
+Accelerate learning cycles and explore
+multiple refinements quickly.
+• Given our prototype [insert], suggest 5–7
+possible improvements based on common
+feedback themes.
+• Propose variations of the concept that target
+different user segments.
+• Generate quick “what if” scenarios to
+explore bold or unconventional changes.
+• Suggest ways to prioritise iterations based
+on impact vs. effort.
+• Rewrite our user journey incorporating the
+new iteration for clarity.
+
+                                                                            AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                             19
+        Co-iterate with
+             Users
+
+You have made some prototypes, received
+some feedback, it is time to iterate. Why not
+bring in some users and lead a workshop. Here
+are some facilitation tips:
+❶ Brief the users where you are in the process
+and show appreciation for their participation.
+❷ Be open to new ideas and let them know
+about that.
+❸ Be prepared to move from your initial
+ideas, however hard it feels at times.
+❹ Be prepared to try out the ideas in the next
+iteration.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+Co-iterate with Users
+    (AI Prompts)
+
+Use these AI Prompts to Refine solutions
+collaboratively with end users:
+• Propose structured co-creation sessions for
+specific design challenges.
+• Suggest activities that encourage users to
+sketch or prototype their own ideas.
+• Recommend ways to integrate user feedback
+in real time.
+• Suggest tools for remote co-iteration
+workshops.
+• Propose reflection questions to deepen user
+involvement.
+
+
+
+                                                                            AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                               20
+
+            Run a
+         Design Sprint
+You have identified a few strategic
+opportunities. Gather a team and run a Design
+Sprint. Engage customers throughout the
+process:
+❶ Explore: Empathise and Define the problems.
+Frame and reframe them. Prioritise the problems
+to carry through to the next stage.
+❷ Imagine: Ideate lots of solutions and select a
+few. Turn them into rough concepts.
+❸ Implement: Prototype rough and fast, test,
+get feedback, iterate. Pull it all together using
+the BMC.
+❹ Tell the story: Pitch for success.
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+           Run a
+       Design Sprint
+       (AI Prompts)
+
+Compress the design process into focused,
+time-boxed effort.
+• Outline a 5-day sprint plan tailored to our
+    challenge.
+
+•   Suggest adaptations for a 3-day or 1-day
+    mini-sprint.
+
+•   Propose activities for each sprint day to
+    maximise learning.
+
+•   Recommend roles and responsibilities for
+    sprint team members.
+
+•   Suggest how to integrate sprint outcomes
+    into ongoing work.
+
+                                                                             AI
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+ DIVERGENT THINKING
+
+
+
+
+CONVERGENT THINKING
+                   Implement Stage
+                     List of Cards
+
+1. Identify Assumptions     12. Map a Value Proposition
+2. Frame Hypotheses         Canvas
+3. Plan Experiments         13. Design with the 4P Model
+4. Set up Experiments       14. Design with the 4C Model
+5. Test Desirability        15. Build a Service Blueprint
+6.Test Feasibility          16. Test the Whole System
+7.Test Viability            17. Run Pilots
+8.Test Sustainability       18. Launch the Solution
+9. Apply Business Lenses    19. Scale the Solution
+10. Design a Go-to-market 20. Select your S
+Strategy                    caling Path
+11. Map a Business
+Model Canvas
+      Guide for Facilitators – Implement Stage
+         Turning tested ideas into sustainable impact
+The Implement Stage moves from promising concepts to
+market-ready solutions. It balances experimentation, testing,
+and business design with a focus on scaling responsibly.
+The flow is logical but not rigid — teams may enter at any
+point or loop back depending on their challenge.
+
+
+                       Flow Overview
+               Frame Assumptions & Hypotheses
+                       Design Experiments
+                      Test Through Lenses
+                    Build Business Foundations
+                          Integrate & Pilot
+                           Launch & Scale
+Facilitator Reminders:
+• De-risk early: Encourage starting with assumptions and
+   tests
+• Evidence is Gold: Capture and share what worked, what
+   didn’t, what’s next. Every card should leave behind
+   proof.
+      Facilitator Playbook – Implement Stage
+
+1. Frame Assumptions & Hypotheses
+• Identify Assumptions (desirability, feasibility, viability,
+     sustainability).
+• Frame Hypotheses (turn beliefs into testable statements).
+
+2. Design Experiments
+• Plan Experiments (define success metrics & criteria).
+• Set Up Experiments (design lean tests; pivot, persevere, or
+     pause) .
+
+3. Test Through Lenses (capture evidence from each test)
+• Desirability- Do people want it?
+• Feasibility - Can we build and deliver it?
+• Viability - Is it financially sustainable?
+• Sustainability -Will it endure responsibly? Include risks &
+     unintended consequences.
+• Apply Business Lenses -People, Processes, Platforms, Finan-
+     cials, Policy, Location.
+
+4. Build Business Foundations
+• Design a Go-to-Market Plan.
+• Map the Business Model and Value Proposition Canvases.
+• Design with the 4P Model.
+• Design with the 4C Model
+• Build a Service Blueprint.
+
+5. Integrate & Pilot
+• Test the Whole System (validate fit & refine).
+• Run Pilots (real-world trials, collect evidence).
+
+6. Launch & Scale Responsibly
+• Launch the Solution (story + evidence).
+• Scale the Solution (resources & partnerships).
+• Select Scaling Path (scale up, scale deep, scale out) .
+                                                                               1
+           Identify
+         Assumptions
+The team needs to make explicit the risks that
+might prevent your innovation working. So far,
+you have been testing assumptions about the
+needs, the concepts and the main customer
+segment.
+Time to go wider, identify assumptions that
+are crucial for the plan before you make
+investments in product development and the
+supporting infrastructure.
+Identifying assumptions and articulating them
+will reduce the risks going ahead.
+❶ Surface and categorise key assumptions
+before acting.
+❷ List assumptions you are making
+about: Customers/Business/Technology/
+Sustainability.
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+ Identify Assumptions
+     (AI Prompts)
+
+• Given our concept [insert], list assumptions
+across desirability, feasibility, viability, and
+sustainability.
+• Suggest a method to rate each assumption
+by risk and uncertainty.
+• Propose quick ways to test the riskiest
+assumptions first.
+• Generate questions to uncover hidden or
+unconscious assumptions.
+• Suggest a visual map linking assumptions to
+evidence gaps.
+
+
+
+
+                                                                              AI
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                                         2
+
+     Frame Hypotheses
+
+HYPOTHESIS is an instrument you use to prove
+or refute your assumptions. You have identified
+key assumptions. Frame them as Hypotheses.
+The hypothesis includes 3 key elements:
+1. The TARGET CUSTOMER
+2. The FEATURE/SOLUTION you need to test
+3. The VALIDATION, the benefit it will bring to
+the user, the business and the society.
+Here’s an example:
+We believe that: (Target customer) Coffee drinkers on
+the go, will find (Feature/Solution) recycling pods easy
+and convenient to use, (Validation) enabling us to collect
+good quality cups to recycle, increasing recycling rates by
+20%.
+ A well written Hypothesis is Human Centric, Explic-
+                     it, and Testable.
+
+
+
+
+                                                                                         i n g. c o m
+                                                                           designthink
+                                h t t p s : / / w w w. a c a d e m y o f
+ Frame Hypotheses
+    (AI Prompts)
+
+Copy and paste each of the following AI prompts
+in ChatGPT or any other AI you use:
+• Given our assumptions [insert], write clear
+“If… then…” hypotheses.
+• Suggest how to frame hypotheses for user
+behaviour, technical feasibility, and market
+adoption.
+• Propose 3–5 bold hypotheses that could
+radically change our approach.
+• Recommend metrics for validating or
+invalidating each hypothesis.
+
+
+
+
+                                                                            AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                 3
+
+       Plan Experiments
+
+
+Prepare and organise the resources, people, and
+processes needed to run your experiments smooth-
+ly. You need this after ou’ve designed your experi-
+ment plan and are ready to move into action.
+
+How to use:
+❶ Objectives and Metrics : revisit what you’re
+testing and why. Define what success looks like be-
+fore you test.
+❷ List requirements: tools, materials, locations,
+participants, permissions.
+❸ Assign roles: larify who is responsible for each
+task.
+❹ Schedule and sequence: set timelines for set-
+up, execution, and follow-up.
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+     Plan Experiments
+        (AI Prompts)
+Move from experiment design to execution with
+clarity and precision.
+
+• Given our experiment plan [insert], generate
+a step-by-step checklist to prepare resources,
+tools, and participants.
+• Suggest ways to recruit and brief participants
+to ensure relevant, unbiased feedback.
+• Propose methods for collecting data consist-
+ently across multiple trials.
+• Recommend backup plans for common exper-
+iment disruptions or failures.
+• Generate templates for recording observa-
+tions, metrics, and learnings in real time.
+
+
+
+
+                                                                             AI
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                4
+    Set up Experiments
+
+
+To set up experiments, you need decide which
+hypotheses you are going to test.
+Depending on the nature of the hypothesis, you
+can choose the type of tests you are going to run
+and how you will measure and assess the results
+from the test.
+For example:
+(Hypothesis) We believe this platform will make
+it easy for colleagues to access
+information in a timely fashion.
+(Type of experiment) We will run 121 testing
+sessions with 8 colleagues next week.
+(Validation) We will know the hypothesis is true
+if 80% of the colleagues, we tested with, say that
+the plaform fulfil their needs.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+    Set up Experiments
+        (AI Prompts)
+
+•   Design targeted tests to validate assump-
+    tions and reduce risk.
+•   Given our concept [insert], list the top
+    5–7 assumptions we must validate before
+    launch.
+•   Suggest experiment formats for each as-
+    sumption (e.g., landing page test, proto-
+    type trial, role-play, A/B test).
+•   Recommend timelines, participant profiles,
+    and sample sizes for credible results.
+•   Propose metrics and success thresholds for
+    each experiment.
+•   Identify the fastest, lowest-cost way to get
+    actionable data for each test.
+
+
+
+
+                                                                             AI
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                   5
+
+        Test Desirability
+
+Assess whether your solution is appealing and
+relevant to the target audience.
+How to run it:
+❶ Prototype the experience: Use mockups,
+storyboards, or role-play.
+❷ Engage real users: Gather direct feedback
+on interest and emotional response.
+❸ Observe behaviour: Look for excitement,
+confusion, or disinterest.
+❹ Refine: Adjust based on what resonates most.
+Tips:
+• Ask: What would you miss if this disappeared?
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+       Test Desirability
+         (AI Prompts)
+
+Gauge whether your target customers truly
+want your solution.
+• Identify 5–7 assumptions about user
+preferences and behaviours to test.
+• Suggest quick validation methods (smoke
+tests, fake-door pages, ad campaigns).
+• Propose interview and survey questions that
+reveal emotional driver.s
+• Generate variations of the concept to compare
+user appeal.
+• Recommend ways to track and measure
+interest before launch.
+
+
+
+
+                                                                              AI
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                               6
+               Test
+            Feasibility
+
+Determine if your solution can be delivered
+effectively with available resources and
+technology.
+How to run it:
+❶ Break down components: Identify all
+critical parts of the solution.
+❷ Assess capability: Compare requirements
+with current resources.
+❸ Test at small scale: Run a pilot to check
+operational success.
+Tips:
+• Involve technical and operational experts
+early in testing.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+        Test Feasibility
+         (AI Prompts)
+
+Assess whether your concept can be built and
+delivered reliably.
+• List 5–7 key technical or operational
+assumptions to validate.
+• Suggest small-scale prototypes or proof-of-
+concept builds to test constraints.
+• Identify potential technology, supply chain, or
+skills gaps.
+• Recommend partnerships or resources to
+increase feasibility.
+• Propose fallback options if a core element
+proves unworkable.
+
+
+
+
+                                                                             AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                  7
+                Test
+              Viability
+
+Validate whether your solution can generate
+enough value to sustain itself financially.
+How to run it:
+❶ Identify revenue streams: Define how the
+solution will make money.
+❷ Estimate costs: Include production,
+delivery, and maintenance.
+❸ Run financial scenarios: Test best-case,
+worst-case, and realistic cases.
+Tips:
+•Compare results to market benchmarks for
+similar solutions.
+
+
+
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+         Test Viability
+         (AI Prompts)
+
+Assess whether your concept can succeed in the
+market and sustain itself.
+• Given our concept [insert], identify 5–7 key
+financial and market assumptions to validate.
+• Suggest 3 quick, low-cost experiments to test
+pricing sensitivity.
+• Generate competitor analysis highlighting
+potential differentiators and gaps.
+• Propose 5 key metrics (e.g., CAC, LTV, churn
+rate) to track from day one.
+• Recommend ways to simulate demand before
+launch (landing pages, pre-orders, smoke tests).
+
+
+
+                                                                              AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                8
+              Test
+          Sustainability
+
+Ensure your solution is environmentally,
+socially, and ethically responsible over the
+long term.
+How to run it:
+❶ Assess impact: Look at environmental
+footprint and community effects.
+❷ Map life cycle: From sourcing to disposal.
+❸ Engage stakeholders: Get feedback from
+those affected.
+❹ Risks & Ethics: Uncover unintended
+consequences this solution might create and
+how to mitigate them.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+       Test Sustainability
+          (AI Prompts)
+
+Evaluate long-term environmental, social, and
+ethical impacts of your concept.
+• Given our concept [insert], list 5–7 key
+sustainability assumptions to validate.
+• Propose quick tests or research methods to
+assess environmental footprint (materials,
+energy, waste).
+• Suggest metrics for social impact (community
+benefit, inclusivity, fair labour).
+• Identify potential regulatory or certification
+requirements for sustainable operation.
+• Generate 3 alternative concept adjustments to
+improve sustainability without losing core value.
+
+
+
+                                                                              AI
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                                9
+
+              Apply
+         Business Lenses
+Examine your proposal’s impact across key
+areas of the organisation. What to consider:
+People: Roles, skills, morale, recruitment,
+training.
+Processes: Workflows, efficiency, dependencies,
+bottlenecks.
+Platforms: Technology systems, tools, integration
+requirements.
+Financials: Costs, revenue streams, ROI, budget
+alignment.
+Policy & Regulations: Compliance,
+governance, legal constraints.
+Location: Physical space, geography, remote vs.
+on-site needs.
+Engage relevant stakeholders for feedback on
+their specific lens. Summarise findings to guide
+refinement or decision-making.
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+        Apply Business
+            Lenses
+         (AI Prompts)
+Evaluate your proposal from multiple
+organisational perspectives.
+• Given our concept [insert], list 3–5 potential
+    impacts in each of these areas: People,
+    Processes, Platforms, Financials, Policy/
+    Regulations, Location.
+• Propose targeted questions to ask
+    stakeholders in each category.
+• Suggest quick validation activities (e.g.,
+    simulations, pilot runs, stakeholder
+    interviews) for high-risk areas.
+• Identify possible unintended consequences in
+    each lens and propose mitigation strategies.
+• Recommend ways to visually map trade-offs
+    across all business lenses for decision-
+    making.
+                                                                              AI
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                                10
+
+        Design a Go To
+        Market Strategy
+GO-TO MARKET(GTM) is a strategic
+planning and communication instrument. It helps
+you think ahead and facilitates communication
+and alignment between you, the product team,
+the sales team, and company executives
+
+There are several instruments to help you:
+❶ The Business Model Canvas.
+❷ The 4P model (Product/Price/Promotion, Place).
+❸ 4Cs of marketing model: Consumer wants, Cost
+to satisfy, Convenience of buying, Communication.
+❹ The Blueprint- A collaborative tool that connects
+the customer experiences with employee and support
+processes.
+
+
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+       Design a Go To
+           Market
+        (AI Prompts)
+•   Generate a go-to-market plan including
+    positioning, pricing, and promotion.
+
+•   Suggest launch channels based on target
+    audience behaviour.
+
+•   Recommend early adopter outreach
+    strategies.
+
+•   Propose launch-day activation activities.
+
+•   Suggest post-launch tracking metrics.
+
+
+
+
+                                                                          AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                            11
+
+          Map a BMC
+
+Map the key building blocks of your business
+model. Populate each BMC section based on
+your concept
+
+
+
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+            Map a BMC
+           (AI Prompts)
+
+• Visualise and stress-test your business model
+with AI support.
+• Given our concept [insert], populate each of
+the 9 blocks with 3–5 bullet points.
+• Suggest alternative revenue streams or pricing
+models we might explore.
+• Identify potential gaps or contradictions
+between blocks (e.g., cost structure vs. key
+activities).
+• Propose 2–3 unusual partner or channel ideas
+to expand reach.
+
+
+
+
+                                                                            AI
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                                         12
+
+
+                   Map a VPC
+
+ Value Proposition Canvas (VPC) is an instrument
+ that makes the user problems and needs visible and
+ tangible. It has two sides: The Customer Segment and
+ the Value Proposition.
+
+
+
+
+Customer Segment defines           Value Proposition -what fulfills
+customer’s needs.                  the user’s jobs.
+Pains -what hinders the fulfillment Pain relievers -how product/service
+of the jobs.                        can solve the problems of customers.
+Gains- desired advantages for      The gain creators -how product
+the user in fulfilling the jobs.   and service creates benefits.
+
+
+
+
+                                                                                               i n g. c o m
+                                                                                 designthink
+                                      h t t p s : / / w w w. a c a d e m y o f
+            Map a VPC
+           (AI Prompts)
+
+• Given our target segment [insert], fill in the
+    customer profile (Jobs, Pains, Gains) using
+    10+ examples per section.
+• Suggest product/service features that address
+    the top 3 pains and create the top 3 gains.
+• Identify mismatches between customer needs
+    and our current offer.
+• Generate extreme or unconventional value
+    propositions to spark new thinking.
+• Create 3 alternative propositions tailored to
+    different customer personas.
+
+
+
+
+                                                                               AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                     13
+             Design with
+            The 4P Model
+
+The 4P model (Product, Price, Place, Promotion) helps
+teams translate ideas into market-ready strategies.
+
+It forces consideration of not just the offering itself, but
+also how it will be positioned, priced, delivered, and
+communicated to customers. This ensures solutions are
+not only desirable, but also commercially viable.
+How to run it:
+❶ Product: Clarify the features, benefits, and
+unique selling proposition.
+❷ Price: Decide the pricing strategy (premium,
+penetration, value-based, etc.).
+❸ Place: Determine distribution channels
+(online, retail, direct).
+❹ Promotion: Plan how you’ll communicate the
+offer to the market.
+
+
+                                                                                            i n g. c o m
+                                                                              designthink
+                                   h t t p s : / / w w w. a c a d e m y o f
+            Design with
+           the 4P Model
+            (AI Prompts)
+Use these AI prompts to refine your go-to-
+market strategy.
+• Given our concept [insert], propose 3–5
+    options for each P: Product, Price,
+    Promotion, Place.
+• Suggest innovative pricing strategies aligned
+    with our target customer segment.
+• Generate unconventional promotion ideas
+    that fit our brand voice and budget.
+• Recommend distribution channels, both
+    traditional and digital, that reach our
+    audience effectively.
+
+
+
+
+                                                                           AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                              14
+           Design with
+          The 4C Model
+
+The 4C model (Customer needs, Cost to satisfy,
+Convenience, Communication) reframes
+marketing from the customer’s perspective.
+By focusing on what people want, how much
+they’re willing to spend, how easy it is to access,
+and how they prefer to hear about it, teams
+design solutions that resonate more deeply and
+sustainably with users.
+How to run it:
+❶ Consumer Wants: Define what customers
+truly need and desire.
+❷ Cost to Satisfy: Understand total cost from
+the customer’s viewpoint.
+❸ Convenience: Make it easy to find, buy, and
+use the product.
+❹ Communication: Build two-way engagement
+rather than one-way promotion.
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+         Design with
+        the 4C Model
+         (AI Prompts)
+Copy and paste these AI prompts in ChatGPT or
+other:
+• Given our concept [insert], define each C:
+    Consumer Wants & Needs, Cost to Satisfy,
+    Convenience to Buy, Communication.
+• Suggest research prompts to uncover deeper
+    consumer wants and unmet needs.
+• Propose cost scenarios balancing value
+    perception and profitability.
+• Recommend strategies to increase convenience
+    (location, delivery, access).
+• Generate communication ideas that resonate
+    with target segments and build trust.
+
+
+
+                                                                           AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                              15
+
+        Build a Service
+          Blueprint
+A Blueprint maps the full customer experience
+alongside the internal processes, people, and
+systems that support it.
+By visualizing both the frontstage (what the
+customer sees) and backstage (what the
+organization must deliver), teams uncover gaps,
+dependencies, and opportunities to improve the
+entire service ecosystem.
+How to run it:
+❶ Identify touchpoints: Map every interaction
+a customer has with your service.
+❷ Frontstage actions: Document visible
+employee activities.
+❸ Backstage actions: Capture internal
+processes that support delivery.
+❹ Support systems: Note tools, policies, and
+infrastructure required.
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+         Build a Service
+            Blueprint
+          (AI Prompts)
+Use these prompts tp map the customer
+experience to internal processes for seamless
+delivery.
+• Given our service or product [insert], outline
+    the full customer journey from awareness to
+    post-purchase.
+• Identify all frontstage (customer-facing) and
+    backstage (internal) activities for each
+    journey step.
+• Suggest tools or platforms to improve
+    coordination between customer experience
+    and internal processes.
+• Propose 2–3 alternative process designs to
+    reduce friction or improve service quality.
+• Highlight potential gaps between customer
+    expectations and operational capabilities
+    and suggest quick fixes.
+
+                                                                            AI
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                                16
+
+         Test the Whole
+             System
+Testing the whole system allows teams to see
+how all the pieces of a solution interact in real-
+world conditions.
+Instead of validating isolated features, this
+approach highlights dependencies, bottlenecks,
+and unintended consequences across people,
+processes, and platforms. Here are some tips:
+❶ Assemble all prototypes, processes, and
+touchpoints into one end-to-end experience.
+❷ Run a complete trial with representative users
+and operational teams.
+❸ Track interactions, transitions, and
+dependencies across the system.
+❹ Spot bottlenecks, hand-off issues, or gaps
+in user experience. Adjust and re-test until the
+whole system runs smoothly.
+❹ Iteration Loops: Review results. Decide:
+pivot, persevere, or pause.
+
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+         Test the Whole
+             System
+          (AI Prompts)
+Copy and paste these prompts in ChatGPT:
+• Given our concept [insert], outline all
+    interconnected components (people,
+    processes, technology, policies).
+• Propose a simulation or pilot that tests the
+    end-to-end experience for users.
+• Suggest metrics to track performance across
+    technical, operational, and user satisfaction
+    dimensions.
+• Identify weak points or bottlenecks that only
+    appear when the full system is running.
+• Recommend contingency plans for critical
+    failure points uncovered during testing.
+
+
+
+                                                                             AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                               17
+
+
+              Run Pilots
+
+Test your concept in a small, controlled
+environment before a full launch. Use it after
+initial prototyping and concept validation, to
+learn how it works in the real world.
+How to use:
+❶ Define objectives and select scope: what
+do you need to learn from the pilot?choose a
+limited location, customer segment, or feature set.
+❷ Plan duration: long enough to gather good
+insights, short enough to adjust quickly.
+❸ Set metrics: track success, challenges, and
+unintended effects.
+❹ Debrief and adapt : refine before scaling.
+❹ Story of Evidence: capture evidence from
+pilots to strengthen the launch story.
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+            Run Pilots
+           (AI Prompts)
+Refine and de-risk your solution with AI-assisted
+pilot planning.
+• Given our concept [insert], suggest 3–5 pilot
+    scenarios with varying scope and audience.
+• Propose low-cost ways to replicate real
+    conditions without committing full
+    resources.
+• Recommend key metrics to track during the
+    pilot, tailored to our goals.
+• Identify operational or user experience risks
+    before launch.
+• Suggest ways to gather feedback during the
+    pilot (unobtrusively)
+
+
+
+                                                                             AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                               18
+             Launch the
+              Solution
+Launching is the moment when a solution moves
+from prototype to real-world offering. A well-
+designed launch ensures that users understand,
+adopt, and engage with the solution from the start.
+How to run it:
+• Define Launch Objectives – Be clear on
+   whatsuccess looks like: awareness, adoption,
+   first sales, or feedback.
+• Craft the Launch Story – Create a compelling
+    message that explains the what, why, and
+    how of the solution.
+• Plan Channels & Timing – Decide how
+    to reach users (events, digital, partners)
+    and choose the right moment to maximize
+    impact.
+• Prepare Support Systems – Ensure customer
+    service, logistics, and internal teams are
+    ready to handle first adoption.
+• Measure & Learn – Track early reactions and
+   metrics to refine quickly after launch.
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+           Launch the
+            Solution
+          (AI Prompts)
+
+Collaborate with AI using the following
+prompts:
+“Create a 90-day go-to-market roadmap for
+this concept, broken into weekly milestones for
+marketing, sales, product, and operations.”
+• “Identify the top 5 risks to a successful
+launch and suggest mitigation tactics for
+each.”
+• “Draft 3 variations of the launch
+announcement — one for early adopters,
+one for industry press, one for internal
+stakeholders.”
+• “Suggest the pros and cons of launching in
+Q1 vs Q3 for this industry, based on market
+patterns and buyer behavior.”
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                               19
+
+     Scale the Solution
+
+Scaling ensures that a solution grows beyond
+the pilot stage to reach more users, markets,
+or contexts. It’s about replicating success
+while maintaining quality and alignment with
+user needs. Scaling turns a good idea into a
+sustainable impact.
+Key Considerations:
+❶ Identify scaling models: Replication,
+adaptation, licensing, franchising, digitalisation.
+❷ Evaluate fit: Match scaling type to resources,
+market conditions, and organisational strengths.
+❸ Test small: Pilot the chosen scaling approach
+before committing fully.
+❹ Investment Readiness: “What resources are
+required to sustain growth? Are you investment-
+ready?
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+    Scale the Solution
+      (AI Prompts)
+Use these AI prompts to collaborate with
+ChatGPT or other.
+• “Analyze this business model and identify
+    which parts can scale easily and which
+    may break under growth pressure.”
+• “List 5 possible ways to expand the
+    customer base — including geographic
+    expansion, adjacent market entry, and
+    new segment targeting — and propose a
+    test for each.
+• “Propose 3 low-risk experiments to test if
+    this concept can double sales without
+    doubling costs.”
+• “Suggest ways to automate, outsource, or
+    streamline high-effort processes while
+    maintaining quality.”
+• “What allies or partners are needed to grow
+    impact responsibly?”
+
+
+.
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                20
+
+               Select
+            Scaling Path
+Not all scaling looks the same. Some solutions scale
+by growing bigger (more users, more markets), while
+others scale by going deeper (expanding features,
+improving value), or wider (adapting to new
+contexts). Understanding the different types of scale
+helps teams make strategic choice how to grow.
+Here are key Considerations:
+ ❶ Clarify the Goal – Is the priority to reach
+more people, improve outcomes, or adapt to new
+contexts?
+❷ Explore Growth Paths – Discuss Scale
+Up (new users/markets), Scale Deep (greater
+impact per user), and Scale Out (spread into new
+settings/partners).
+❸ Evaluate Fit – Use criteria like resources, user
+needs, and mission alignment to assess which
+growth path is most viable.
+❹ Choose and Plan – Select one or combine
+paths, then sketch an experiment to test the
+chosen scale approach.
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+    Select Scaling Path
+       (AI Prompts)
+
+Use the following AI prompts, by coping and
+pasting into ChatGPT or other:
+• Suggest different scaling models
+    (geographic, product line, channel).
+• Recommend pros and cons for each
+    approach in our case.
+• Propose key indicators for scaling readiness.
+• Suggest pilot approaches to test scaling
+    potential.
+• Recommend partnerships that could
+    accelerate scale.
+.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+ DIVERGENT THINKING
+
+
+
+
+CONVERGENT THINKING
+                 DIVERGENT THINKING
+
+
+
+
+1. Apply 4D Frame           12. Make Meaning in the
+2. Discover the Purpose     middle
+3. Define the audience      13. End to Make it stick
+4. Develop the content      14. Write crisp titles
+5. Identify Key mes-        15.Write a recommendation
+    sages                   16. Deliver for Impact
+6. Humanise Data            17. Use Voice and Tone
+7. Visualise data           18. Use body language
+8. Find Story in the data   19. Design presentation
+9. Structure the story      slides
+10. Create a Storyboard     20. Rehearse and Refine
+
+               CONVERGENT THINKING
+                                                                             1
+
+      Apply 4D Frame
+
+
+The 4D FRAME is a human centred approach
+that equips you with key questions to ask
+yourself when preparing and delivering your
+communication.
+The Frame can be used in any context,
+communicating to one or to many, face to face
+and virtual, formal or informal.
+The four Ds are:
+❶ Discover the Purpose (Why? )
+❷ Define the Audience    (Who? )
+❸ Develop the message (What?)
+❹ Deliver for impact     (How?)
+
+
+
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+      Apply 4D Frame
+       (AI Prompts)
+
+• Given our project [insert], outline a 4D
+Frame narrative covering Why, Who, What,
+and How.
+• Suggest 3 variations of the 4D Frame for
+different audiences.
+• Recommend prompts to deepen the “Why”
+and connect emotionally.
+• Propose ways to integrate visuals into
+each part of the frame.
+• Suggest follow-up questions to test clarity
+and engagement.
+
+
+
+                                                                           AI
+                                                                             AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                                2
+
+            Discover
+          the Purpose
+Start with WHY!
+Why do you need to communicate/present/
+talk? What do you want to achieve with it?
+What is the aspired outcome?
+For example:
+• “As a result of my talk, the team will have a
+shared understanding of where we want to get
+to”;
+• “As a result of my presentation, the product
+owner will be able to make an informed
+decision on the investment”.
+Having the outcome in mind will help you
+focus during preparation and delivery. It will
+also help you measure how you did.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+Discover the Purpose
+    (AI Prompts)
+
+• Generate 5 ways to articulate the core
+purpose of our story.
+• Suggest metaphors or analogies to express
+our purpose memorably.
+• Recommend prompts to connect the
+purpose to audience values.
+• Propose ways to check if the purpose
+resonates across diverse stakeholders.
+• Suggest reframing the purpose for internal
+vs. external audiences.
+
+
+
+
+                                                                       AI
+                                                                         AI
+
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+                                                                                   3
+
+ Define the Audience
+
+You have been asked to present to a group of
+people, your bosses, your colleagues, a big
+conference. Take some time to think about
+your audience.
+Here are some questions for you to ponder:
+❶ Who are they? Why are they in the
+audience?
+❷ What are their goals and aspirations, their
+fears and frustrations? What do they care
+about: cost, reputation, revenue?
+❸ What are their beliefs, feelings, questions
+about the way forward, their sentiment about
+change?
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+ Define the Audience
+     (AI Prompts)
+
+• Create a quick audience persona for our
+key stakeholders.
+• Suggest 5 questions to uncover audience
+motivations and concerns.
+• Recommend ways to adapt tone, detail,
+and format for different groups.
+• Propose channels best suited to reach this
+audience effectively.
+• Suggest how to pre-test our story with a
+small audience sample.
+
+
+
+
+                                                                          AI
+                                                                            AI
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+                                                                                 4
+
+ Develop the Content
+
+This stage in the process is about the content.
+This is when you start thinking what you
+know, what research you need, what facts and
+stories you need to collect, before developing
+your talk/presentation.
+Three key areas to cover:
+❶ What you need to say.
+❷ What narrative structure you use.
+❸ What facts and stories you choose to
+support your key messages
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+ Develop the Content
+    (AI Prompts)
+
+• Given our project [insert], outline the top 3
+content pillars to include.
+• Suggest ways to balance data, stories, and
+visuals.
+• Recommend prompts for generating strong
+supporting examples.
+• Propose methods to remove irrelevant
+content without losing impact.
+• Suggest ways to make complex content
+simple without oversimplifying.
+
+
+
+
+                                                                            AI
+                                                                              AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                5
+
+Identify Key Messages
+
+
+Identify the essential takeaways for your
+audience. A good tool is Carmine Gallo’s three
+step “Message Plan”.
+Here it is how it goes:
+❶ Create a twitter friendly headline-the
+most important thing you want to say about
+yoursef, your product, service or idea.
+❷ Support the headline sentence with three
+key benefits.
+❸ Reinforce the three benefits with stories,
+statistics, data.
+Watch Carmine in Youtube. Try it out!
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+Identify Key Messages
+    (AI Prompts)
+
+• Generate 3–5 concise key messages from
+our project.
+• Recommend ways to make each message
+memorable and actionable.
+• Suggest visuals or metaphors for each
+message.
+• Propose ways to reinforce messages
+throughout a presentation.
+• Suggest how to adapt messages for
+different communication formats.
+
+
+
+
+                                                                         AI
+                                                                           AI
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+                                                                               6
+    Support with data
+       and stories
+
+After identifying your key messages, make
+them powerful by backing them up with data
+to convince and stories to connect.
+Data builds credibility and appeals to logic,
+while stories humanise the message and
+inspire action. Great communicators blend
+both to ensure ideas are understood, believed,
+and remembered.
+Key things to consider:
+❶ For each key message, identify one
+supporting data point and one illustrative
+story.
+❷ Keep the data clear and simple – no
+overload.
+❸ Choose stories that humanise the numbers
+– personal, real, or relatable.         AI
+                                           AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+    Support with data
+       and stories
+      (AI Prompts)
+Help me strengthen my key messages.
+•    For each message, suggest one
+    compelling data point to prove it.
+•   For each message, suggest a short story
+    or example to make it relatable and
+    memorable.”
+
+
+
+
+                                                                          AI
+                                                                            AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                               7
+
+       Humanize Data
+
+“Humanising data” means presenting
+data in a way that connects with people
+emotionally, cognitively, and contextually.
+
+How to humanise Data:
+❶ Use personas, stories, or testimonials to
+illustrate data points.
+
+❷ Translate data into real-world impacts
+(e.g., time saved, lives affected).
+❸ Add visuals of people, environments, or
+outcomes—not just charts.
+
+❹ Include voice of the user/customer in
+quotes or short anecdotes.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+       Humanize Data
+        (AI Prompts)
+
+Bridge numbers and narratives with AI
+support.
+• Given our dataset [insert], generate short
+user stories that illustrate key insights.
+• Suggest compelling ways to pair a statistic
+with an anecdote or quote.
+•Propose metaphors or analogies to make
+data easier to understand.
+•Identify emotional triggers in the data that
+can make the message more memorable.
+•Recommend a structure for blending
+qualitative and quantitative findings.
+
+
+                                                                           AI
+                                                                             AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                              8
+
+        Vizualize Data
+
+Communicate complex information clearly
+and effectively through visuals, when you need
+to share findings, patterns, or comparisons in
+a way that’s easy to grasp
+How to use:
+
+❶ Define the message — decide the single
+most important insight to communicate.
+❷ Choose the right format — chart,
+diagram, infographic, heat map, etc.
+.❸ Simplify — remove unnecessary details
+that distract from the core point.
+❹ Highlight key data — use colour, size, or
+annotations to draw attention.
+
+TIP:
+Test for clarity — show it to someone
+unfamiliar with the data and refine based on
+their feedback.
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+        Vizualize Data
+         (AI Prompts)
+
+Use AI to explore, refine, and inspire your
+visual storytelling.
+• Given our dataset [insert], suggest 3–5
+    chart or graph types that best match the
+    insight.
+• Propose alternative layouts that make trends
+    or comparisons clearer.
+• Generate example captions or titles that
+    emphasise the story in the data.
+• Recommend colour schemes and visual cues
+    to improve accessibility.
+• Suggest ways to combine multiple visuals
+    into a coherent narrative.
+
+                                                                            AI
+                                                                              AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                                   9
+
+       Find Story in Data
+
+Turn raw data into a clear, compelling narrative,
+after analysis, to shape findings into a message
+that resonates.
+How to use:
+❶ Review your research findings and highlight
+the 3–5 most surprising or impactful insights.
+❷ Look for patterns, contradictions, or trends
+that link these insights together.
+❸ Identify a central message or “through line”
+that ties the data to your challenge.
+❹Organise your points into a beginning
+(context), middle (insights), and end
+(implications).
+TIP:
+Discard anything that doesn’t support your
+main story.
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+     Find Story in Data
+        (AI Prompts)
+
+• Given our data [insert], identify the most
+surprising or important insight.
+• Suggest ways to frame that insight as a
+story with a beginning, middle, and end.
+• Recommend charts or visuals to make the
+insight instantly clear.
+• Propose metaphors or analogies to
+humanise the data.
+• Suggest questions to provoke audience
+curiosity before revealing the key point.
+
+
+
+
+                                                                             AI
+                                                                               AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                             10
+
+             Structure
+             the story
+
+Organise your story for maximum
+engagement.
+Every story has a beginning, middle and
+end. So should your talk or presentation -
+have a story structure.
+Here are a few tips:
+• Set the story up by introducing characters
+and establishing the hero’s unfulfilled.(the
+beginning)
+• Create dramatic action held together by
+confrontation. (the middle)
+• Resolve the story-did the main character
+succeed or fail? (the end)
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+   Structure the Story
+      (AI Prompts)
+
+• Given our content [insert], suggest 3
+possible story arcs.
+• Recommend structures suited for
+persuasion vs. inspiration.
+• Propose hooks to open the story
+powerfully.
+• Suggest pacing strategies to keep attention
+high.
+• Recommend ways to close with impact and
+a clear call to action.
+
+
+
+
+                                                                           AI
+                                                                             AI
+
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+                                                                               11
+
+  Create a Storyboard
+
+
+Before you bring out your Powerpoint or
+Keynote, or Prezi app, get pen and paper,
+some post-its and map out key messages you
+want to express. Here is some structure:
+
+❶ Map out the beginning, what is it you are
+talking about, how will your idea/team/project
+change things for the better.
+
+❷ Plan middle of your presentation, what
+facts and figures and stories do you need to
+communicate?
+
+❸ Sketch out the ending. What are the key points
+you need to repeat? How can you finish on a high,
+inspiring your audience to action.
+
+
+
+
+                                                                                      i n g. c o m
+                                                                        designthink
+                             h t t p s : / / w w w. a c a d e m y o f
+ Create a Storyboard
+         (AI Prompts)
+
+• Create a 6–8 frame storyboard for our
+presentation or pitch.
+
+• Suggest key visuals or scenes for each
+frame.
+
+• Recommend ways to balance text and
+imagery.
+
+• Propose methods to test the storyboard
+flow with a small group.
+
+• Suggest how to adapt the storyboard for
+slides, video, or live delivery.
+
+
+
+
+                                                                           AI
+                                                                             AI
+
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+                                                                               12
+
+         Begin Strong
+
+Capture attention from the first moment, at
+the start of a presentation, pitch, or report.
+How to use:
+❶ Lead with impact — open with a striking
+fact, question, or story.
+❷ Set the context — briefly outline the
+problem or opportunity.
+❸ Hook the audience — make it clear why
+this matters to them.
+❹ Preview the journey — give a simple
+roadmap of what’s to come.
+Keep it concise — aim for 1–2 minutes to get into
+the story quickly.
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+         Begin Strong
+         (AI Prompts)
+
+Design a powerful opening.
+• Propose opening questions that spark
+curiosity.
+• Suggest 5 attention-grabbing openers for
+our topic [insert].
+• Rewrite our first sentence to be more
+engaging.
+• Generate examples of metaphor or imagery
+to set the tone.
+• Suggest culturally inclusive ways to start for
+a global audience.
+
+
+                                                                             AI
+                                                                               AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                           13
+
+Make Meaning in the
+      middle
+Keep the audience engaged and deepen
+understanding.
+How to use:
+❶ Build logically — move from context to
+evidence to implications.
+❷ Link data to meaning — show why the
+facts matter.
+❸ Use contrast — before vs. after, problem
+vs. solution.
+❹ Signpost — guide the audience through
+transitions clearly.
+Engage emotions — balance logic with
+relatable stories.
+
+
+
+
+                                                                                 i n g. c o m
+                                                                   designthink
+                        h t t p s : / / w w w. a c a d e m y o f
+Make Meaning in the
+      middle
+   (AI Prompts)
+Structure your story flow with AI.
+ • Outline 3–4 key points in logical order for
+ our story [insert].
+ • Suggest analogies or examples to make
+ each point relatable.
+ • Propose ways to integrate data into each
+ section without overwhelming.
+ • Generate bridging sentences that smoothly
+ connect sections.
+ • Recommend emotional beats to keep
+ energy and interest high.
+
+
+                                                                             AI
+                                                                               AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                               14
+  End to Make It Stick
+
+Leave a lasting impression and a clear
+call to action, in the final minutes of your
+presentation, pitch, or report.
+How to use:
+❶ Reinforce the key message — remind
+them of the main takeaway.
+❷ Connect to the bigger picture — why
+this matters beyond the room.
+❸ Call to action — be explicit about the
+next step.
+❹ End memorably — with a quote, image,
+or challenge.
+Pause — let the ending land before inviting
+discussion.
+
+
+
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+ End to Make It Stick
+         (AI Prompts)
+
+Craft a memorable close with AI.
+ • Suggest 5 powerful closing statements
+ for our message [insert].
+ • Propose short calls to action that
+ motivate follow-through.
+ • Generate metaphor or imagery to
+ make the conclusion vivid.
+ • Rewrite our closing paragraph to
+ emphasise impact.
+ • Suggest ways to tie back to the
+ opening for a satisfying full circle.
+
+
+                                                                           AI
+                                                                             AI
+
+
+                                                                                  i n g. c o m
+                                                                    designthink
+                         h t t p s : / / w w w. a c a d e m y o f
+                                                                              15
+
+      Write Crisp Titles
+
+Make your message instantly clear and
+engaging.
+When to use: In presentations, reports, or
+prototypes to grab attention quickly.
+How to use:
+❶ Summarise the key takeaway in one short,
+active sentence.
+❷ Use strong verbs and specific language —
+avoid jargon.
+❸ Make it audience-focused: what matters
+most to them?
+❹ Test alternatives: write 3–5 versions and
+choose the clearest, most compelling.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+      Write Crisp Titles
+       (AI Prompts)
+
+• Rewrite our section or slide titles to be more
+engaging and action-oriented.
+• Suggest 5 alternative headlines for each key
+message.
+• Recommend titles that work across
+presentation, report, and digital formats.
+• Propose ways to use questions as titles to
+spark curiosity.
+• Suggest methods to test which titles
+resonate most.
+
+
+
+
+                                                                             AI
+                                                                               AI
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                              16
+          Write a
+      Recommendation
+
+Deliver concise, actionable proposals for
+decision-makers, senior leadership or
+sponsors.
+How to use
+❶ Start with what you recommend — be
+direct and specific.
+❷ Explain why this matters now, using data,
+insights, and context.
+❸ Describe how it can be implemented —
+give a realistic, high-level plan.
+❹ Keep it concise — executives should grasp
+it in under 2 minutes.
+End with the expected impact or success
+measures.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+         Write a
+    Recommendation
+      (AI Prompts)
+• Given our findings [insert], draft a one-
+paragraph executive recommendation.
+• Suggest ways to prioritise recommendations
+based on impact and urgency.
+• Recommend a format that highlights both
+benefits and risks.
+• Propose clear next steps for each
+recommendation.
+• Suggest how to adapt recommendations for
+different executive personas.
+
+
+
+
+                                                                              AI
+                                                                                AI
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+                                                                             17
+
+  Deliver with Impact
+  Use Voice and Tone
+Use your voice and tone to keep attention
+and convey confidence, during presentations,
+pitches, and storytelling moments.
+How to use:
+❶ Vary your tone — avoid monotone by
+shifting pace, pitch, and energy.
+❷ Pause with purpose — let key points
+land.
+❸ Match tone to message — serious,
+inspiring, playful, depending on content.
+❹ Check clarity — articulate words so
+ideas are easy to follow.
+TIP: Practice aloud — rehearse to build
+comfort and control.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+   Use Voice and Tone
+      (AI Prompts)
+
+• Suggest voice techniques (pace, pauses,
+emphasis) for our script [insert].
+• Rewrite our message in 3 tone variations
+(inspiring, formal, conversational).
+• Propose ways to use tone to highlight calls
+to action.
+• Identify filler words or weak phrasing and
+replace with stronger
+
+
+
+
+                                                                           AI
+                                                                             AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                             18
+
+  Use Body Language
+
+Reinforce your story with confident, open, and
+engaging body language, when you present in
+person or on video.
+How to use:
+❶ Stand tall — posture communicates
+confidence.
+❷ Use gestures — emphasise key points
+naturally.
+❸ Make Eye contact — connect with your
+audience, not your slides.
+❹ Be aware of movement — avoid pacing
+or fidgeting.
+TIP: Adapt to medium — adjust for stage,
+meeting room, or camera.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+            Use Body
+           Language
+          (AI Prompts)
+• Suggest 5 gestures to match the main
+points of our presentation [insert].
+• Recommend adjustments for body language
+in virtual vs. in-person settings.
+• Propose ways to align facial expressions
+with message tone.
+• Generate feedback prompts to practice
+posture and stance.
+• Suggest grounding techniques to reduce
+nervous movements.
+
+
+
+
+                                                                           AI
+                                                                             AI
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+                                                                              19
+
+        Design
+   Presentation Slides
+Design slides that support your story, not
+overwhelm it. You may use them when
+creating visuals for pitches, workshops, or
+reports.
+How to use:
+❶ Keep it simple — one idea per slide.
+❷ Use visuals over text — images,
+diagrams, and charts communicate faster.
+❸ Limit text — avoid full sentences, aim for
+keywords.
+❹ Highlight the key point — make the
+takeaway obvious at a glance.
+❹ Design for readability — clear fonts,
+strong contrast, uncluttered layout.
+
+
+
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+   Presentation Slides
+      (AI Prompts)
+• Redesign our slide deck [insert outline] into
+10 clear, minimal slides.
+• Suggest 3 alternative visual formats for the
+same content.
+• Generate strong slide titles that reinforce the
+story.
+• Recommend colour palettes and font
+pairings for clarity.
+• Propose ways to reduce text-heavy slides
+into visuals or diagrams.
+
+
+
+
+                                                                               AI
+                                                                                 AI
+
+                                                                                     i n g. c o m
+                                                                       designthink
+                            h t t p s : / / w w w. a c a d e m y o f
+                                                                             20
+
+         Rehearse and
+            Refine
+Strengthen your delivery by practicing,
+receiving feedback, and improving before
+presenting to your real audience.
+How to use:
+❶ Practice out loud — rehearse in real
+conditions, not just in your head.
+❷ Time yourself — check pacing against
+your allocated slot.
+❸ Record and review — watch for voice,
+tone, and body language.
+❹ Seek feedback — practice with a
+colleague or test audience.
+❹ Refine and repeat — adjust based on
+feedback until confident.
+
+
+
+
+                                                                                   i n g. c o m
+                                                                     designthink
+                          h t t p s : / / w w w. a c a d e m y o f
+         Rehearse and
+             Refine
+         (AI Prompts)
+• Given our presentation [insert text/slides],
+suggest a timed run-through plan.
+• Identify likely sections where audience
+attention may drop and propose fixes.
+• Generate feedback prompts for a colleague
+or test audience to use.
+• Suggest alternative wordings for sentences
+that may be unclear or awkward.
+• Recommend pacing adjustments to ensure
+energy flows throughout.
+
+
+
+
+                                                                             AI
+                                                                               AI
+
+                                                                                    i n g. c o m
+                                                                      designthink
+                           h t t p s : / / w w w. a c a d e m y o f
+❶❷❸
+
+
+
+
+ AI
+
+
+
+
+      AI
+        AI
+
+
+
+
+      AI
+
+
+
+
+      AI
+

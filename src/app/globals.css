@@ -1,8 +1,47 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f3f7fb;
+  --foreground: #0d1827;
+  --foreground-soft: #304154;
+  --foreground-muted: #60748d;
+  --panel: rgba(255, 255, 255, 0.72);
+  --panel-strong: rgba(255, 255, 255, 0.92);
+  --panel-muted: rgba(248, 250, 252, 0.72);
+  --panel-border: rgba(148, 163, 184, 0.2);
+  --line: rgba(15, 23, 42, 0.08);
+  --ambient-a: rgba(56, 189, 248, 0.18);
+  --ambient-b: rgba(245, 158, 11, 0.12);
+  --body-top: rgba(255, 255, 255, 0.72);
+  --body-bottom: rgba(236, 243, 250, 0.96);
+  --muted: #60748d;
+  --shadow-soft: 0 24px 60px rgba(15, 23, 42, 0.08);
+  --shadow-strong: 0 30px 90px rgba(15, 23, 42, 0.14);
+  --surface-contrast-a: #08111f;
+  --surface-contrast-b: #0d1727;
+  --surface-contrast-border: rgba(255, 255, 255, 0.08);
+}
+
+html.dark {
+  --background: #07111d;
+  --foreground: #edf4ff;
+  --foreground-soft: #dce7f3;
+  --foreground-muted: #98aac0;
+  --panel: rgba(8, 15, 27, 0.7);
+  --panel-strong: rgba(8, 15, 27, 0.9);
+  --panel-muted: rgba(12, 23, 39, 0.82);
+  --panel-border: rgba(148, 163, 184, 0.18);
+  --line: rgba(226, 232, 240, 0.08);
+  --ambient-a: rgba(14, 165, 233, 0.18);
+  --ambient-b: rgba(244, 114, 182, 0.14);
+  --body-top: rgba(7, 17, 29, 0.86);
+  --body-bottom: rgba(4, 11, 20, 0.98);
+  --muted: #94a3b8;
+  --shadow-soft: 0 24px 60px rgba(2, 6, 23, 0.28);
+  --shadow-strong: 0 30px 90px rgba(2, 6, 23, 0.4);
+  --surface-contrast-a: #08111f;
+  --surface-contrast-b: #0d1727;
+  --surface-contrast-border: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
@@ -10,21 +49,291 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-space-grotesk);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
+  min-height: 100vh;
+  overflow-x: hidden;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-image:
+    radial-gradient(circle at top right, var(--ambient-a), transparent 24rem),
+    radial-gradient(circle at 18% 20%, var(--ambient-b), transparent 18rem),
+    linear-gradient(180deg, var(--body-top), var(--body-bottom));
+  background-attachment: fixed;
+  font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--line) 80%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--line) 80%, transparent) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: radial-gradient(circle at center, black 48%, transparent 88%);
+  z-index: 0;
+}
+
+body[data-app-view="dashboard"] {
+  background: #ffffff;
+  background-image: none;
+}
+
+body[data-app-view="dashboard"]::before {
+  display: none;
 }
 
 .font-handwriting {
   font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-space-grotesk), var(--font-geist-sans), sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.surface-panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(26px);
+  box-shadow: var(--shadow-soft);
+}
+
+.surface-panel-strong {
+  background: var(--panel-strong);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(28px);
+  box-shadow: var(--shadow-soft);
+}
+
+.surface-panel-muted {
+  background: var(--panel-muted);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(26px);
+}
+
+.surface-contrast {
+  background: linear-gradient(180deg, var(--surface-contrast-a), var(--surface-contrast-b));
+  border: 1px solid var(--surface-contrast-border);
+}
+
+.text-soft {
+  color: var(--foreground-soft);
+}
+
+.text-muted {
+  color: var(--foreground-muted);
+}
+
+.eyebrow {
+  color: var(--foreground-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--line) 72%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--line) 72%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.particle-dot {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.96), rgba(56, 189, 248, 0.5) 55%, transparent 72%);
+  opacity: 0.8;
+  animation-name: particleFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.22);
+}
+
+.particle-wave {
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+    linear-gradient(90deg, rgba(56, 189, 248, 0.04), rgba(56, 189, 248, 0.18), rgba(14, 165, 233, 0.06)),
+    radial-gradient(circle at 18% 50%, rgba(255, 255, 255, 0.34), transparent 46%),
+    radial-gradient(circle at 78% 50%, rgba(14, 165, 233, 0.16), transparent 44%);
+  opacity: 0.56;
+  filter: blur(0.2px);
+  box-shadow:
+    inset 0 0 40px rgba(255, 255, 255, 0.16),
+    0 24px 64px rgba(14, 165, 233, 0.08);
+  animation: waveDrift ease-in-out infinite;
+}
+
+.book-shell {
+  perspective: 2400px;
+}
+
+.book-shell .book-spread {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.book-shell .book-panel {
+  transition:
+    transform 800ms cubic-bezier(0.2, 0.9, 0.16, 1),
+    box-shadow 400ms ease,
+    filter 400ms ease;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.book-shell .book-panel-left {
+  transform: rotateY(10deg) translateY(0);
+}
+
+.book-shell .book-panel-right {
+  transform: rotateY(-10deg) translateY(0);
+}
+
+.book-shell .book-spine {
+  transition: transform 800ms cubic-bezier(0.2, 0.9, 0.16, 1);
+}
+
+.book-shell .book-flip-sheet {
+  transform-origin: left center;
+  transform: rotateY(0deg);
+  transition:
+    transform 780ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 240ms ease;
+  transform-style: preserve-3d;
+}
+
+.book-shell:hover .book-panel-left {
+  transform: rotateY(16deg) translateY(-8px);
+}
+
+.book-shell:hover .book-panel-right {
+  transform: rotateY(-16deg) translateY(-8px);
+}
+
+.book-shell:hover .book-spine {
+  transform: scaleY(1.02);
+}
+
+.book-shell.is-opening .book-panel-left {
+  transform: rotateY(-78deg) translateX(-20px) translateY(-10px);
+  filter: saturate(1.06);
+}
+
+.book-shell.is-opening .book-panel-right {
+  transform: rotateY(18deg) translateX(28px) translateY(-4px);
+}
+
+.book-shell.is-opening .book-spine {
+  transform: translateX(6px) scaleY(1.06);
+}
+
+.book-shell.is-opening .book-flip-sheet {
+  opacity: 0.98;
+  transform: rotateY(-176deg);
+}
+
+.book-shell.is-opening .book-badge {
+  animation: pulseGlow 900ms ease forwards;
+}
+
+::selection {
+  background: rgba(14, 165, 233, 0.18);
+  color: inherit;
+}
+
+@keyframes particleFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.38;
+  }
+  50% {
+    transform: translate3d(14px, -18px, 0) scale(1.28);
+    opacity: 0.96;
+  }
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 rgba(56, 189, 248, 0.14);
+  }
+  100% {
+    box-shadow: 0 0 0 18px rgba(56, 189, 248, 0);
+  }
+}
+
+@keyframes facilitatorBreathe {
+  0%, 100% {
+    transform: scale(0.94);
+    opacity: 0.16;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.3;
+  }
+}
+
+@keyframes waveDrift {
+  0%, 100% {
+    transform: translate3d(-1%, 0, 0) scaleX(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate3d(2.5%, 14px, 0) scaleX(1.08);
+    opacity: 0.82;
+  }
+}
+
+@keyframes referencePageIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(24px, 12px, 0) scale(0.965);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.animate-facilitator-breathe {
+  animation: facilitatorBreathe 3.8s ease-in-out infinite;
+}
+
+.animate-reference-page-in {
+  animation: referencePageIn 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .particle-dot,
+  .particle-wave,
+  .book-shell .book-panel,
+  .book-shell .book-spine,
+  .book-shell .book-flip-sheet,
+  .book-shell .book-badge,
+  .animate-reference-page-in {
+    animation: none !important;
+    transition-duration: 0ms !important;
+  }
 }

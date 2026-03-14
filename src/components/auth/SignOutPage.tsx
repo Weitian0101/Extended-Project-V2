@@ -8,10 +8,10 @@ interface SignOutPageProps {
 
 export function SignOutPage({ onComplete }: SignOutPageProps) {
     useEffect(() => {
-        // Wait for 2 seconds then complete
+        // Keep the transition visible, but don't stall the user on sign-out.
         const timer = setTimeout(() => {
             onComplete();
-        }, 2000);
+        }, 650);
 
         return () => clearTimeout(timer);
     }, [onComplete]);
@@ -26,7 +26,7 @@ export function SignOutPage({ onComplete }: SignOutPageProps) {
                 {/* Logo or Icon */}
                 <div className="w-24 h-24 bg-white rounded-full shadow-xl flex items-center justify-center mb-8">
                     <div className="relative w-16 h-16">
-                        <Image src="/images/logo.png" alt="Logo" fill style={{ objectFit: 'contain' }} />
+                        <Image src="/images/logo.png" alt="Logo" fill sizes="64px" style={{ objectFit: 'contain' }} />
                     </div>
                 </div>
 

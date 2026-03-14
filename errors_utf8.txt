@@ -1,0 +1,17 @@
+﻿src/components/stages/ExploreView.tsx(22,15): error TS2739: Type '{ id: string; methodCardId: string; methodCardTitle: string; stage: "explore"; createdAt: number; updatedAt: number; aiResponses: never[]; }' is missing the following properties from type 'ToolRun': currentStepIndex, data
+src/components/tools/StageToolBoard.tsx(54,19): error TS2322: Type '{ id: string; methodCardId: string; methodCardTitle: string; stage: StageId; createdAt: number; updatedAt: number; currentStepIndex: number; data: Record<string, any>; aiResponses?: { ...; }[] | undefined; }' is not assignable to type 'ToolRun'.
+  Types of property 'aiResponses' are incompatible.
+    Type '{ prompt: string; response: string; timestamp: number; }[] | undefined' is not assignable to type '{ prompt: string; response: string; timestamp: number; }[]'.
+      Type 'undefined' is not assignable to type '{ prompt: string; response: string; timestamp: number; }[]'.
+src/components/tools/ToolWorkspace.tsx(18,36): error TS2339: Property 'answers' does not exist on type 'ToolRun'.
+src/components/tools/ToolWorkspace.tsx(59,19): error TS2339: Property 'hint' does not exist on type 'MethodCard'.
+src/components/tools/ToolWorkspace.tsx(64,31): error TS2339: Property 'hint' does not exist on type 'MethodCard'.
+src/components/tools/ToolWorkspace.tsx(72,27): error TS2339: Property 'template' does not exist on type 'MethodCard'.
+src/components/tools/ToolWorkspace.tsx(72,41): error TS7006: Parameter 'step' implicitly has an 'any' type.
+src/components/tools/ToolWorkspace.tsx(104,55): error TS7006: Parameter 'opt' implicitly has an 'any' type.
+src/components/tools/ToolWorkspace.tsx(112,55): error TS7006: Parameter 'opt' implicitly has an 'any' type.
+src/components/ui/StickyNote.tsx(19,43): error TS2339: Property 'color' does not exist on type 'StickyNote'.
+src/components/ui/StickyNote.tsx(19,71): error TS2339: Property 'color' does not exist on type 'StickyNote'.
+src/components/ui/StickyNote.tsx(20,41): error TS2339: Property 'color' does not exist on type 'StickyNote'.
+src/components/ui/StickyNote.tsx(21,42): error TS2339: Property 'color' does not exist on type 'StickyNote'.
+src/components/ui/StickyNote.tsx(22,41): error TS2339: Property 'color' does not exist on type 'StickyNote'.

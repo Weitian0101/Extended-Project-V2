@@ -1,84 +1,223 @@
 'use client';
 
-import React from 'react';
-import Image from 'next/image';
+import React, { useEffect, useRef, useState } from 'react';
+import { Folder, LogOut, MoreVertical, PencilLine, Plus, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
+
+import { BrandLockup } from '@/components/ui/BrandLockup';
 import { Button } from '@/components/ui/Button';
-import { Plus, Folder, MoreVertical, LogOut } from 'lucide-react';
+import { ProfilePanel } from '@/components/ui/ProfilePanel';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { AvatarCluster } from '@/components/ui/AvatarCluster';
+import { ProjectSettingsDialog } from '@/components/dashboard/ProjectSettingsDialog';
+import { TeamMember, UserProfileData, WorkspaceProject } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface DashboardProps {
+    projects: WorkspaceProject[];
+    profile: UserProfileData;
     onOpenProject: (projectId: string) => void;
+    onCreateProject: () => void;
+    onUpdateProject: (projectId: string, updates: Partial<WorkspaceProject>) => void;
+    onDeleteProject: (projectId: string) => void;
+    onOpenProfile: () => void;
     onLogout: () => void;
 }
 
-export function Dashboard({ onOpenProject, onLogout }: DashboardProps) {
-    // Mock Projects for now
-    const projects = [
-        { id: '1', name: 'Sustainable Packaging', updated: '2 mins ago', color: 'bg-green-500' },
-        { id: '2', name: 'AI Education App', updated: '2 days ago', color: 'bg-blue-500' },
-        { id: '3', name: 'Smart Home Hub', updated: '5 days ago', color: 'bg-purple-500' },
-    ];
+function getOwner(project: WorkspaceProject): TeamMember | undefined {
+    return project.members.find(member => member.id === project.ownerId) || project.members[0];
+}
+
+export function Dashboard({ projects, profile, onOpenProject, onCreateProject, onUpdateProject, onDeleteProject, onOpenProfile, onLogout }: DashboardProps) {
+    const [menuProjectId, setMenuProjectId] = useState<string | null>(null);
+    const [settingsProject, setSettingsProject] = useState<WorkspaceProject | null>(null);
+    const activeMenuRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!menuProjectId) return;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!activeMenuRef.current?.contains(event.target as Node)) {
+                setMenuProjectId(null);
+            }
+        };
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setMenuProjectId(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('keydown', handleEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [menuProjectId]);
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            {/* Header */}
-            <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-20">
-                <div className="relative w-32 h-10">
-                    <Image src="/images/logo.png" alt="Logo" fill style={{ objectFit: 'contain' }} />
-                </div>
-                <div className="flex items-center gap-4">
-                    <button onClick={onLogout} className="text-sm font-medium text-slate-500 hover:text-red-600 flex items-center gap-2">
-                        <LogOut className="w-4 h-4" /> Sign Out
-                    </button>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden relative cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all">
-                        {/* Avatar Placeholder */}
-                        <div className="absolute inset-0 flex items-center justify-center text-slate-500 font-bold">U</div>
+        <div className="relative min-h-screen bg-white">
+            <div className="pointer-events-none fixed inset-0 z-0 bg-white" />
+
+            <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 lg:px-8">
+                    <BrandLockup compact />
+                    <div className="flex items-center gap-2 lg:gap-3">
+                        <ThemeToggle compact />
+                        <ProfilePanel
+                            compact
+                            name={profile.name}
+                            title={`${profile.membershipLabel} membership`}
+                            onClick={onOpenProfile}
+                        />
+                        <button onClick={onLogout} className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-red-600">
+                            <LogOut className="h-4 w-4" />
+                            <span className="hidden lg:inline">Sign Out</span>
+                        </button>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto p-8 lg:p-12">
-                <div className="flex items-center justify-between mb-12">
+            <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 lg:px-8 lg:py-10">
+                <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-                        <p className="text-slate-500 mt-1">Manage your innovation projects.</p>
+                        <h1 className="text-4xl font-display font-semibold text-slate-950">Dashboard</h1>
+                        <p className="mt-2 max-w-2xl text-base text-slate-500">
+                            Pick a project, invite collaborators, or create a new sandbox project without leaving this page.
+                        </p>
                     </div>
-                    <Button size="lg" className="shadow-lg shadow-blue-500/20" onClick={() => onOpenProject('new')}>
-                        <Plus className="w-5 h-5 mr-2" /> New Project
+                    <Button size="lg" onClick={onCreateProject}>
+                        <Plus className="mr-2 h-5 w-5" />
+                        New Project
                     </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {/* Project Cards */}
-                    {projects.map(project => (
-                        <div
-                            key={project.id}
-                            onClick={() => onOpenProject(project.id)}
-                            className="bg-white rounded-2xl border border-slate-200 p-6 cursor-pointer hover:shadow-xl hover:border-blue-400 transition-all group relative overflow-hidden"
-                        >
-                            <div className={`absolute top-0 left-0 w-2 h-full ${project.color}`}></div>
-                            <div className="flex justify-between items-start mb-4 pl-4">
-                                <div className="p-3 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
-                                    <Folder className="w-6 h-6 text-slate-500 group-hover:text-blue-600" />
-                                </div>
-                                <button className="text-slate-300 hover:text-slate-600">
-                                    <MoreVertical className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2 pl-4">{project.name}</h3>
-                            <p className="text-sm text-slate-400 pl-4">Last updated {project.updated}</p>
-                        </div>
-                    ))}
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    {projects.map(project => {
+                        const owner = getOwner(project);
 
-                    {/* New Project Placeholder */}
-                    <div
-                        onClick={() => onOpenProject('new')}
-                        className="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50/50 transition-all min-h-[200px]"
-                    >
-                        <Plus className="w-12 h-12 mb-4 opacity-50" />
-                        <span className="font-semibold text-lg">Create New Project</span>
-                    </div>
+                        return (
+                            <div
+                                key={project.id}
+                                onClick={() => onOpenProject(project.id)}
+                                className="group relative cursor-pointer rounded-[30px] border border-slate-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_18px_44px_rgba(15,23,42,0.08)]"
+                            >
+                                <div className={`absolute inset-x-0 top-0 h-1 rounded-t-[30px] bg-gradient-to-r ${project.accent}`} />
+
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-slate-50 text-slate-500 transition-colors group-hover:text-sky-500">
+                                            <Folder className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-medium text-slate-900">{project.name}</div>
+                                            <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">{project.updated}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <AvatarCluster members={project.members.filter(member => member.status === 'online')} size="sm" />
+                                        <div
+                                            ref={menuProjectId === project.id ? activeMenuRef : null}
+                                            className={cn('relative', menuProjectId === project.id && 'z-40')}
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={event => {
+                                                    event.stopPropagation();
+                                                    setMenuProjectId(current => current === project.id ? null : project.id);
+                                                }}
+                                                aria-label={`Open actions for ${project.name}`}
+                                                className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                                            >
+                                                <MoreVertical className="h-4 w-4" />
+                                            </button>
+
+                                            {menuProjectId === project.id && (
+                                                <div
+                                                    className="absolute right-0 top-10 z-50 w-48 rounded-[18px] border border-slate-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
+                                                    onClick={event => event.stopPropagation()}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSettingsProject(project);
+                                                            setMenuProjectId(null);
+                                                        }}
+                                                        className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                                                    >
+                                                        <PencilLine className="h-4 w-4" />
+                                                        Rename Project
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSettingsProject(project);
+                                                            setMenuProjectId(null);
+                                                        }}
+                                                        className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                                                    >
+                                                        <UserPlus className="h-4 w-4" />
+                                                        Invite Team Member
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSettingsProject(project);
+                                                            setMenuProjectId(null);
+                                                        }}
+                                                        className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                                                    >
+                                                        <ShieldCheck className="h-4 w-4" />
+                                                        Manage Access
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const confirmed = window.confirm(`Delete "${project.name}"? This removes the project from the dashboard.`);
+                                                            if (confirmed) {
+                                                                onDeleteProject(project.id);
+                                                            }
+                                                            setMenuProjectId(null);
+                                                        }}
+                                                        className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                        Delete Project
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p className="mt-6 text-sm leading-relaxed text-slate-500">{project.summary}</p>
+
+                                <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+                                    <div className="text-sm text-slate-500">
+                                        Owner: <span className="font-medium text-slate-800">{owner?.name || 'User'}</span>
+                                    </div>
+                                    <div className="text-sm font-semibold text-slate-900">Open</div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </main>
+
+            <ProjectSettingsDialog
+                open={Boolean(settingsProject)}
+                project={settingsProject}
+                onClose={() => {
+                    setSettingsProject(null);
+                    setMenuProjectId(null);
+                }}
+                onSave={(project) => {
+                    onUpdateProject(project.id, project);
+                    setSettingsProject(null);
+                }}
+            />
         </div>
     );
 }

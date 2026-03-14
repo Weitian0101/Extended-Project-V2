@@ -1,17 +1,45 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+
 import { LandingPage } from '@/components/auth/LandingPage';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { SandboxApp } from '@/components/SandboxApp';
 import { SignOutPage } from '@/components/auth/SignOutPage';
+import { AppThemeProvider } from '@/components/ui/AppThemeProvider';
+import { DEFAULT_PROJECTS } from '@/data/workspaceSeed';
+import { UserProfileData, WorkspaceProject } from '@/types';
+import { ProfilePage } from '@/components/profile/ProfilePage';
+import { DEFAULT_USER } from '@/data/workspaceSeed';
 
-type ViewState = 'landing' | 'auth' | 'dashboard' | 'sandbox' | 'logging_out';
+type ViewState = 'landing' | 'auth' | 'dashboard' | 'sandbox' | 'profile' | 'logging_out';
+const PROJECTS_STORAGE_KEY = 'app_projects';
+const PROFILE_STORAGE_KEY = 'app_profile';
 
 export default function Home() {
+  return (
+    <AppThemeProvider>
+      <HomeShell />
+    </AppThemeProvider>
+  );
+}
+
+function HomeShell() {
   const [view, setView] = useState<ViewState>('landing');
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [projects, setProjects] = useState<WorkspaceProject[]>(DEFAULT_PROJECTS);
+  const [profile, setProfile] = useState<UserProfileData>(DEFAULT_USER);
+  const [profileReturnView, setProfileReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
+
+  useEffect(() => {
+    document.body.setAttribute('data-app-view', view);
+
+    return () => {
+      document.body.removeAttribute('data-app-view');
+    };
+  }, [view]);
 
   // --- Persistence ---
   useEffect(() => {
@@ -27,6 +55,16 @@ export default function Home() {
 
     if (savedView) setView(savedView);
     if (savedProject) setActiveProjectId(savedProject);
+
+    const savedProjects = localStorage.getItem(PROJECTS_STORAGE_KEY);
+    if (savedProjects) {
+      setProjects(JSON.parse(savedProjects));
+    }
+
+    const savedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (savedProfile) {
+      setProfile(JSON.parse(savedProfile));
+    }
   }, []);
 
   useEffect(() => {
@@ -44,6 +82,14 @@ export default function Home() {
     }
   }, [view, activeProjectId]);
 
+  useEffect(() => {
+    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
+  }, [projects]);
+
+  useEffect(() => {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+  }, [profile]);
+
   // --- Navigation Handlers ---
 
   const handleAuthComplete = () => {
@@ -51,9 +97,40 @@ export default function Home() {
   };
 
   const handleOpenProject = (projectId: string) => {
-    console.log(`Opening project: ${projectId}`);
     setActiveProjectId(projectId);
     setView('sandbox');
+  };
+
+  const handleCreateProject = () => {
+    const createdProject: WorkspaceProject = {
+      id: uuidv4(),
+      name: `New Project ${projects.length + 1}`,
+      accent: 'from-violet-500 to-fuchsia-300',
+      ownerId: 'user',
+      updated: 'Just now',
+      summary: 'A new sandbox project ready for team setup, context capture, and stage work.',
+      members: DEFAULT_PROJECTS[0].members
+    };
+
+    setProjects([createdProject, ...projects]);
+  };
+
+  const handleUpdateProject = (projectId: string, updates: Partial<WorkspaceProject>) => {
+    setProjects(currentProjects =>
+      currentProjects.map(project => project.id === projectId ? { ...project, ...updates } : project)
+    );
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    setProjects(currentProjects => currentProjects.filter(project => project.id !== projectId));
+    if (activeProjectId === projectId) {
+      setActiveProjectId(null);
+      setView('dashboard');
+    }
+  };
+
+  const handleUpdateProfile = (updates: Partial<UserProfileData>) => {
+    setProfile(currentProfile => ({ ...currentProfile, ...updates }));
   };
 
   const handleExitSandbox = () => {
@@ -67,7 +144,13 @@ export default function Home() {
     // Persistence useEffect will handle clearing storage
   };
 
+  const handleOpenProfile = (source: 'dashboard' | 'sandbox') => {
+    setProfileReturnView(source);
+    setView('profile');
+  };
+
   // --- View Rendering ---
+  const activeProject = projects.find(project => project.id === activeProjectId) ?? null;
 
   switch (view) {
     case 'landing':
@@ -77,10 +160,49 @@ export default function Home() {
       return <AuthPage onBack={() => setView('landing')} onComplete={handleAuthComplete} />;
 
     case 'dashboard':
-      return <Dashboard onOpenProject={handleOpenProject} onLogout={handleLogout} />;
+      return (
+        <Dashboard
+          projects={projects}
+          profile={profile}
+          onOpenProject={handleOpenProject}
+          onCreateProject={handleCreateProject}
+          onUpdateProject={handleUpdateProject}
+          onDeleteProject={handleDeleteProject}
+          onOpenProfile={() => handleOpenProfile('dashboard')}
+          onLogout={handleLogout}
+        />
+      );
 
     case 'sandbox':
-      return <SandboxApp projectId={activeProjectId || 'default'} onExit={handleExitSandbox} />;
+      return activeProject ? (
+        <SandboxApp
+          project={activeProject}
+          profile={profile}
+          onExit={handleExitSandbox}
+          onUpdateProject={handleUpdateProject}
+          onOpenProfile={() => handleOpenProfile('sandbox')}
+        />
+      ) : (
+        <Dashboard
+          projects={projects}
+          profile={profile}
+          onOpenProject={handleOpenProject}
+          onCreateProject={handleCreateProject}
+          onUpdateProject={handleUpdateProject}
+          onDeleteProject={handleDeleteProject}
+          onOpenProfile={() => handleOpenProfile('dashboard')}
+          onLogout={handleLogout}
+        />
+      );
+
+    case 'profile':
+      return (
+        <ProfilePage
+          profile={profile}
+          onUpdateProfile={handleUpdateProfile}
+          onBack={() => setView(profileReturnView)}
+        />
+      );
 
     case 'logging_out':
       return <SignOutPage onComplete={() => setView('landing')} />;

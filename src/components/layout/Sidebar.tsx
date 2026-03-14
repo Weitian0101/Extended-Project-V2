@@ -1,73 +1,131 @@
 'use client';
 
 import React from 'react';
-import { Compass, Lightbulb, Hammer, CheckCircle, Rocket, FileText, BookOpen, Layers, X } from 'lucide-react';
+import { BookOpen, Compass, Hammer, Layers, Lightbulb, X } from 'lucide-react';
+
+import { BrandLockup } from '@/components/ui/BrandLockup';
+import { useAppTheme } from '@/components/ui/AppThemeProvider';
 import { cn } from '@/lib/utils';
 import { StageId } from '@/types';
-import Image from 'next/image';
 
 interface SidebarProps {
     currentStage: StageId;
     onSetStage: (stage: StageId) => void;
-    isOpen?: boolean; // Mobile state
-    onClose?: () => void; // Mobile close handler
-    onBackToDashboard?: () => void;
+    onGoDashboard?: () => void;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
-export function Sidebar({ currentStage, onSetStage, isOpen = true, onClose, onBackToDashboard }: SidebarProps) {
-    const navItems = [
-        { id: 'overview', label: 'Project Context', icon: Layers, description: 'Set the stage' },
-        { id: 'explore', label: 'Explore', icon: Compass, description: 'Broaden horizons' },
-        { id: 'imagine', label: 'Imagine', icon: Lightbulb, description: 'Generate ideas' },
-        { id: 'implement', label: 'Implement', icon: Hammer, description: 'Make it real' },
-        { id: 'tell-story', label: 'Tell Story', icon: BookOpen, description: 'Share the journey' },
-    ];
+const STAGE_ACCENTS: Record<StageId, {
+    indicator: string;
+    activeIcon: string;
+    activeText: string;
+    softGlow: string;
+}> = {
+    overview: {
+        indicator: 'bg-slate-400 shadow-[0_0_18px_rgba(148,163,184,0.3)]',
+        activeIcon: 'bg-slate-500/12 text-slate-600 border-slate-300/60',
+        activeText: 'text-slate-700',
+        softGlow: 'bg-slate-300/30'
+    },
+    explore: {
+        indicator: 'bg-emerald-400 shadow-[0_0_18px_rgba(16,185,129,0.3)]',
+        activeIcon: 'bg-emerald-500/12 text-emerald-700 border-emerald-200/80',
+        activeText: 'text-emerald-700',
+        softGlow: 'bg-emerald-300/26'
+    },
+    imagine: {
+        indicator: 'bg-rose-400 shadow-[0_0_18px_rgba(244,63,94,0.3)]',
+        activeIcon: 'bg-rose-500/12 text-rose-700 border-rose-200/80',
+        activeText: 'text-rose-700',
+        softGlow: 'bg-rose-300/26'
+    },
+    implement: {
+        indicator: 'bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.3)]',
+        activeIcon: 'bg-amber-500/12 text-amber-700 border-amber-200/80',
+        activeText: 'text-amber-700',
+        softGlow: 'bg-amber-300/26'
+    },
+    'tell-story': {
+        indicator: 'bg-sky-400 shadow-[0_0_18px_rgba(56,189,248,0.3)]',
+        activeIcon: 'bg-sky-500/12 text-sky-700 border-sky-200/80',
+        activeText: 'text-sky-700',
+        softGlow: 'bg-sky-300/26'
+    },
+    test: {
+        indicator: 'bg-slate-400 shadow-[0_0_18px_rgba(148,163,184,0.3)]',
+        activeIcon: 'bg-slate-500/12 text-slate-600 border-slate-300/60',
+        activeText: 'text-slate-700',
+        softGlow: 'bg-slate-300/30'
+    }
+};
+
+const NAV_ITEMS = [
+    { id: 'overview', label: 'Project Context', icon: Layers, description: 'Set the stage' },
+    { id: 'explore', label: 'Explore', icon: Compass, description: 'Broaden horizons' },
+    { id: 'imagine', label: 'Imagine', icon: Lightbulb, description: 'Generate ideas' },
+    { id: 'implement', label: 'Implement', icon: Hammer, description: 'Make it real' },
+    { id: 'tell-story', label: 'Tell Story', icon: BookOpen, description: 'Share the journey' }
+] as const;
+
+export function Sidebar({ currentStage, onSetStage, onGoDashboard, isOpen = true, onClose }: SidebarProps) {
+    const { theme } = useAppTheme();
+    const activeAccent = STAGE_ACCENTS[currentStage];
+    const isDark = theme === 'dark';
 
     return (
         <>
-            {/* Mobile Backdrop */}
             <div
                 className={cn(
-                    "fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300",
-                    isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+                    'fixed inset-0 z-40 bg-black/35 backdrop-blur-sm transition-opacity duration-300 lg:hidden',
+                    isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
                 )}
                 onClick={onClose}
             />
 
-            <aside className={cn(
-                "h-screen flex flex-col bg-slate-900 text-slate-300 shadow-2xl overflow-hidden shrink-0 transition-transform duration-300 z-50",
-                "fixed top-0 left-0 w-80 lg:relative lg:translate-x-0 lg:w-72",
-                isOpen ? "translate-x-0" : "-translate-x-full"
-            )}>
+            <aside
+                className={cn(
+                    'fixed left-0 top-0 z-50 flex h-screen w-80 shrink-0 flex-col overflow-hidden border-r transition-transform duration-300 lg:relative lg:translate-x-0',
+                    isDark ? 'border-white/8' : 'border-slate-200/80',
+                    isOpen ? 'translate-x-0' : '-translate-x-full'
+                )}
+            >
+                <div className={cn(
+                    'absolute inset-0',
+                    isDark
+                        ? 'bg-[linear-gradient(180deg,#081120,#0a1424_36%,#0b1728_100%)]'
+                        : 'bg-[linear-gradient(180deg,#ffffff,#f8fbff_38%,#f3f7fb_100%)]'
+                )} />
+                <div className={cn('absolute right-[-24%] top-[-12%] h-[320px] w-[320px] rounded-full blur-[90px] opacity-40', activeAccent.softGlow)} />
+                <div className={cn(
+                    'absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.5)_1px,transparent_1px)] bg-[size:28px_28px]',
+                    isDark ? '' : 'opacity-[0.04]'
+                )} />
 
-                {/* Background Ambience */}
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 z-0 pointer-events-none"></div>
-                <div className="absolute top-[-10%] right-[-50%] w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[80px] z-0 pointer-events-none"></div>
-
-                {/* Header with Logo */}
-                <div className="relative z-10 p-8 pb-6 flex flex-col items-center border-b border-white/5">
-                    <div className="absolute top-4 right-4 lg:hidden">
-                        <button onClick={onClose} className="p-2 text-slate-400 hover:text-white">
-                            <X className="w-6 h-6" />
+                <div className={cn('relative z-10 border-b p-7 pb-5', isDark ? 'border-white/8' : 'border-slate-200/80')}>
+                    <div className="absolute right-4 top-4 lg:hidden">
+                        <button onClick={onClose} className={cn('p-2 transition-colors', isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-900')}>
+                            <X className="h-6 w-6" />
                         </button>
                     </div>
-                    <div className="relative w-52 h-24 mb-4">
-                        <Image
-                            src="/images/logo.png"
-                            alt="Company Logo"
-                            fill
-                            style={{ objectFit: 'contain' }}
-                            className="drop-shadow-lg"
-                        />
+
+                    <div className={cn(
+                        'rounded-[28px] border p-4 backdrop-blur-xl',
+                        isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200/80 bg-white/75'
+                    )}>
+                        <BrandLockup compact onClick={onGoDashboard} />
+                        <div className={cn('mt-4 text-[10px] uppercase tracking-[0.24em]', isDark ? 'text-slate-500' : 'text-slate-400')}>
+                            Innovation Toolkit
+                        </div>
                     </div>
-                    <div className="text-[10px] text-slate-500 font-medium uppercase tracking-[0.2em]">Innovation Toolkit</div>
                 </div>
 
-                {/* Navigation */}
-                <nav className="relative z-10 flex-1 px-4 space-y-3 mt-6 overflow-y-auto">
-                    {navItems.map((item) => {
+                <nav className="relative z-10 mt-6 flex-1 space-y-3 overflow-y-auto px-4">
+                    {NAV_ITEMS.map((item) => {
                         const Icon = item.icon;
                         const isActive = currentStage === item.id;
+                        const accent = STAGE_ACCENTS[item.id as StageId];
+
                         return (
                             <button
                                 key={item.id}
@@ -76,60 +134,56 @@ export function Sidebar({ currentStage, onSetStage, isOpen = true, onClose, onBa
                                     if (onClose) onClose();
                                 }}
                                 className={cn(
-                                    "w-full group relative flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-300 ease-out border border-transparent",
+                                    'group relative flex w-full items-center gap-4 rounded-2xl border px-4 py-4 text-left transition-all duration-300 ease-out',
                                     isActive
-                                        ? "bg-white/5 border-white/10 text-white shadow-lg shadow-black/20"
-                                        : "hover:bg-white/5 hover:text-white hover:border-white/5 text-slate-400"
+                                        ? isDark
+                                            ? 'border-white/10 bg-white/[0.06] shadow-[0_16px_32px_rgba(2,6,23,0.2)]'
+                                            : 'border-slate-200 bg-white shadow-[0_14px_30px_rgba(15,23,42,0.08)]'
+                                        : isDark
+                                            ? 'border-transparent text-slate-400 hover:border-white/8 hover:bg-white/[0.04] hover:text-white'
+                                            : 'border-transparent text-slate-500 hover:border-slate-200/80 hover:bg-white/80 hover:text-slate-900'
                                 )}
                             >
-                                {/* Active Indicator Line */}
                                 {isActive && (
-                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.6)]"></div>
+                                    <div className={cn('absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full', accent.indicator)} />
                                 )}
 
-                                <div className={cn(
-                                    "p-2 rounded-lg transition-colors",
-                                    isActive ? "bg-blue-500/20 text-blue-400" : "bg-slate-800/50 text-slate-500 group-hover:text-slate-300"
-                                )}>
-                                    <Icon className="w-5 h-5" />
+                                <div
+                                    className={cn(
+                                        'rounded-xl border p-2.5 transition-colors',
+                                        isActive
+                                            ? accent.activeIcon
+                                            : isDark
+                                                ? 'border-white/5 bg-slate-900/40 text-slate-500 group-hover:text-slate-200'
+                                                : 'border-slate-200/80 bg-white text-slate-400 group-hover:text-slate-700'
+                                    )}
+                                >
+                                    <Icon className="h-5 w-5" />
                                 </div>
 
                                 <div className="text-left">
-                                    <div className={cn("text-sm font-semibold leading-none mb-1 transition-colors", isActive ? "text-white" : "text-slate-300")}>
+                                    <div className={cn('mb-1 text-sm font-semibold leading-none font-display', isActive ? accent.activeText : isDark ? 'text-slate-100' : 'text-slate-800')}>
                                         {item.label}
                                     </div>
-                                    <div className={cn("text-[10px] transition-colors", isActive ? "text-blue-300/80" : "text-slate-600 group-hover:text-slate-500")}>
+                                    <div className={cn('text-[10px] uppercase tracking-[0.16em]', isActive ? accent.activeText : isDark ? 'text-slate-500' : 'text-slate-400')}>
                                         {item.description}
                                     </div>
                                 </div>
-
-                                {/* Hover Glow */}
-                                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                             </button>
                         );
                     })}
                 </nav>
 
-                {/* Footer */}
-                <div className="relative z-10 p-6 border-t border-slate-800/50 bg-slate-900/50 backdrop-blur-sm space-y-4">
+                <div className={cn('relative z-10 border-t px-6 py-5', isDark ? 'border-white/8 bg-black/5' : 'border-slate-200/80 bg-white/40')}>
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-lg animate-pulse">
+                        <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white shadow-lg', activeAccent.indicator)}>
                             AI
                         </div>
                         <div>
-                            <div className="text-xs text-white font-medium">Assistant Active</div>
-                            <div className="text-[10px] text-slate-500">Context Loaded</div>
+                            <div className={cn('text-xs font-medium', isDark ? 'text-white' : 'text-slate-900')}>AI facilitator</div>
+                            <div className={cn('text-[10px] uppercase tracking-[0.18em]', isDark ? 'text-slate-500' : 'text-slate-400')}>Context aware</div>
                         </div>
                     </div>
-
-                    {onBackToDashboard && (
-                        <button
-                            onClick={onBackToDashboard}
-                            className="w-full py-2 px-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-xs text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2 group"
-                        >
-                            <span className="group-hover:-translate-x-1 transition-transform">←</span> Back to Dashboard
-                        </button>
-                    )}
                 </div>
             </aside>
         </>

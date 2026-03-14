@@ -1,36 +1,59 @@
 'use client';
 
 import React, { useState } from 'react';
+import { ArrowLeft, Menu, Settings2 } from 'lucide-react';
+
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ProjectOverview } from '@/components/stages/ProjectOverview';
 import { ExploreView } from '@/components/stages/ExploreView';
+import { ImagineView } from '@/components/stages/ImagineView';
+import { ImplementView } from '@/components/stages/ImplementView';
+import { TellStoryView } from '@/components/stages/TellStoryView';
 import { useProjectData } from '@/hooks/useProjectData';
-import { StageId } from '@/types';
-import { Menu, ArrowLeft } from 'lucide-react';
-import Image from 'next/image';
+import { StageId, UserProfileData, WorkspaceProject } from '@/types';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { AvatarCluster } from '@/components/ui/AvatarCluster';
+import { ProfilePanel } from '@/components/ui/ProfilePanel';
+import { ProjectSettingsDialog } from '@/components/dashboard/ProjectSettingsDialog';
+import { Button } from '@/components/ui/Button';
 
 interface SandboxAppProps {
-    projectId: string; // Future proofing for multi-project
+    project: WorkspaceProject;
+    profile: UserProfileData;
     onExit: () => void;
+    onUpdateProject: (projectId: string, updates: Partial<WorkspaceProject>) => void;
+    onOpenProfile: () => void;
 }
 
-export function SandboxApp({ projectId, onExit }: SandboxAppProps) {
-    const { project, updateProject, isLoaded } = useProjectData();
+export function SandboxApp({ project: projectSummary, profile, onExit, onUpdateProject, onOpenProfile }: SandboxAppProps) {
+    const { project, updateProject, isLoaded } = useProjectData(projectSummary.id, projectSummary.name);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     if (!isLoaded) {
-        return <div className="flex items-center justify-center h-screen">Loading Project...</div>;
+        return <div className="flex h-screen items-center justify-center bg-[var(--background)] text-[var(--foreground-muted)] font-display">Loading project...</div>;
     }
 
     const handleSetStage = (stage: StageId) => {
         updateProject({ currentStage: stage });
-        setSidebarOpen(false); // Close on selection (mobile)
+        setSidebarOpen(false);
     };
 
-    const handleUpdateContext = (contextUpdates: any) => {
+    const handleUpdateContext = (contextUpdates: Partial<typeof project.context>) => {
         updateProject({
             context: { ...project.context, ...contextUpdates }
         });
+    };
+
+    const handleSaveProjectSettings = (nextProject: WorkspaceProject) => {
+        onUpdateProject(projectSummary.id, nextProject);
+        updateProject({
+            context: {
+                ...project.context,
+                name: nextProject.name
+            }
+        });
+        setSettingsOpen(false);
     };
 
     const renderStage = () => {
@@ -40,43 +63,79 @@ export function SandboxApp({ projectId, onExit }: SandboxAppProps) {
             case 'explore':
                 return <ExploreView />;
             case 'imagine':
-                return <div className="p-12 text-gray-400 italic">Imagine Stage - Coming Soon</div>;
+                return <ImagineView />;
             case 'implement':
-                return <div className="p-12 text-gray-400 italic">Implement Stage - Coming Soon</div>;
+                return <ImplementView />;
             case 'tell-story':
-                return <div className="p-12 text-gray-400 italic">Tell Story Stage - Coming Soon</div>;
+                return <TellStoryView />;
             default:
                 return <ProjectOverview project={project} onUpdateContext={handleUpdateContext} />;
         }
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 flex-col lg:flex-row">
-
-            {/* Mobile Header */}
-            <div className="lg:hidden h-16 bg-white border-b flex items-center justify-between px-4 shrink-0 z-30 relative">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                        <Menu className="w-6 h-6" />
-                    </button>
-                    <div className="relative w-24 h-8">
-                        <Image src="/images/logo.png" alt="Logo" fill style={{ objectFit: 'contain' }} />
-                    </div>
-                </div>
-                <button onClick={onExit} className="text-xs font-semibold text-gray-500">Exit</button>
-            </div>
-
+        <div className="relative flex h-screen overflow-hidden bg-[var(--background)]">
             <Sidebar
                 currentStage={project.currentStage}
                 onSetStage={handleSetStage}
+                onGoDashboard={onExit}
                 isOpen={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
-                onBackToDashboard={onExit}
             />
 
-            <main className="flex-1 overflow-hidden relative shadow-none lg:shadow-xl lg:rounded-l-3xl bg-white lg:my-2 lg:mr-2 border-t lg:border border-gray-100 flex flex-col">
-                {renderStage()}
-            </main>
+            <div className="relative flex flex-1 flex-col overflow-hidden">
+                <header className="surface-panel-strong relative z-20 border-b px-4 py-3 lg:px-6">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setSidebarOpen(true)} className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] p-2 text-[var(--foreground-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300/80 hover:text-[var(--foreground)] lg:hidden">
+                                <Menu className="h-5 w-5" />
+                            </button>
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Current Project</div>
+                                <div className="text-lg font-display font-semibold text-[var(--foreground)]">{projectSummary.name}</div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 lg:gap-3">
+                            <div className="hidden sm:flex items-center gap-3 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2">
+                                <AvatarCluster members={projectSummary.members.filter(member => member.status !== 'offline')} size="sm" />
+                            </div>
+                            <ThemeToggle compact />
+                            <button
+                                type="button"
+                                onClick={() => setSettingsOpen(true)}
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300/80 hover:text-[var(--foreground)]"
+                                title="Project settings"
+                            >
+                                <Settings2 className="h-4 w-4" />
+                            </button>
+                            <ProfilePanel
+                                compact
+                                name={profile.name}
+                                title={`${profile.membershipLabel} membership`}
+                                onClick={onOpenProfile}
+                            />
+                            <Button variant="secondary" onClick={onExit} className="hidden lg:inline-flex">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Dashboard
+                            </Button>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="relative flex-1 overflow-hidden lg:p-3">
+                    <main className="relative flex h-full flex-col overflow-hidden rounded-none bg-[var(--panel-strong)] lg:rounded-[30px] lg:border lg:border-[var(--panel-border)]">
+                        {renderStage()}
+                    </main>
+                </div>
+            </div>
+
+            <ProjectSettingsDialog
+                open={settingsOpen}
+                project={projectSummary}
+                onClose={() => setSettingsOpen(false)}
+                onSave={handleSaveProjectSettings}
+            />
         </div>
     );
 }
