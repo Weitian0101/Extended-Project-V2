@@ -11,7 +11,7 @@ const MEMBERSHIP_META = {
         Icon: ShieldCheck,
         pillClassName: 'border-slate-200 bg-slate-100 text-slate-700',
         solidClassName: 'border-slate-400/30 bg-[linear-gradient(135deg,#64748b,#334155)] text-white',
-        avatarGradient: 'from-slate-500 to-slate-700'
+        avatarBackground: 'linear-gradient(135deg,#64748b,#334155)'
     },
     plus: {
         title: 'Plus',
@@ -19,7 +19,7 @@ const MEMBERSHIP_META = {
         Icon: Sparkles,
         pillClassName: 'border-sky-200 bg-sky-50 text-sky-700',
         solidClassName: 'border-sky-400/20 bg-[linear-gradient(135deg,#0ea5e9,#2563eb)] text-white',
-        avatarGradient: 'from-sky-500 to-blue-600'
+        avatarBackground: 'linear-gradient(135deg,#0ea5e9,#2563eb)'
     },
     ultra: {
         title: 'Ultra',
@@ -27,7 +27,7 @@ const MEMBERSHIP_META = {
         Icon: Gem,
         pillClassName: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
         solidClassName: 'border-fuchsia-400/20 bg-[linear-gradient(135deg,#d946ef,#7c3aed)] text-white',
-        avatarGradient: 'from-fuchsia-500 to-violet-600'
+        avatarBackground: 'linear-gradient(135deg,#d946ef,#7c3aed)'
     },
     business: {
         title: 'Business',
@@ -35,7 +35,7 @@ const MEMBERSHIP_META = {
         Icon: Crown,
         pillClassName: 'border-amber-200 bg-amber-50 text-amber-700',
         solidClassName: 'border-amber-400/20 bg-[linear-gradient(135deg,#f59e0b,#f97316)] text-white',
-        avatarGradient: 'from-amber-400 to-orange-500'
+        avatarBackground: 'linear-gradient(135deg,#f59e0b,#f97316)'
     }
 } satisfies Record<MembershipTier, {
     title: string;
@@ -43,7 +43,7 @@ const MEMBERSHIP_META = {
     Icon: React.ComponentType<{ className?: string }>;
     pillClassName: string;
     solidClassName: string;
-    avatarGradient: string;
+    avatarBackground: string;
 }>;
 
 interface MembershipBadgeProps {

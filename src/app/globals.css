@@ -361,14 +361,21 @@ body[data-app-view="dashboard"]::before {
   }
 }
 
-@keyframes referencePageIn {
+@keyframes referencePageSwap {
   0% {
     opacity: 0;
-    transform: translate3d(24px, 12px, 0) scale(0.965);
+    transform: perspective(1400px) rotateY(-14deg) translate3d(42px, 0, 0) scale(0.94);
+    filter: blur(10px) saturate(0.92);
+  }
+  55% {
+    opacity: 1;
+    transform: perspective(1400px) rotateY(4deg) translate3d(-6px, 0, 0) scale(1.015);
+    filter: blur(0px) saturate(1.02);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: perspective(1400px) rotateY(0deg) translate3d(0, 0, 0) scale(1);
+    filter: blur(0px) saturate(1);
   }
 }
 
@@ -377,7 +384,9 @@ body[data-app-view="dashboard"]::before {
 }
 
 .animate-reference-page-in {
-  animation: referencePageIn 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: referencePageSwap 520ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
 }
 
 @media (prefers-reduced-motion: reduce) {

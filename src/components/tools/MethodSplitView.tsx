@@ -90,6 +90,7 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
     }, [responses]);
 
     const activeReferencePage = referencePages.find(page => page.id === activeReferencePageId) || referencePages[0];
+    const activeReferenceIndex = referencePages.findIndex(page => page.id === activeReferencePage.id);
 
     useEffect(() => {
         if (!isReferencePreviewOpen) {
@@ -210,7 +211,7 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                         className="group relative flex h-full w-full cursor-zoom-in items-center justify-center overflow-hidden px-1 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                         aria-label="Preview reference image"
                     >
-                        <div className="relative h-full w-full animate-reference-page-in">
+                        <div key={activeReferencePage.id} className="relative h-full w-full animate-reference-page-in">
                             <Image
                                 src={activeReferencePage.image}
                                 alt="Method Reference"
@@ -227,16 +228,16 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                 <div className="px-4 pb-4 lg:px-6">
                     <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-between">
                         {referencePages.length > 1 ? (
-                            <div className="flex flex-wrap justify-center gap-2">
+                            <div className="inline-flex flex-wrap justify-center gap-2 rounded-full border border-white/10 bg-white/6 p-1.5 backdrop-blur-sm">
                             {referencePages.map(page => (
                                 <button
                                     key={page.id}
                                     onClick={() => setActiveReferencePageId(page.id)}
                                     className={cn(
-                                        'px-4 py-2 rounded-full text-xs lg:text-sm font-medium transition-all border backdrop-blur-sm',
+                                        'rounded-full px-4 py-2 text-xs lg:text-sm font-medium transition-all duration-300 border border-transparent backdrop-blur-sm',
                                         page.id === activeReferencePage.id
-                                            ? `${theme.accentSolid} text-white border-transparent shadow-[0_14px_28px_rgba(15,23,42,0.18)]`
-                                            : `bg-white/8 text-slate-200 border-white/10 ${theme.accentHover}`
+                                            ? `${theme.accentSolid} translate-y-[-1px] text-white shadow-[0_14px_28px_rgba(15,23,42,0.18)]`
+                                            : `bg-transparent text-slate-200/86 hover:bg-white/10 ${theme.accentHover}`
                                     )}
                                 >
                                     {page.label}
@@ -259,7 +260,9 @@ export function MethodSplitView({ card, context, existingRun, onSave, onBack }: 
                 </div>
 
                 <div className="bg-black/22 border-t border-white/8 px-4 py-3 lg:px-6 text-[11px] lg:text-xs text-center text-slate-400">
-                    Reference Card: {card.title} / {activeReferencePage.label}
+                    <div key={`${activeReferencePage.id}-${activeReferenceIndex}`} className="animate-reference-page-in">
+                        Reference Card: {card.title} / {activeReferencePage.label}
+                    </div>
                 </div>
             </div>
 
