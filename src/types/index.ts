@@ -1,6 +1,7 @@
 export type StageId = 'overview' | 'explore' | 'imagine' | 'implement' | 'tell-story';
 export type ProjectSurface = 'hub' | StageId;
-export type AppViewState = 'landing' | 'auth' | 'dashboard' | 'sandbox' | 'profile' | 'logging_out';
+export type AppViewState = 'landing' | 'auth' | 'dashboard' | 'sandbox' | 'profile' | 'learning-center' | 'logging_out';
+export type MethodCardLayout = 'classic' | 'immersive';
 export type ToolFieldValue = string | string[] | boolean | number | null;
 export type ToolFieldMap = Record<string, ToolFieldValue>;
 export type ProjectHubTab = 'brief' | 'board' | 'sessions' | 'outcomes';
@@ -263,6 +264,23 @@ export interface WorkspaceCollaborationOverview {
 export type PermissionLevel = 'owner' | 'edit' | 'view';
 export type MembershipTier = 'free' | 'plus' | 'ultra' | 'business';
 export type BillingCycle = 'monthly' | 'yearly';
+export type OnboardingStepId =
+    | 'dashboard-summary'
+    | 'dashboard-create'
+    | 'dashboard-open'
+    | 'hub'
+    | 'overview'
+    | 'explore-home'
+    | 'explore-card'
+    | 'card-pages'
+    | 'card-ai';
+export type GuideFlowVariant = 'new-user' | 'existing-user';
+
+export interface GuidePreferences {
+    onboardingSeenAt?: string | null;
+    lastLearningCenterVisitAt?: string | null;
+    methodCardLayout?: MethodCardLayout | null;
+}
 
 export interface BillingInvoice {
     id: string;
@@ -344,6 +362,7 @@ export interface UserProfileData {
     billingInvoices: BillingInvoice[];
     createdAt?: string;
     lastSignInAt?: string | null;
+    guidePreferences?: GuidePreferences;
 }
 
 export interface ProjectState {

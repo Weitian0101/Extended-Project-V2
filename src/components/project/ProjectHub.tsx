@@ -1,9 +1,11 @@
-'use client';
+﻿'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+    ArrowUpRight,
     CalendarClock,
     CheckCircle2,
+    ChevronsUpDown,
     ClipboardList,
     FileStack,
     Flag,
@@ -24,6 +26,7 @@ import {
 
 import { AvatarCluster } from '@/components/ui/AvatarCluster';
 import { Button } from '@/components/ui/Button';
+import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RoundedSelect } from '@/components/ui/RoundedSelect';
 import { BOARD_COLUMNS, PROJECT_HUB_TABS, formatPresenceLabel } from '@/lib/collaboration';
@@ -35,6 +38,7 @@ import {
     ProjectBrief,
     ProjectData,
     ProjectHubData,
+    ProjectSurface,
     ProjectHubTab,
     ProjectSession,
     StageId,
@@ -84,6 +88,7 @@ interface ProjectHubProps {
     projectSummary: WorkspaceProject;
     profile: UserProfileData;
     hub: ProjectHubData;
+    currentSurface: ProjectSurface;
     isLoading: boolean;
     error: string | null;
     onUpdateBrief: (updates: Partial<ProjectBrief>) => Promise<ProjectBrief>;
@@ -91,21 +96,44 @@ interface ProjectHubProps {
     onUpdateRecord: <TResource extends ProjectHubResource>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
     onDeleteRecord: (resource: 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'tasks', id: string) => Promise<void>;
     onOpenStage: (stage: StageId) => void;
+    onSetProjectStage: (stage: StageId) => void;
     onSyncContext: (contextUpdates: Partial<ProjectData['context']>) => void;
 }
+
+type HubJumpTarget = 'working-setup' | 'tasks' | 'sessions' | 'review' | 'board';
+type StagePreferenceMode = 'auto' | 'manual';
+type HubInsightItem = {
+    id: string;
+    title: string;
+    subtitle?: string | null;
+    meta?: string | null;
+    icon?: React.ComponentType<{ className?: string }>;
+    accentText?: string;
+    onSelect?: () => void;
+};
+
+const STAGE_PREFERENCE_OPTIONS: Array<{ id: StageId; label: string }> = [
+    { id: 'overview', label: 'Project Context' },
+    { id: 'explore', label: 'Explore' },
+    { id: 'imagine', label: 'Imagine' },
+    { id: 'implement', label: 'Implement' },
+    { id: 'tell-story', label: 'Tell Story' }
+];
 
 export function ProjectHub({
     project,
     projectSummary,
     profile,
     hub,
+    currentSurface,
     isLoading,
     error,
     onUpdateBrief,
     onCreateRecord,
     onUpdateRecord,
     onDeleteRecord,
-    onOpenStage
+    onOpenStage,
+    onSetProjectStage
 }: ProjectHubProps) {
     const currentUserId = profile.id || 'user';
     const [activeTab, setActiveTab] = useState<ProjectHubTab>('brief');
@@ -119,16 +147,41 @@ export function ProjectHub({
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
     const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(null);
     const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+    const [pendingJumpTarget, setPendingJumpTarget] = useState<HubJumpTarget | null>(null);
+    const [isStageControlOpen, setIsStageControlOpen] = useState(false);
     const [taskFilter, setTaskFilter] = useState<'all' | TaskItem['status']>('all');
     const [boardDraft, setBoardDraft] = useState({ title: '', summary: '', type: 'idea', status: 'open-questions', ownerId: '', dueDate: '' });
     const [taskDraft, setTaskDraft] = useState({ title: '', details: '', status: 'open', ownerId: '', dueDate: '', todoScope: 'none' });
     const [sessionDraft, setSessionDraft] = useState({ title: '', goal: '', agenda: '', participants: '', scheduledAt: '' });
     const [decisionDraft, setDecisionDraft] = useState({ title: '', background: '', options: '', decision: '', rationale: '' });
     const [artifactDraft, setArtifactDraft] = useState({ title: '', summary: '', type: 'concept', status: 'draft' });
+    const mergeIncomingBriefMetadataRef = useRef(false);
+    const stageControlRef = useRef<HTMLDivElement | null>(null);
+    const taskSectionRef = useRef<HTMLDivElement | null>(null);
+    const workingSetupRef = useRef<HTMLDivElement | null>(null);
+    const sessionsSectionRef = useRef<HTMLDivElement | null>(null);
+    const outcomesSectionRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        setBriefDraft(hub.brief);
-        setRoleAssignments(parseRoleAssignments(projectSummary.members, hub.brief.teamRoles));
+        const shouldMergeBriefMetadata = mergeIncomingBriefMetadataRef.current;
+        setBriefDraft((current) => {
+            if (shouldMergeBriefMetadata) {
+                mergeIncomingBriefMetadataRef.current = false;
+                return {
+                    ...current,
+                    metadata: hub.brief.metadata,
+                    version: hub.brief.version,
+                    updatedAt: hub.brief.updatedAt,
+                    updatedBy: hub.brief.updatedBy
+                };
+            }
+
+            return hub.brief;
+        });
+
+        if (!shouldMergeBriefMetadata) {
+            setRoleAssignments(parseRoleAssignments(projectSummary.members, hub.brief.teamRoles));
+        }
     }, [hub.brief, projectSummary.members]);
 
     useEffect(() => {
@@ -138,16 +191,33 @@ export function ProjectHub({
         return () => window.removeEventListener('pointerdown', closeMenu);
     }, [contextMenu]);
 
+    useEffect(() => {
+        if (!isStageControlOpen) {
+            return;
+        }
+
+        const handlePointerDown = (event: PointerEvent) => {
+            if (!stageControlRef.current?.contains(event.target as Node)) {
+                setIsStageControlOpen(false);
+            }
+        };
+
+        window.addEventListener('pointerdown', handlePointerDown);
+        return () => window.removeEventListener('pointerdown', handlePointerDown);
+    }, [isStageControlOpen]);
+
     const nextSession = [...hub.sessions]
         .filter((session) => session.scheduledAt && session.status !== 'canceled')
         .sort((left, right) => String(left.scheduledAt).localeCompare(String(right.scheduledAt)))[0];
     const openTasks = hub.tasks.filter((task) => task.status !== 'done');
-    const reviewItems = hub.cards.filter((card) => card.status === 'ready-for-review').length
-        + hub.artifacts.filter((artifact) => artifact.status === 'ready').length
-        + hub.decisions.filter((decision) => decision.status === 'proposed').length;
-    const unresolvedBriefThreads = hub.threads.filter((thread) => thread.entityType === 'brief' && thread.status === 'open').length;
+    const reviewCardCount = hub.cards.filter((card) => card.status === 'ready-for-review').length;
+    const readyArtifactCount = hub.artifacts.filter((artifact) => artifact.status === 'ready').length;
+    const proposedDecisionCount = hub.decisions.filter((decision) => decision.status === 'proposed').length;
+    const reviewItems = reviewCardCount + readyArtifactCount + proposedDecisionCount;
+    const openThreadCount = hub.threads.filter((thread) => thread.status === 'open').length;
     const currentMember = projectSummary.members.find((member) => member.id === currentUserId);
     const canManageSharedTodos = currentMember?.permission === 'owner' || currentMember?.permission === 'edit';
+    const systemTimeZone = useMemo(() => getSystemTimezone(), []);
     const cardsByColumn = useMemo(() => Object.fromEntries(
         BOARD_COLUMNS.map((column) => [column.id, hub.cards.filter((card) => card.status === column.id)])
     ) as Record<CollaborationCard['status'], CollaborationCard[]>, [hub.cards]);
@@ -161,6 +231,203 @@ export function ProjectHub({
         member,
         tasks: openTasks.filter((task) => task.ownerId === member.id)
     })).filter((entry) => entry.tasks.length > 0);
+    const reviewRecords = [
+        ...hub.cards
+            .filter((card) => card.status === 'ready-for-review')
+            .map((card) => ({
+                id: card.id,
+                resource: 'cards' as const,
+                title: card.title,
+                subtitle: 'Board card ready for review',
+                meta: [card.ownerId ? resolveMemberName(projectSummary.members, card.ownerId) : null, card.dueDate ? formatDateOnly(card.dueDate) : null].filter(Boolean).join(' 路 '),
+                icon: ClipboardList,
+                accentText: 'text-violet-600'
+            })),
+        ...hub.artifacts
+            .filter((artifact) => artifact.status === 'ready')
+            .map((artifact) => ({
+                id: artifact.id,
+                resource: 'artifacts' as const,
+                title: artifact.title,
+                subtitle: 'Output ready to review',
+                meta: `${artifact.type}`,
+                icon: FileStack,
+                accentText: 'text-sky-600'
+            })),
+        ...hub.decisions
+            .filter((decision) => decision.status === 'proposed')
+            .map((decision) => ({
+                id: decision.id,
+                resource: 'decisions' as const,
+                title: decision.title,
+                subtitle: 'Decision waiting for alignment',
+                meta: decision.reviewDate ? formatDateOnly(decision.reviewDate) : 'Open for review',
+                icon: Gavel,
+                accentText: 'text-rose-600'
+            }))
+    ];
+    const stageMode = getStagePreferenceMode(briefDraft.metadata);
+    const manualStage = getManualStagePreference(briefDraft.metadata);
+    const displayedStage = stageMode === 'manual' && manualStage ? manualStage : project.currentStage;
+    const nextTaskDueDate = [...openTasks]
+        .filter((task) => task.dueDate)
+        .sort((left, right) => String(left.dueDate).localeCompare(String(right.dueDate)))[0]?.dueDate;
+    const reviewHelper = [
+        reviewCardCount > 0 ? `${reviewCardCount} card${reviewCardCount === 1 ? '' : 's'}` : null,
+        readyArtifactCount > 0 ? `${readyArtifactCount} output${readyArtifactCount === 1 ? '' : 's'}` : null,
+        proposedDecisionCount > 0 ? `${proposedDecisionCount} decision${proposedDecisionCount === 1 ? '' : 's'}` : null
+    ].filter(Boolean).join(' 路 ');
+
+    useEffect(() => {
+        if (!pendingJumpTarget) {
+            return;
+        }
+
+        const targetRef = pendingJumpTarget === 'working-setup'
+            ? workingSetupRef
+            : pendingJumpTarget === 'tasks'
+                ? taskSectionRef
+                : pendingJumpTarget === 'sessions'
+                    ? sessionsSectionRef
+                    : pendingJumpTarget === 'review'
+                        ? outcomesSectionRef
+                        : null;
+
+        const frameId = window.requestAnimationFrame(() => {
+            targetRef?.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+            setPendingJumpTarget(null);
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
+    }, [activeTab, pendingJumpTarget]);
+
+    const handleHubJump = (target: HubJumpTarget) => {
+        setPendingJumpTarget(null);
+        setActiveTab(
+            target === 'sessions'
+                ? 'sessions'
+                : target === 'review'
+                    ? 'outcomes'
+                    : target === 'board'
+                        ? 'board'
+                        : 'brief'
+        );
+        window.requestAnimationFrame(() => setPendingJumpTarget(target));
+    };
+
+    const handleStagePreferenceChange = async (mode: StagePreferenceMode, nextStage?: StageId) => {
+        const previousMetadata = briefDraft.metadata;
+        const resolvedStage = mode === 'manual'
+            ? (nextStage || manualStage || project.currentStage)
+            : null;
+        const nextMetadata = {
+            ...briefDraft.metadata,
+            stageMode: mode,
+            manualStage: resolvedStage
+        };
+
+        setBriefDraft((current) => ({
+            ...current,
+            metadata: nextMetadata
+        }));
+        setIsStageControlOpen(false);
+        setActionError(null);
+
+        try {
+            mergeIncomingBriefMetadataRef.current = true;
+            await onUpdateBrief({
+                metadata: nextMetadata
+            });
+
+            if (mode === 'manual' && resolvedStage) {
+                onSetProjectStage(resolvedStage);
+                return;
+            }
+
+            if (mode === 'auto' && currentSurface !== 'hub') {
+                onSetProjectStage(currentSurface as StageId);
+            }
+        } catch (stageError) {
+            mergeIncomingBriefMetadataRef.current = false;
+            setBriefDraft((current) => ({
+                ...current,
+                metadata: previousMetadata
+            }));
+            setActionError(stageError instanceof Error ? stageError.message : 'Unable to update the project stage preference.');
+        }
+    };
+
+    const sessionPreviewItems: HubInsightItem[] = hub.sessions
+        .filter((session) => session.scheduledAt && session.status !== 'canceled')
+        .sort((left, right) => String(left.scheduledAt).localeCompare(String(right.scheduledAt)))
+        .slice(0, 4)
+        .map((session) => ({
+            id: session.id,
+            title: session.title,
+            subtitle: formatDateTime(session.scheduledAt, 'Time not set'),
+            meta: session.goal || 'Open session',
+            icon: CalendarClock,
+            accentText: 'text-emerald-600',
+            onSelect: () => {
+                setDetailState({ resource: 'sessions', record: session });
+                handleHubJump('sessions');
+            }
+        }));
+
+    const taskPreviewItems: HubInsightItem[] = openTasks
+        .slice(0, 4)
+        .map((task) => ({
+            id: task.id,
+            title: task.title,
+            subtitle: task.ownerId ? resolveMemberName(projectSummary.members, task.ownerId) : 'Unassigned',
+            meta: task.dueDate ? formatDateOnly(task.dueDate) : 'No due date',
+            icon: ClipboardList,
+            accentText: 'text-amber-600',
+            onSelect: () => {
+                setDetailState({ resource: 'tasks', record: task });
+                handleHubJump('tasks');
+            }
+        }));
+
+    const reviewPreviewItems: HubInsightItem[] = reviewRecords
+        .slice(0, 4)
+        .map((record) => ({
+            id: record.id,
+            title: record.title,
+            subtitle: record.subtitle,
+            meta: record.meta,
+            icon: record.icon,
+            accentText: record.accentText,
+            onSelect: () => {
+                if (record.resource === 'cards') {
+                    const item = hub.cards.find((card) => card.id === record.id);
+                    if (item) {
+                        setDetailState({ resource: 'cards', record: item });
+                    }
+                    handleHubJump('board');
+                    return;
+                }
+
+                if (record.resource === 'artifacts') {
+                    const item = hub.artifacts.find((artifact) => artifact.id === record.id);
+                    if (item) {
+                        setDetailState({ resource: 'artifacts', record: item });
+                    }
+                }
+
+                if (record.resource === 'decisions') {
+                    const item = hub.decisions.find((decision) => decision.id === record.id);
+                    if (item) {
+                        setDetailState({ resource: 'decisions', record: item });
+                    }
+                }
+
+                handleHubJump('review');
+            }
+        }));
 
     const handleBriefSave = async () => {
         setSavingBrief(true);
@@ -383,19 +650,28 @@ export function ProjectHub({
     };
 
     const handleSessionSubmit = async () => {
+        const scheduledAt = sessionDraft.scheduledAt ? new Date(sessionDraft.scheduledAt).toISOString() : null;
+
         if (editingRecord?.resource === 'sessions') {
             const existing = hub.sessions.find((session) => session.id === editingRecord.recordId);
             if (!existing) return;
             await onUpdateRecord('sessions', existing.id, {
                 ...existing,
                 ...sessionDraft,
-                scheduledAt: sessionDraft.scheduledAt ? new Date(sessionDraft.scheduledAt).toISOString() : null,
+                scheduledAt,
+                metadata: {
+                    ...existing.metadata,
+                    timeZone: systemTimeZone
+                },
                 version: existing.version
             });
         } else {
             await onCreateRecord('sessions', {
                 ...sessionDraft,
-                scheduledAt: sessionDraft.scheduledAt ? new Date(sessionDraft.scheduledAt).toISOString() : null
+                scheduledAt,
+                metadata: {
+                    timeZone: systemTimeZone
+                }
             });
         }
 
@@ -441,13 +717,19 @@ export function ProjectHub({
     };
 
     if (isLoading) {
-        return <div className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]">Loading project hub...</div>;
+        return (
+            <BrandedLoadingScreen
+                compact
+                label="Loading project hub"
+                detail="Pulling together the brief, sessions, decisions, and team activity."
+            />
+        );
     }
 
     return (
         <div className="scrollbar-none h-full overflow-y-auto px-4 py-5 lg:px-8 lg:py-8">
             <div className="mx-auto max-w-7xl space-y-6">
-                <section className="surface-panel-strong relative overflow-hidden rounded-[34px] p-6 lg:p-8">
+                <section className="surface-panel-strong relative z-20 overflow-visible rounded-[34px] p-6 lg:p-8">
                     <div className={cn('absolute inset-0 bg-gradient-to-br opacity-15', projectSummary.accent)} />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_72%)]" />
                     <div className="relative grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
@@ -459,22 +741,130 @@ export function ProjectHub({
                             <h1 className="mt-4 text-3xl font-display font-semibold text-[var(--foreground)] lg:text-5xl">{project.context.name}</h1>
                             <p className="mt-4 max-w-3xl text-base leading-relaxed text-[var(--foreground-soft)]">{projectSummary.summary}</p>
                             <div className="mt-6 flex flex-wrap gap-2">
-                                <HubChip label={`Stage: ${formatStageLabel(project.currentStage)}`} />
-                                <HubChip label={`${projectSummary.members.length} members`} />
-                                <HubChip label={`${hub.activity.length} activity events`} />
+                                <div ref={stageControlRef} className="relative z-30">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsStageControlOpen((current) => !current)}
+                                        className="group relative flex min-w-[8.5rem] items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 pr-9 text-center text-xs font-medium text-[var(--foreground-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:text-[var(--foreground)]"
+                                        aria-haspopup="menu"
+                                        aria-expanded={isStageControlOpen}
+                                    >
+                                        <div className="min-w-0 text-center">
+                                            <div className="text-sm font-semibold text-[var(--foreground)]">
+                                                {formatStageLabel(displayedStage)}
+                                            </div>
+                                            <div className="mt-0.5 text-[10px] font-semibold tracking-[0.08em] text-[var(--foreground-muted)]">
+                                                {`stage · ${stageMode}`}
+                                            </div>
+                                        </div>
+                                        <ChevronsUpDown className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--foreground-muted)] transition-transform duration-200 group-hover:text-[var(--foreground)]" />
+                                    </button>
+
+                                    <div
+                                        className={cn(
+                                            'absolute left-0 top-[calc(100%+0.75rem)] z-40 w-[16.5rem] rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-2.5 shadow-[0_24px_52px_rgba(15,23,42,0.18)] transition-all duration-200',
+                                            isStageControlOpen ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
+                                        )}
+                                    >
+                                        <div className="space-y-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleStagePreferenceChange('auto')}
+                                                className={cn(
+                                                    'flex w-full items-start justify-between gap-3 rounded-[18px] border px-3 py-3 text-left transition-all duration-200',
+                                                    stageMode === 'auto'
+                                                        ? 'border-slate-400/18 bg-[var(--panel)] text-[var(--foreground)]'
+                                                        : 'border-transparent bg-[var(--panel)]/70 text-[var(--foreground-soft)] hover:border-[var(--panel-border)] hover:text-[var(--foreground)]'
+                                                )}
+                                            >
+                                                <div>
+                                                    <div className="text-sm font-semibold">Auto</div>
+                                                    <div className="mt-1 text-[11px] text-[var(--foreground-muted)]">
+                                                        Follows the stage you open.
+                                                    </div>
+                                                </div>
+                                                {stageMode === 'auto' && (
+                                                    <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-600">
+                                                        Active
+                                                    </div>
+                                                )}
+                                            </button>
+                                            {STAGE_PREFERENCE_OPTIONS.map((option) => (
+                                                <button
+                                                    key={option.id}
+                                                    type="button"
+                                                    onClick={() => void handleStagePreferenceChange('manual', option.id)}
+                                                    className={cn(
+                                                        'flex w-full items-start justify-between gap-3 rounded-[18px] border px-3 py-3 text-left transition-all duration-200',
+                                                        stageMode === 'manual' && manualStage === option.id
+                                                            ? 'border-slate-400/18 bg-[var(--panel)] text-[var(--foreground)]'
+                                                            : 'border-transparent bg-[var(--panel)]/70 text-[var(--foreground-soft)] hover:border-[var(--panel-border)] hover:text-[var(--foreground)]'
+                                                    )}
+                                                >
+                                                    <div className="text-sm font-semibold">{option.label}</div>
+                                                    {stageMode === 'manual' && manualStage === option.id && (
+                                                        <div className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-600">
+                                                            Manual
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                <HubStatChip value={`${projectSummary.members.length}`} label="members" />
+                                <HubStatChip value={`${hub.activity.length}`} label="activity events" />
                             </div>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <HubSummaryTile
+                            <HubInsightTile
                                 icon={Milestone}
                                 label="Next milestone"
                                 value={briefDraft.milestones || 'Set the next milestone'}
                                 helper={formatDateOnly(getMetadataString(briefDraft.metadata, 'milestoneDate'), 'No deadline')}
                                 accent="text-sky-600"
+                                items={[]}
+                                emptyState="No milestone yet."
+                                onOpen={() => handleHubJump('working-setup')}
                             />
-                            <HubSummaryTile icon={CalendarClock} label="Next session" value={nextSession?.title || 'No session scheduled'} helper={formatDateTime(nextSession?.scheduledAt, null)} accent="text-emerald-600" />
-                            <HubSummaryTile icon={ClipboardList} label="Open tasks" value={`${openTasks.length}`} accent="text-amber-600" />
-                            <HubSummaryTile icon={CheckCircle2} label="Needs review" value={`${reviewItems}`} helper={`${unresolvedBriefThreads} brief thread${unresolvedBriefThreads === 1 ? '' : 's'}`} accent="text-violet-600" />
+                            <HubInsightTile
+                                icon={CalendarClock}
+                                label="Next session"
+                                value={nextSession?.title || 'No session scheduled'}
+                                helper={formatDateTime(nextSession?.scheduledAt, 'No session planned')}
+                                accent="text-emerald-600"
+                                items={sessionPreviewItems}
+                                maxItems={sessionPreviewItems.length}
+                                emptyState="No session scheduled yet."
+                                onOpen={() => handleHubJump('sessions')}
+                            />
+                            <HubInsightTile
+                                icon={ClipboardList}
+                                label="Open tasks"
+                                value={`${openTasks.length}`}
+                                helper={nextTaskDueDate ? formatDateOnly(nextTaskDueDate) : (openTasks.length > 0 ? 'No due dates' : 'Nothing open')}
+                                accent="text-amber-600"
+                                items={taskPreviewItems}
+                                emptyState="No open tasks."
+                                onOpen={() => handleHubJump('tasks')}
+                            />
+                            <HubInsightTile
+                                icon={CheckCircle2}
+                                label="Needs review"
+                                value={`${reviewItems}`}
+                                helper={reviewItems > 0 ? reviewHelper : `${openThreadCount} open thread${openThreadCount === 1 ? '' : 's'}`}
+                                accent="text-violet-600"
+                                items={reviewPreviewItems}
+                                emptyState="Nothing is waiting for review right now."
+                                onOpen={() => {
+                                    const firstReviewItem = reviewPreviewItems[0];
+                                    if (firstReviewItem?.onSelect) {
+                                        firstReviewItem.onSelect();
+                                        return;
+                                    }
+                                    handleHubJump('review');
+                                }}
+                            />
                         </div>
                     </div>
                     <div className="relative mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4">
@@ -514,7 +904,7 @@ export function ProjectHub({
                 {activeTab === 'brief' && (
                     <div className="grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
                         <div className="space-y-6">
-                            <div className="surface-panel-strong rounded-[30px] p-6">
+                            <div ref={taskSectionRef} className="surface-panel-strong rounded-[30px] p-6">
                                 <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                                     <SectionHeading icon={ListTodo} title="Team todo lists" compact />
                                     <Button variant="secondary" size="sm" onClick={() => onOpenStage('overview')}>
@@ -590,7 +980,7 @@ export function ProjectHub({
                             </div>
                         </div>
                         <div className="space-y-6">
-                            <div className="surface-panel-strong rounded-[30px] p-6">
+                            <div ref={workingSetupRef} className="surface-panel-strong rounded-[30px] p-6">
                                 <SectionHeading icon={Target} title="Working setup" />
                                 <div className="grid gap-4 md:grid-cols-[1fr_220px]">
                                     <StructuredField label="Next milestone" value={briefDraft.milestones} onChange={(value) => setBriefDraft((current) => ({ ...current, milestones: value }))} />
@@ -656,7 +1046,7 @@ export function ProjectHub({
                                 </div>
                                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                                     <MiniMetric label="Role coverage" value={`${projectSummary.members.length}`} helper="active members" />
-                                    <MiniMetric label="Open threads" value={`${unresolvedBriefThreads}`} helper="brief items" />
+                                    <MiniMetric label="Open threads" value={`${openThreadCount}`} helper="across this hub" />
                                 </div>
                             </div>
                         </div>
@@ -824,7 +1214,7 @@ export function ProjectHub({
                 )}
 
                 {activeTab === 'sessions' && (
-                    <div className="space-y-6">
+                    <div ref={sessionsSectionRef} className="space-y-6">
                         <div className="surface-panel-strong rounded-[30px] p-6">
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                 <div>
@@ -860,7 +1250,7 @@ export function ProjectHub({
                 )}
 
                 {activeTab === 'outcomes' && (
-                    <div className="space-y-6">
+                    <div ref={outcomesSectionRef} className="space-y-6">
                         <div className="surface-panel-strong rounded-[30px] p-6">
                             <div className="flex items-start gap-4">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]">
@@ -917,7 +1307,7 @@ export function ProjectHub({
                                     {hub.artifacts.map((artifact) => (
                                         <button key={artifact.id} type="button" onClick={() => setDetailState({ resource: 'artifacts', record: artifact })} className="w-full rounded-[24px] border border-sky-300/16 bg-[linear-gradient(180deg,rgba(56,189,248,0.10),rgba(56,189,248,0.03))] px-4 py-4 text-left transition-transform hover:-translate-y-0.5">
                                             <div className="text-sm font-semibold text-[var(--foreground)]">{artifact.title}</div>
-                                            <div className="mt-2 inline-flex rounded-full border border-sky-400/18 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-500">{artifact.type} · {artifact.status}</div>
+                                            <div className="mt-2 inline-flex rounded-full border border-sky-400/18 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-500">{artifact.type} 路 {artifact.status}</div>
                                             <div className="mt-3 line-clamp-2 text-sm text-[var(--foreground-soft)]">{artifact.summary || 'No output summary yet.'}</div>
                                         </button>
                                     ))}
@@ -970,8 +1360,9 @@ export function ProjectHub({
                             <ModalInput label="Agenda" value={sessionDraft.agenda} onChange={(value) => setSessionDraft((current) => ({ ...current, agenda: value }))} multiline />
                             <ModalInput label="Participants" value={sessionDraft.participants} onChange={(value) => setSessionDraft((current) => ({ ...current, participants: value }))} />
                             <label className="block">
-                                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Time ({getTimezoneLabel()})</div>
+                                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Time ({systemTimeZone})</div>
                                 <input type="datetime-local" value={sessionDraft.scheduledAt} onChange={(event) => setSessionDraft((current) => ({ ...current, scheduledAt: event.target.value }))} className="w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--foreground)]" />
+                                <div className="mt-2 text-xs text-[var(--foreground-muted)]">Sessions are saved using your current system timezone.</div>
                             </label>
                             <ModalActions submitLabel={editingRecord?.resource === 'sessions' ? 'Update session' : 'Create session'} onSubmit={() => void handleSessionSubmit()} />
                         </>
@@ -1105,6 +1496,21 @@ function getMetadataString(metadata: ProjectBrief['metadata'], key: string) {
     return typeof value === 'string' ? value : '';
 }
 
+function getStagePreferenceMode(metadata: ProjectBrief['metadata']): StagePreferenceMode {
+    return metadata.stageMode === 'manual' ? 'manual' : 'auto';
+}
+
+function getManualStagePreference(metadata: ProjectBrief['metadata']): StageId | null {
+    const value = metadata.manualStage;
+    return value === 'overview'
+        || value === 'explore'
+        || value === 'imagine'
+        || value === 'implement'
+        || value === 'tell-story'
+        ? value
+        : null;
+}
+
 function formatStageLabel(stage?: StageId | null) {
     if (!stage) return 'Overview';
     return stage.split('-').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
@@ -1124,8 +1530,8 @@ function formatDateOnly(value?: string | null, fallback: string = 'No deadline')
     return new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric', year: 'numeric' }).format(parsed);
 }
 
-function getTimezoneLabel() {
-    return new Intl.DateTimeFormat('en-GB', { timeZoneName: 'short' }).formatToParts(new Date()).find((part) => part.type === 'timeZoneName')?.value || 'UTC';
+function getSystemTimezone() {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 }
 
 function getComposerTitle(mode: Exclude<ComposerMode, null>, editingRecord: { resource: ProjectHubResource; recordId: string } | null) {
@@ -1154,12 +1560,132 @@ function getBoardCardTone(type: CollaborationCard['type']) {
     return 'border-slate-300/18 bg-[linear-gradient(180deg,rgba(148,163,184,0.10),rgba(148,163,184,0.03))]';
 }
 
-function HubChip({ label }: { label: string }) {
-    return <div className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-1.5 text-xs font-medium text-[var(--foreground-soft)]">{label}</div>;
+function HubStatChip({ value, label }: { value: string; label: string }) {
+    return (
+        <div className="flex min-w-[5.25rem] flex-col items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-center">
+            <div className="text-sm font-semibold text-[var(--foreground)]">{value}</div>
+            <div className="mt-0.5 text-[10px] font-semibold tracking-[0.16em] text-[var(--foreground-muted)]">
+                {label}
+            </div>
+        </div>
+    );
 }
 
-function HubSummaryTile({ icon: Icon, label, value, helper, accent }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; helper?: string | null; accent: string }) {
-    return <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4"><div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]"><Icon className={cn('h-4 w-4', accent)} />{label}</div><div className="mt-3 text-base font-semibold text-[var(--foreground)]">{value}</div>{helper && <div className="mt-1 text-xs text-[var(--foreground-muted)]">{helper}</div>}</div>;
+function HubInsightTile({
+    icon: Icon,
+    label,
+    value,
+    helper,
+    accent,
+    items,
+    maxItems = 4,
+    emptyState,
+    onOpen
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    value: string;
+    helper?: string | null;
+    accent: string;
+    items: HubInsightItem[];
+    maxItems?: number;
+    emptyState: string;
+    onOpen: () => void;
+}) {
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const closeTimerRef = useRef<number | null>(null);
+    const hasItems = items.length > 0;
+
+    const openPreview = () => {
+        if (closeTimerRef.current) {
+            window.clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+
+        if (hasItems) {
+            setIsPreviewOpen(true);
+        }
+    };
+
+    const closePreview = () => {
+        if (closeTimerRef.current) {
+            window.clearTimeout(closeTimerRef.current);
+        }
+
+        closeTimerRef.current = window.setTimeout(() => {
+            setIsPreviewOpen(false);
+        }, 140);
+    };
+
+    useEffect(() => () => {
+        if (closeTimerRef.current) {
+            window.clearTimeout(closeTimerRef.current);
+        }
+    }, []);
+
+    return (
+        <div
+            className="relative isolate z-20 overflow-visible rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4 transition-[transform,z-index] duration-200 hover:z-30 hover:-translate-y-0.5"
+            onMouseEnter={openPreview}
+            onMouseLeave={closePreview}
+            onFocus={openPreview}
+            onBlur={closePreview}
+        >
+            <button
+                type="button"
+                onClick={onOpen}
+                className="w-full text-left"
+            >
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
+                    <Icon className={cn('h-4 w-4', accent)} />
+                    {label}
+                </div>
+                <div className="mt-3 text-base font-semibold text-[var(--foreground)]">{value}</div>
+                <div className="mt-1 text-xs text-[var(--foreground-muted)]">
+                    {helper || emptyState}
+                </div>
+            </button>
+
+            {hasItems && (
+                <div
+                    className={cn(
+                        'absolute left-0 right-0 top-full z-40 mt-3 rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-3 shadow-[0_24px_44px_rgba(15,23,42,0.2)] transition-all duration-200',
+                        isPreviewOpen ? 'pointer-events-auto translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
+                    )}
+                    onMouseEnter={openPreview}
+                    onMouseLeave={closePreview}
+                >
+                    <div className="space-y-2">
+                        {items.slice(0, maxItems).map((item) => (
+                            <button
+                                key={item.id}
+                                type="button"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    item.onSelect?.();
+                                }}
+                                className="group/item relative flex w-full items-start justify-between gap-3 overflow-hidden rounded-[16px] border border-transparent bg-[var(--panel)] px-3 py-3 text-left transition-all duration-200 hover:border-[var(--panel-border)] hover:bg-[var(--panel-strong)]"
+                            >
+                                <div className="flex min-w-0 items-start gap-3">
+                                    {item.icon && (
+                                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] transition-transform duration-200 group-hover/item:scale-105">
+                                            <item.icon className={cn('h-4 w-4', item.accentText || accent)} />
+                                        </div>
+                                    )}
+                                    <div className="min-w-0">
+                                        <div className="text-sm font-medium text-[var(--foreground)]">{item.title}</div>
+                                        {item.subtitle && <div className="mt-1 text-xs text-[var(--foreground-muted)]">{item.subtitle}</div>}
+                                        {item.meta && <div className="mt-1 text-xs font-medium text-[var(--foreground-soft)]">{item.meta}</div>}
+                                    </div>
+                                </div>
+                                <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-[var(--foreground-muted)] transition-all duration-200 group-hover/item:translate-x-0.5 group-hover/item:text-[var(--foreground)]" />
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 function SectionHeading({ icon: Icon, title, compact = false }: { icon: React.ComponentType<{ className?: string }>; title: string; compact?: boolean }) {
@@ -1389,3 +1915,4 @@ function toLocalDateTimeInput(value?: string | null) {
     const adjusted = new Date(date.getTime() - offset * 60_000);
     return adjusted.toISOString().slice(0, 16);
 }
+

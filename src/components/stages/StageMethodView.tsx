@@ -3,10 +3,12 @@ import Image from 'next/image';
 import { ArrowRight, BookOpen, Play, ScanSearch, ScrollText, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
+import { SpotlightGuide } from '@/components/guide/SpotlightGuide';
 import { Button } from '@/components/ui/Button';
 import { MethodSplitView } from '@/components/tools/MethodSplitView';
 import { useProjectData } from '@/hooks/useProjectData';
-import { MethodCard, ProjectHubData, StageId, ToolRun } from '@/types';
+import { getGuideProgress } from '@/data/onboarding';
+import { GuideFlowVariant, MethodCard, MethodCardLayout, OnboardingStepId, ProjectHubData, StageId, ToolRun } from '@/types';
 import { METHOD_LIBRARY } from '@/data/methodLibrary';
 import { STAGE_GUIDE_GROUPS } from '@/data/stageGuides';
 import { cn } from '@/lib/utils';
@@ -20,6 +22,7 @@ interface StageMethodViewProps {
     isHubLoading?: boolean;
     onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
     onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    methodCardLayout?: MethodCardLayout;
     stage: BrowsableStage;
     stageTitle: string;
     entryHeadline: string;
@@ -32,6 +35,10 @@ interface StageMethodViewProps {
     guideActionLabel?: string;
     guideImages: [string, string];
     entryImages?: [string, string];
+    guideStep?: OnboardingStepId | null;
+    guideVariant?: GuideFlowVariant | null;
+    onGuideStepChange?: (step: OnboardingStepId | null) => void;
+    onDismissGuide?: () => void;
 }
 
 const createToolRunRecord = (method: MethodCard, stage: BrowsableStage): ToolRun => {
@@ -137,6 +144,7 @@ export function StageMethodView({
     isHubLoading = false,
     onCreateHubRecord,
     onUpdateHubRecord,
+    methodCardLayout = 'classic',
     stage,
     stageTitle,
     entryHeadline,
@@ -148,7 +156,11 @@ export function StageMethodView({
     previewButtonLabel = 'Preview Guide',
     guideActionLabel = 'View Guide',
     guideImages,
-    entryImages
+    entryImages,
+    guideStep,
+    guideVariant,
+    onGuideStepChange,
+    onDismissGuide
 }: StageMethodViewProps) {
     const { project, updateProject } = useProjectData(projectId, projectName);
     const [viewState, setViewState] = useState<'entry' | 'tools' | 'workspace'>('entry');
@@ -158,6 +170,8 @@ export function StageMethodView({
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [isOpening, setIsOpening] = useState(false);
     const openTimerRef = useRef<number | null>(null);
+    const entryContentRef = useRef<HTMLDivElement | null>(null);
+    const firstMethodCardRef = useRef<HTMLDivElement | null>(null);
 
     const methods = METHOD_LIBRARY.filter(method => method.stage === stage);
     const methodsById = new Map(methods.map(method => [method.id, method]));
@@ -173,6 +187,9 @@ export function StageMethodView({
     const theme = STAGE_THEMES[stage];
     const introImages = entryImages || guideImages;
     const stageName = stageTitle.replace(' Stage', '');
+    const isExploreGuide = stage === 'explore' && Boolean(guideVariant);
+    const exploreHomeGuide = isExploreGuide && guideVariant ? getGuideProgress(guideVariant, 'explore-home') : null;
+    const exploreCardGuide = isExploreGuide && guideVariant ? getGuideProgress(guideVariant, 'explore-card') : null;
 
     useEffect(() => {
         return () => {
@@ -182,22 +199,33 @@ export function StageMethodView({
         };
     }, []);
 
-    const handleEnterAtlas = () => {
+    const handleEnterAtlas = (nextGuideStep?: OnboardingStepId) => {
         if (isOpening) return;
         setIsOpening(true);
 
         openTimerRef.current = window.setTimeout(() => {
             setViewState('tools');
+            if (nextGuideStep) {
+                onGuideStepChange?.(nextGuideStep);
+            }
             setIsOpening(false);
         }, 240);
     };
 
     const handleStartTool = (method: MethodCard) => {
-        const newRun = createToolRunRecord(method, stage);
+        const existingRun = [...project.toolRuns]
+            .filter((run) => run.methodCardId === method.id && run.stage === stage)
+            .sort((left, right) => right.updatedAt - left.updatedAt)[0];
+        const nextRun = existingRun || createToolRunRecord(method, stage);
 
-        updateProject({ toolRuns: [...project.toolRuns, newRun] });
+        if (!existingRun) {
+            updateProject({ toolRuns: [...project.toolRuns, nextRun] });
+        }
+        if (stage === 'explore' && guideStep === 'explore-card') {
+            onGuideStepChange?.('card-pages');
+        }
         setActiveMethod(method);
-        setActiveRunId(newRun.id);
+        setActiveRunId(nextRun.id);
         setViewState('workspace');
     };
 
@@ -230,6 +258,11 @@ export function StageMethodView({
                 onUpdateHubRecord={onUpdateHubRecord}
                 onSave={handleSaveRun}
                 onBack={() => setViewState('tools')}
+                layout={methodCardLayout}
+                guideStep={guideStep}
+                guideVariant={guideVariant}
+                onGuideStepChange={onGuideStepChange}
+                onDismissGuide={onDismissGuide}
             />
         );
     }
@@ -251,7 +284,7 @@ export function StageMethodView({
                     </div>
                 </div>
                 {viewState === 'entry' && (
-                    <Button size="sm" onClick={handleEnterAtlas}>
+                    <Button size="sm" onClick={() => handleEnterAtlas()}>
                         Open Atlas <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                 )}
@@ -262,7 +295,7 @@ export function StageMethodView({
                     <div className="mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)] lg:gap-12">
                         <button
                             type="button"
-                            onClick={handleEnterAtlas}
+                            onClick={() => handleEnterAtlas()}
                             className="group order-1 block w-full text-left outline-none focus-visible:rounded-[28px] focus-visible:ring-2 focus-visible:ring-slate-300/80 lg:order-2"
                             aria-label={`Open ${stageName} atlas`}
                         >
@@ -304,7 +337,7 @@ export function StageMethodView({
                             </div>
                         </button>
 
-                        <div className="order-2 flex flex-col justify-center lg:order-1">
+                        <div ref={entryContentRef} className="order-2 flex flex-col justify-center lg:order-1">
                             <div className={cn('inline-flex w-fit rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]', theme.badge)}>
                                 {theme.label}
                             </div>
@@ -323,7 +356,10 @@ export function StageMethodView({
                             </div>
 
                             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                                <Button size="lg" onClick={handleEnterAtlas}>
+                                <Button
+                                    size="lg"
+                                    onClick={() => handleEnterAtlas(guideStep === 'explore-home' ? 'explore-card' : undefined)}
+                                >
                                     Open {stageName} Atlas <ArrowRight className="ml-2 h-4 w-4" />
                                 </Button>
                                 <Button size="lg" variant="secondary" onClick={() => setShowGuide(true)}>
@@ -362,7 +398,7 @@ export function StageMethodView({
                                             type="button"
                                             onClick={() => setActiveCategory('all')}
                                             className={cn(
-                                                'rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                                                'rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5',
                                                 activeCategory === 'all' ? theme.badge : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
                                             )}
                                         >
@@ -374,7 +410,7 @@ export function StageMethodView({
                                                 type="button"
                                                 onClick={() => setActiveCategory(section.title)}
                                                 className={cn(
-                                                    'rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+                                                    'rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5',
                                                     activeCategory === section.title ? theme.badge : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
                                                 )}
                                         >
@@ -387,24 +423,23 @@ export function StageMethodView({
                                 <div
                                     onClick={() => setShowGuide(true)}
                                     className={cn(
-                                        'cursor-pointer rounded-[28px] bg-gradient-to-r p-6 text-white shadow-[0_24px_54px_rgba(15,23,42,0.18)] transition-all duration-300 hover:-translate-y-1 lg:p-7',
-                                        theme.banner
+                                        'surface-panel relative overflow-hidden cursor-pointer rounded-[28px] border border-[var(--panel-border)] p-6 shadow-[0_22px_48px_rgba(15,23,42,0.10)] transition-all duration-300 hover:-translate-y-1 lg:p-7 dark:shadow-[0_28px_58px_rgba(2,6,23,0.28)]',
                                     )}
                                 >
                                     <div className="flex h-full flex-col justify-between gap-4">
                                         <div className="flex items-start gap-4">
-                                            <div className="rounded-2xl border border-white/20 bg-white/18 p-3 backdrop-blur-sm">
-                                                <BookOpen className="w-7 h-7 text-white" />
+                                            <div className={cn('rounded-2xl border p-3', theme.border, theme.softBg)}>
+                                                <BookOpen className={cn('h-7 w-7', theme.accentText)} />
                                             </div>
                                             <div>
-                                                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/72">{guideEyebrow}</div>
-                                                <h3 className="mt-2 text-2xl font-display font-semibold">{guideTitle}</h3>
-                                                <p className={cn('mt-2 max-w-2xl text-sm leading-relaxed lg:text-base', theme.bannerText)}>
+                                                <div className={cn('text-[11px] font-semibold uppercase tracking-[0.24em]', theme.accentText)}>{guideEyebrow}</div>
+                                                <h3 className="mt-2 text-2xl font-display font-semibold text-[var(--foreground)]">{guideTitle}</h3>
+                                                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--foreground-soft)] lg:text-base">
                                                     {guideDescription}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className={cn('inline-flex w-fit rounded-full bg-white/90 px-5 py-2 text-sm font-semibold shadow-sm', theme.buttonText)}>
+                                        <div className={cn('inline-flex w-fit rounded-full border px-5 py-2 text-sm font-semibold', theme.border, theme.softBg, theme.accentText)}>
                                             {guideActionLabel}
                                         </div>
                                     </div>
@@ -436,6 +471,7 @@ export function StageMethodView({
                                         {section.methods.map(method => (
                                             <div
                                                 key={method.id}
+                                                ref={section.methods[0] === method && activeCategory === 'all' ? firstMethodCardRef : null}
                                                 onClick={() => handleStartTool(method)}
                                                 className={cn(
                                                     'surface-panel group relative cursor-pointer overflow-hidden rounded-[28px] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_26px_60px_rgba(15,23,42,0.14)]',
@@ -511,6 +547,41 @@ export function StageMethodView({
                     </div>
                 </div>
             )}
+
+            <SpotlightGuide
+                open={isExploreGuide && guideStep === 'explore-home' && viewState === 'entry'}
+                targetRef={entryContentRef}
+                currentStep={exploreHomeGuide?.currentStep || 5}
+                totalSteps={exploreHomeGuide?.totalSteps || 8}
+                placement="bottom"
+                title="Explore is the Beyond Post-its discovery deck"
+                description="Beyond Post-its is Academy of Design Thinking's card-based method system for moving past loose sticky-note sessions into structured facilitation. Explore is the part of the deck that helps you frame the challenge, research people and context, and turn findings into insight."
+                purpose="Start here when you need to understand the problem properly before ideating. The atlas gives you a browsable set of method cards you can open one by one."
+                primaryAction={{
+                    label: 'Open Explore Atlas',
+                    onClick: () => handleEnterAtlas('explore-card')
+                }}
+                onBack={() => onGuideStepChange?.('overview')}
+                onSkip={onDismissGuide}
+            />
+            <SpotlightGuide
+                open={isExploreGuide && guideStep === 'explore-card' && viewState === 'tools'}
+                targetRef={firstMethodCardRef}
+                currentStep={exploreCardGuide?.currentStep || 6}
+                totalSteps={exploreCardGuide?.totalSteps || 8}
+                placement="right"
+                title="Open a method card to start using the deck"
+                description="Each card is a self-contained method. The front shows the method itself, and the AI page gives you prompt ideas for running it with more confidence."
+                purpose="Choose a card to move from browsing the atlas into the actual method workspace. That is where you can switch between the front and AI prompt pages and work with the facilitator."
+                primaryAction={methods[0] ? {
+                    label: `Open "${methods[0].title}"`,
+                    onClick: () => handleStartTool(methods[0])
+                } : undefined}
+                onBack={() => onGuideStepChange?.('explore-home')}
+                onSkip={onDismissGuide}
+            />
         </div>
     );
 }
+
+

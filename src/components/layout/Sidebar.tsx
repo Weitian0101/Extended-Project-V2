@@ -17,6 +17,7 @@ interface SidebarProps {
     isCollapsed?: boolean;
     onClose?: () => void;
     onToggleCollapse?: () => void;
+    navButtonRefs?: Partial<Record<ProjectSurface, React.RefObject<HTMLButtonElement | null>>>;
 }
 
 const STAGE_ACCENTS: Record<StageId, {
@@ -27,40 +28,40 @@ const STAGE_ACCENTS: Record<StageId, {
 }> = {
     overview: {
         indicator: 'bg-slate-400 shadow-[0_0_18px_rgba(148,163,184,0.3)]',
-        activeIcon: 'bg-slate-500/12 text-slate-600 border-slate-300/60',
-        activeText: 'text-slate-700',
+        activeIcon: 'bg-slate-500/12 text-slate-600 border-slate-300/60 dark:bg-slate-300/12 dark:text-slate-100 dark:border-slate-400/30',
+        activeText: 'text-slate-700 dark:text-slate-100',
         softGlow: 'bg-slate-300/30'
     },
     explore: {
         indicator: 'bg-emerald-400 shadow-[0_0_18px_rgba(16,185,129,0.3)]',
-        activeIcon: 'bg-emerald-500/12 text-emerald-700 border-emerald-200/80',
-        activeText: 'text-emerald-700',
+        activeIcon: 'bg-emerald-500/12 text-emerald-700 border-emerald-200/80 dark:bg-emerald-400/14 dark:text-emerald-200 dark:border-emerald-400/26',
+        activeText: 'text-emerald-700 dark:text-emerald-200',
         softGlow: 'bg-emerald-300/26'
     },
     imagine: {
         indicator: 'bg-rose-400 shadow-[0_0_18px_rgba(244,63,94,0.3)]',
-        activeIcon: 'bg-rose-500/12 text-rose-700 border-rose-200/80',
-        activeText: 'text-rose-700',
+        activeIcon: 'bg-rose-500/12 text-rose-700 border-rose-200/80 dark:bg-rose-400/14 dark:text-rose-200 dark:border-rose-400/26',
+        activeText: 'text-rose-700 dark:text-rose-200',
         softGlow: 'bg-rose-300/26'
     },
     implement: {
         indicator: 'bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.3)]',
-        activeIcon: 'bg-amber-500/12 text-amber-700 border-amber-200/80',
-        activeText: 'text-amber-700',
+        activeIcon: 'bg-amber-500/12 text-amber-700 border-amber-200/80 dark:bg-amber-400/14 dark:text-amber-200 dark:border-amber-400/28',
+        activeText: 'text-amber-700 dark:text-amber-200',
         softGlow: 'bg-amber-300/26'
     },
     'tell-story': {
         indicator: 'bg-sky-400 shadow-[0_0_18px_rgba(56,189,248,0.3)]',
-        activeIcon: 'bg-sky-500/12 text-sky-700 border-sky-200/80',
-        activeText: 'text-sky-700',
+        activeIcon: 'bg-sky-500/12 text-sky-700 border-sky-200/80 dark:bg-sky-400/14 dark:text-sky-200 dark:border-sky-400/26',
+        activeText: 'text-sky-700 dark:text-sky-200',
         softGlow: 'bg-sky-300/26'
     }
 };
 
 const HUB_ACCENT = {
     indicator: 'bg-violet-400 shadow-[0_0_18px_rgba(167,139,250,0.32)]',
-    activeIcon: 'bg-violet-500/12 text-violet-700 border-violet-200/80',
-    activeText: 'text-violet-700',
+    activeIcon: 'bg-violet-500/12 text-violet-700 border-violet-200/80 dark:bg-violet-400/14 dark:text-violet-200 dark:border-violet-400/26',
+    activeText: 'text-violet-700 dark:text-violet-200',
     softGlow: 'bg-violet-300/26'
 };
 
@@ -80,7 +81,8 @@ export function Sidebar({
     isOpen = true,
     isCollapsed = false,
     onClose,
-    onToggleCollapse
+    onToggleCollapse,
+    navButtonRefs
 }: SidebarProps) {
     const { theme } = useAppTheme();
     const activeAccent = currentSurface === 'hub' ? HUB_ACCENT : STAGE_ACCENTS[currentSurface];
@@ -172,7 +174,7 @@ export function Sidebar({
                         ) : (
                             <>
                                 <BrandLockup compact onClick={onGoDashboard} />
-                                <div className={cn('mt-4 text-[10px] uppercase tracking-[0.24em]', isDark ? 'text-slate-500' : 'text-slate-400')}>
+                                <div className={cn('mt-4 text-[10px] uppercase tracking-[0.24em]', isDark ? 'text-slate-300/72' : 'text-slate-400')}>
                                     Innovation Toolkit
                                 </div>
                             </>
@@ -189,6 +191,7 @@ export function Sidebar({
                         return (
                             <button
                                 key={item.id}
+                                ref={navButtonRefs?.[item.id as ProjectSurface]}
                                 onClick={() => {
                                     onSetSurface(item.id as ProjectSurface);
                                     if (onClose) onClose();
@@ -202,7 +205,7 @@ export function Sidebar({
                                             ? 'border-white/10 bg-white/[0.06] shadow-[0_16px_32px_rgba(2,6,23,0.2)]'
                                             : 'border-slate-200 bg-white shadow-[0_14px_30px_rgba(15,23,42,0.08)]'
                                         : isDark
-                                            ? 'border-white/[0.04] bg-white/[0.025] text-slate-300 hover:border-white/10 hover:bg-white/[0.05] hover:text-white'
+                                            ? 'border-white/[0.04] bg-white/[0.025] text-slate-100 hover:border-white/10 hover:bg-white/[0.05]'
                                             : 'border-slate-200/60 bg-white/62 text-slate-700 hover:border-slate-200/90 hover:bg-white/88 hover:text-slate-900',
                                     isCollapsed && 'lg:justify-center lg:px-3'
                                 )}
@@ -214,12 +217,13 @@ export function Sidebar({
                                 <div
                                     className={cn(
                                         'rounded-xl border p-2.5 transition-colors',
-                                        isActive
-                                            ? accent.activeIcon
-                                            : cn(
-                                                accent.activeIcon,
-                                                isDark ? 'border-white/10 bg-white/[0.05] opacity-75 group-hover:opacity-100' : 'opacity-80 group-hover:opacity-100'
-                                            )
+                                        isDark
+                                            ? isActive
+                                                ? 'border-white/12 bg-white/[0.08] text-slate-100 shadow-[0_12px_24px_rgba(2,6,23,0.18)]'
+                                                : 'border-white/[0.08] bg-white/[0.03] text-slate-400 group-hover:border-white/12 group-hover:bg-white/[0.06] group-hover:text-slate-200'
+                                            : isActive
+                                                ? accent.activeIcon
+                                                : cn(accent.activeIcon, 'opacity-80 group-hover:opacity-100')
                                     )}
                                 >
                                     <Icon className="h-5 w-5" />
@@ -227,10 +231,20 @@ export function Sidebar({
 
                                 {!isCollapsed && (
                                     <div className="text-left">
-                                        <div className={cn('mb-1 text-sm font-semibold leading-none font-display', isActive ? accent.activeText : cn(accent.activeText, isDark ? 'opacity-90' : 'opacity-80'))}>
+                                        <div className={cn(
+                                            'mb-1 text-sm font-semibold leading-none font-display',
+                                            isDark
+                                                ? (isActive ? 'text-white' : 'text-slate-100')
+                                                : (isActive ? accent.activeText : cn(accent.activeText, 'opacity-80'))
+                                        )}>
                                             {item.label}
                                         </div>
-                                        <div className={cn('text-[10px] uppercase tracking-[0.16em]', isActive ? accent.activeText : cn(accent.activeText, 'opacity-55'))}>
+                                        <div className={cn(
+                                            'text-[10px] uppercase tracking-[0.16em]',
+                                            isDark
+                                                ? (isActive ? 'text-slate-300/88' : 'text-slate-400')
+                                                : (isActive ? cn(accent.activeText, 'opacity-72') : cn(accent.activeText, 'opacity-55'))
+                                        )}>
                                             {item.description}
                                         </div>
                                     </div>
@@ -248,7 +262,7 @@ export function Sidebar({
                         {!isCollapsed && (
                             <div>
                                 <div className={cn('text-xs font-medium', isDark ? 'text-white' : 'text-slate-900')}>AI facilitator</div>
-                                <div className={cn('text-[10px] uppercase tracking-[0.18em]', isDark ? 'text-slate-500' : 'text-slate-400')}>Context aware</div>
+                                <div className={cn('text-[10px] uppercase tracking-[0.18em]', isDark ? 'text-slate-300/70' : 'text-slate-400')}>Context aware</div>
                             </div>
                         )}
                     </div>

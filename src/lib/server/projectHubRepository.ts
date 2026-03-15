@@ -44,6 +44,7 @@ interface ProjectBriefRow {
     brief_version: number;
     updated_at: string;
     owner_id: string;
+    brief_metadata?: CollaborationMetadata | null;
 }
 
 interface ResourceRowBase<TStatus extends string> {
@@ -158,6 +159,8 @@ const RESOURCE_SELECTS: Record<Exclude<HubCollectionResource, 'activity' | 'pres
 
 const ACTIVITY_SELECT = 'id, project_id, action, entity_type, entity_id, actor_id, actor_name, message, occurred_at, created_by, updated_by, status, metadata, version, created_at, updated_at';
 const PRESENCE_SELECT = 'id, project_id, user_id, user_name, surface, object_type, object_id, last_seen_at, created_by, updated_by, status, metadata, version, created_at, updated_at';
+const PROJECT_BRIEF_SELECT = 'id, background, objectives, assumptions, success_metrics, milestones, team_roles, working_norms, key_links, brief_version, updated_at, owner_id, brief_metadata';
+const PROJECT_BRIEF_SELECT_LEGACY = 'id, background, objectives, assumptions, success_metrics, milestones, team_roles, working_norms, key_links, brief_version, updated_at, owner_id';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
@@ -200,6 +203,16 @@ function getMetadata(value: unknown): CollaborationMetadata {
 
 function getSupabaseErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback;
+}
+
+function isMissingBriefMetadataColumn(error: unknown) {
+    if (!error || typeof error !== 'object') {
+        return false;
+    }
+
+    const message = 'message' in error ? String((error as { message?: unknown }).message || '') : '';
+    const code = 'code' in error ? String((error as { code?: unknown }).code || '') : '';
+    return code === '42703' || message.includes('brief_metadata');
 }
 
 async function getAuthenticatedActor(projectId: string, minimumPermission: 'member' | PermissionLevel): Promise<AuthenticatedActor> {
@@ -325,7 +338,7 @@ function mapBrief(projectRow: ProjectBriefRow): ProjectBrief {
         version: projectRow.brief_version || 1,
         updatedAt: projectRow.updated_at,
         updatedBy: projectRow.owner_id,
-        metadata: {}
+        metadata: projectRow.brief_metadata || {}
     };
 }
 
@@ -553,8 +566,13 @@ export async function getProjectHub(projectId: string): Promise<ProjectHubData> 
     const actor = await getAuthenticatedActor(projectId, 'member');
     const supabase = await createSupabaseServerClient();
 
+    let projectResponse = await supabase
+        .from('projects')
+        .select(PROJECT_BRIEF_SELECT)
+        .eq('id', projectId)
+        .single();
+
     const [
-        projectResponse,
         cardsResponse,
         artifactsResponse,
         sessionsResponse,
@@ -564,11 +582,6 @@ export async function getProjectHub(projectId: string): Promise<ProjectHubData> 
         activityResponse,
         presenceResponse
     ] = await Promise.all([
-        supabase
-            .from('projects')
-            .select('id, background, objectives, assumptions, success_metrics, milestones, team_roles, working_norms, key_links, brief_version, updated_at, owner_id')
-            .eq('id', projectId)
-            .single(),
         supabase.from('project_cards').select(RESOURCE_SELECTS.cards).eq('project_id', projectId).order('updated_at', { ascending: false }),
         supabase.from('project_artifacts').select(RESOURCE_SELECTS.artifacts).eq('project_id', projectId).order('updated_at', { ascending: false }),
         supabase.from('project_sessions').select(RESOURCE_SELECTS.sessions).eq('project_id', projectId).order('scheduled_at', { ascending: true }),
@@ -578,6 +591,14 @@ export async function getProjectHub(projectId: string): Promise<ProjectHubData> 
         supabase.from('project_activity_events').select(ACTIVITY_SELECT).eq('project_id', projectId).order('occurred_at', { ascending: false }).limit(25),
         supabase.from('project_presence').select(PRESENCE_SELECT).eq('project_id', projectId).order('last_seen_at', { ascending: false })
     ]);
+
+    if (isMissingBriefMetadataColumn(projectResponse.error)) {
+        projectResponse = await supabase
+            .from('projects')
+            .select(PROJECT_BRIEF_SELECT_LEGACY)
+            .eq('id', projectId)
+            .single();
+    }
 
     if (projectResponse.error || !projectResponse.data) {
         throw new Error(getSupabaseErrorMessage(projectResponse.error, 'Unable to load project brief.'));
@@ -631,23 +652,37 @@ export async function updateProjectHubBrief(projectId: string, raw: unknown): Pr
 
     const version = getNumber(raw.version, 1);
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
+    const briefPayload = {
+        background: getString(raw.background),
+        objectives: getString(raw.objectives),
+        assumptions: getString(raw.assumptions),
+        success_metrics: getString(raw.successMetrics),
+        milestones: getString(raw.milestones),
+        team_roles: getString(raw.teamRoles),
+        working_norms: getString(raw.workingNorms),
+        key_links: getString(raw.keyLinks),
+        brief_version: version + 1
+    };
+    let { data, error } = await supabase
         .from('projects')
         .update({
-            background: getString(raw.background),
-            objectives: getString(raw.objectives),
-            assumptions: getString(raw.assumptions),
-            success_metrics: getString(raw.successMetrics),
-            milestones: getString(raw.milestones),
-            team_roles: getString(raw.teamRoles),
-            working_norms: getString(raw.workingNorms),
-            key_links: getString(raw.keyLinks),
-            brief_version: version + 1
+            ...briefPayload,
+            brief_metadata: getMetadata(raw.metadata)
         })
         .eq('id', projectId)
         .eq('brief_version', version)
-        .select('id, background, objectives, assumptions, success_metrics, milestones, team_roles, working_norms, key_links, brief_version, updated_at, owner_id')
+        .select(PROJECT_BRIEF_SELECT)
         .maybeSingle();
+
+    if (isMissingBriefMetadataColumn(error)) {
+        ({ data, error } = await supabase
+            .from('projects')
+            .update(briefPayload)
+            .eq('id', projectId)
+            .eq('brief_version', version)
+            .select(PROJECT_BRIEF_SELECT_LEGACY)
+            .maybeSingle());
+    }
     const row = data as ProjectBriefRow | null;
 
     if (error) {
@@ -1198,21 +1233,35 @@ export async function deleteProjectHubCollectionRecord(projectId: string, resour
 export async function saveProjectHubSnapshot(projectId: string, hub: ProjectHubData) {
     const actor = await getAuthenticatedActor(projectId, 'edit');
     const supabase = await createSupabaseServerClient();
-
-    await supabase
+    const projectPayload = {
+        background: hub.brief.background,
+        objectives: hub.brief.objectives,
+        assumptions: hub.brief.assumptions,
+        success_metrics: hub.brief.successMetrics,
+        milestones: hub.brief.milestones,
+        team_roles: hub.brief.teamRoles,
+        working_norms: hub.brief.workingNorms,
+        key_links: hub.brief.keyLinks,
+        brief_version: hub.brief.version
+    };
+    let { error: projectError } = await supabase
         .from('projects')
         .update({
-            background: hub.brief.background,
-            objectives: hub.brief.objectives,
-            assumptions: hub.brief.assumptions,
-            success_metrics: hub.brief.successMetrics,
-            milestones: hub.brief.milestones,
-            team_roles: hub.brief.teamRoles,
-            working_norms: hub.brief.workingNorms,
-            key_links: hub.brief.keyLinks,
-            brief_version: hub.brief.version
+            ...projectPayload,
+            brief_metadata: hub.brief.metadata
         })
         .eq('id', projectId);
+
+    if (isMissingBriefMetadataColumn(projectError)) {
+        ({ error: projectError } = await supabase
+            .from('projects')
+            .update(projectPayload)
+            .eq('id', projectId));
+    }
+
+    if (projectError) {
+        throw new Error(getSupabaseErrorMessage(projectError, 'Unable to save project brief.'));
+    }
 
     for (const resource of ['cards', 'artifacts', 'sessions', 'decisions', 'threads', 'tasks'] as const) {
         await supabase.from(getCollectionTable(resource)).delete().eq('project_id', projectId);

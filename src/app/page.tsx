@@ -6,10 +6,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { LandingPage } from '@/components/auth/LandingPage';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { Dashboard } from '@/components/dashboard/Dashboard';
+import { LearningCenterPage } from '@/components/guide/LearningCenterPage';
 import { SandboxApp } from '@/components/SandboxApp';
 import { SignOutPage } from '@/components/auth/SignOutPage';
-import { DEFAULT_PROJECTS } from '@/data/workspaceSeed';
-import { AppViewState, UserProfileData, WorkspaceProject } from '@/types';
+import { GUIDE_VIEWPORT_MIN_WIDTH } from '@/data/onboarding';
+import { DEFAULT_PROJECTS, DEFAULT_TEAM } from '@/data/workspaceSeed';
+import { AppViewState, GuideFlowVariant, OnboardingStepId, ProjectSurface, UserProfileData, WorkspaceProject } from '@/types';
 import { ProfilePage } from '@/components/profile/ProfilePage';
 import { DEFAULT_USER } from '@/data/workspaceSeed';
 import { RemoteWorkspaceShell } from '@/components/app/RemoteWorkspaceShell';
@@ -30,15 +32,36 @@ export default function Home() {
   return isRemoteBackendEnabled() ? <RemoteWorkspaceShell /> : <HomeShell />;
 }
 
+function mergeProfileUpdate(
+  currentProfile: UserProfileData,
+  updates: Partial<UserProfileData>
+): UserProfileData {
+  return {
+    ...currentProfile,
+    ...updates,
+    guidePreferences: {
+      ...currentProfile.guidePreferences,
+      ...updates.guidePreferences
+    }
+  };
+}
+
 function HomeShell() {
   const [view, setView] = useState<AppViewState>('landing');
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [activeSurface, setActiveSurface] = useState<ProjectSurface>('hub');
   const [projects, setProjects] = useState<WorkspaceProject[]>(DEFAULT_PROJECTS);
   const [profile, setProfile] = useState<UserProfileData>(DEFAULT_USER);
   const [collaborationOverview, setCollaborationOverview] = useState(loadWorkspaceShell().collaborationOverview);
   const [profileReturnView, setProfileReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
+  const [learningCenterReturnView, setLearningCenterReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
   const [workspaceStatus, setWorkspaceStatus] = useState<string | null>(null);
   const [isWorkspaceHydrated, setIsWorkspaceHydrated] = useState(false);
+  const [guideStep, setGuideStep] = useState<OnboardingStepId | null>(null);
+  const [guideVariant, setGuideVariant] = useState<GuideFlowVariant | null>(null);
+  const [isGuideViewportEligible, setIsGuideViewportEligible] = useState(
+    () => (typeof window === 'undefined' ? true : window.innerWidth >= GUIDE_VIEWPORT_MIN_WIDTH)
+  );
 
   useEffect(() => {
     document.body.setAttribute('data-app-view', view);
@@ -54,12 +77,14 @@ function HomeShell() {
     const savedWorkspace = loadWorkspaceShell();
     const restoredNavigationState = loadWorkspaceBrowserState({
       view: savedSession.view === 'logging_out' ? 'landing' : savedSession.view,
-      activeProjectId: savedSession.activeProjectId
+      activeProjectId: savedSession.activeProjectId,
+      activeSurface: savedSession.activeSurface
     });
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setView(restoredNavigationState.view);
     setActiveProjectId(restoredNavigationState.activeProjectId);
+    setActiveSurface(restoredNavigationState.activeSurface || 'hub');
     setProjects(savedWorkspace.projects);
     setProfile(savedWorkspace.profile);
     setCollaborationOverview(savedWorkspace.collaborationOverview);
@@ -69,12 +94,14 @@ function HomeShell() {
   useWorkspaceBrowserHistory({
     state: {
       view,
-      activeProjectId
+      activeProjectId,
+      activeSurface
     },
     isReady: isWorkspaceHydrated,
     onNavigate: (nextState) => {
       setView(nextState.view);
       setActiveProjectId(nextState.activeProjectId);
+      setActiveSurface(nextState.activeSurface || 'hub');
     }
   });
 
@@ -83,9 +110,10 @@ function HomeShell() {
 
     saveWorkspaceSession({
       view,
-      activeProjectId
+      activeProjectId,
+      activeSurface
     });
-  }, [activeProjectId, isWorkspaceHydrated, view]);
+  }, [activeProjectId, activeSurface, isWorkspaceHydrated, view]);
 
   useEffect(() => {
     if (!isWorkspaceHydrated) return;
@@ -96,6 +124,48 @@ function HomeShell() {
     });
   }, [isWorkspaceHydrated, profile, projects]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const updateGuideViewportEligibility = () => {
+      const nextEligibility = window.innerWidth >= GUIDE_VIEWPORT_MIN_WIDTH;
+      setIsGuideViewportEligible(nextEligibility);
+
+      if (!nextEligibility) {
+        setGuideStep(null);
+        setGuideVariant(null);
+      }
+    };
+
+    window.addEventListener('resize', updateGuideViewportEligibility);
+
+    return () => window.removeEventListener('resize', updateGuideViewportEligibility);
+  }, []);
+
+  useEffect(() => {
+    if (
+      !isWorkspaceHydrated
+      || !isGuideViewportEligible
+      || guideStep
+      || guideVariant
+      || profile.guidePreferences?.onboardingSeenAt
+      || projects.length > 0
+    ) {
+      return;
+    }
+
+    if (view === 'dashboard') {
+      const frameId = window.requestAnimationFrame(() => {
+        setGuideVariant('new-user');
+        setGuideStep('dashboard-summary');
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+    }
+  }, [guideStep, guideVariant, isGuideViewportEligible, isWorkspaceHydrated, profile.guidePreferences?.onboardingSeenAt, projects.length, view]);
+
   // --- Navigation Handlers ---
 
   const handleAuthComplete = () => {
@@ -103,6 +173,10 @@ function HomeShell() {
   };
 
   const handleOpenProject = (projectId: string) => {
+    if (guideStep === 'dashboard-open') {
+      setGuideStep('hub');
+    }
+    setActiveSurface('hub');
     setActiveProjectId(projectId);
     setView('sandbox');
   };
@@ -115,7 +189,7 @@ function HomeShell() {
       ownerId: 'user',
       updated: 'Just now',
       summary: 'A new sandbox project ready for team setup, context capture, and stage work.',
-      members: DEFAULT_PROJECTS[0].members
+      members: DEFAULT_TEAM.slice(0, 1)
     };
 
     setProjects([createdProject, ...projects]);
@@ -138,7 +212,43 @@ function HomeShell() {
   };
 
   const handleUpdateProfile = (updates: Partial<UserProfileData>) => {
-    setProfile(currentProfile => ({ ...currentProfile, ...updates }));
+    setProfile(currentProfile => mergeProfileUpdate(currentProfile, updates));
+  };
+
+  const handleDismissGuide = () => {
+    const onboardingSeenAt = profile.guidePreferences?.onboardingSeenAt || new Date().toISOString();
+    setProfile(currentProfile => ({
+      ...currentProfile,
+      guidePreferences: {
+        ...currentProfile.guidePreferences,
+        onboardingSeenAt
+      }
+    }));
+    setGuideStep(null);
+    setGuideVariant(null);
+    handleUpdateProfile({
+      guidePreferences: {
+        ...profile.guidePreferences,
+        onboardingSeenAt
+      }
+    });
+  };
+
+  const handleOpenLearningCenter = (source: 'dashboard' | 'sandbox') => {
+    setLearningCenterReturnView(source);
+    setView('learning-center');
+  };
+
+  const handleReplayOnboarding = () => {
+    if (!isGuideViewportEligible) {
+      return;
+    }
+
+    setGuideVariant(projects.length === 0 ? 'new-user' : 'existing-user');
+    setGuideStep('dashboard-summary');
+    setActiveProjectId(null);
+    setActiveSurface('hub');
+    setView('dashboard');
   };
 
   const handleExitSandbox = () => {
@@ -147,6 +257,7 @@ function HomeShell() {
     setProfile(savedWorkspace.profile);
     setCollaborationOverview(savedWorkspace.collaborationOverview);
     setActiveProjectId(null);
+    setActiveSurface('hub');
     setView('dashboard');
   };
 
@@ -213,11 +324,16 @@ function HomeShell() {
           onUpdateProject={handleUpdateProject}
           onDeleteProject={handleDeleteProject}
           onOpenProfile={() => handleOpenProfile('dashboard')}
+          onOpenLearningCenter={() => handleOpenLearningCenter('dashboard')}
           onLogout={handleLogout}
           onExportWorkspace={handleExportWorkspace}
           onImportWorkspace={handleImportWorkspace}
           workspaceStatus={workspaceStatus}
           collaborationOverview={collaborationOverview}
+          guideStep={guideStep}
+          guideVariant={guideVariant}
+          onGuideStepChange={setGuideStep}
+          onDismissGuide={handleDismissGuide}
         />
       );
 
@@ -226,10 +342,19 @@ function HomeShell() {
         <SandboxApp
           project={activeProject}
           profile={profile}
+          currentSurface={activeSurface}
+          onSurfaceChange={setActiveSurface}
           onExit={handleExitSandbox}
           onUpdateProject={handleUpdateProject}
+          onSyncProjectSummaryStage={(projectId, stage) => handleUpdateProject(projectId, { currentStage: stage })}
           onOpenProfile={() => handleOpenProfile('sandbox')}
+          onOpenLearningCenter={() => handleOpenLearningCenter('sandbox')}
+          onLogout={handleLogout}
           runtimeMode="local-mvp"
+          guideStep={guideStep}
+          guideVariant={guideVariant}
+          onGuideStepChange={setGuideStep}
+          onDismissGuide={handleDismissGuide}
         />
       ) : (
         <Dashboard
@@ -241,11 +366,16 @@ function HomeShell() {
           onUpdateProject={handleUpdateProject}
           onDeleteProject={handleDeleteProject}
           onOpenProfile={() => handleOpenProfile('dashboard')}
+          onOpenLearningCenter={() => handleOpenLearningCenter('dashboard')}
           onLogout={handleLogout}
           onExportWorkspace={handleExportWorkspace}
           onImportWorkspace={handleImportWorkspace}
           workspaceStatus={workspaceStatus}
           collaborationOverview={collaborationOverview}
+          guideStep={guideStep}
+          guideVariant={guideVariant}
+          onGuideStepChange={setGuideStep}
+          onDismissGuide={handleDismissGuide}
         />
       );
 
@@ -255,6 +385,15 @@ function HomeShell() {
           profile={profile}
           onUpdateProfile={handleUpdateProfile}
           onBack={() => setView(profileReturnView)}
+        />
+      );
+
+    case 'learning-center':
+      return (
+        <LearningCenterPage
+          profile={profile}
+          onBack={() => setView(learningCenterReturnView)}
+          onReplayOnboarding={handleReplayOnboarding}
         />
       );
 

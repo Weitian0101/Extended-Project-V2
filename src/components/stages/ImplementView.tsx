@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { StageMethodView } from '@/components/stages/StageMethodView';
-import { ProjectHubData } from '@/types';
+import { MethodCardLayout, ProjectHubData } from '@/types';
 
 interface ImplementViewProps {
     projectId: string;
@@ -10,9 +10,10 @@ interface ImplementViewProps {
     isHubLoading?: boolean;
     onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
     onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    methodCardLayout?: MethodCardLayout;
 }
 
-export function ImplementView({ projectId, projectName, hub, isHubLoading = false, onCreateHubRecord, onUpdateHubRecord }: ImplementViewProps) {
+export function ImplementView({ projectId, projectName, hub, isHubLoading = false, onCreateHubRecord, onUpdateHubRecord, methodCardLayout = 'classic' }: ImplementViewProps) {
     return (
         <StageMethodView
             projectId={projectId}
@@ -21,6 +22,7 @@ export function ImplementView({ projectId, projectName, hub, isHubLoading = fals
             isHubLoading={isHubLoading}
             onCreateHubRecord={onCreateHubRecord}
             onUpdateHubRecord={onUpdateHubRecord}
+            methodCardLayout={methodCardLayout}
             stage="implement"
             stageTitle="Implement Stage"
             entryHeadline="Turn the strongest ideas into experiments, decisions, and practical rollout moves."

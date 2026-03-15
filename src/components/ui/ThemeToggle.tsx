@@ -30,9 +30,9 @@ export function ThemeToggle({ compact = false, className }: ThemeToggleProps) {
         >
             <span
                 className={cn(
-                    'flex items-center justify-center rounded-full transition-colors',
+                    'flex items-center justify-center rounded-full transition-all duration-300 will-change-transform',
                     compact ? 'h-8 w-8' : 'h-8 w-8',
-                    isDark ? 'bg-sky-500/16 text-sky-300' : 'bg-amber-500/14 text-amber-600'
+                    isDark ? 'rotate-180 bg-sky-500/16 text-sky-300' : 'rotate-0 bg-amber-500/14 text-amber-600'
                 )}
             >
                 {isDark ? <MoonStar className="h-4 w-4" /> : <SunMedium className="h-4 w-4" />}

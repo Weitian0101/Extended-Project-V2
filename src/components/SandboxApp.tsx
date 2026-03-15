@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Menu, Settings2 } from 'lucide-react';
 
+import { SpotlightGuide } from '@/components/guide/SpotlightGuide';
 import { ProjectSettingsDialog } from '@/components/dashboard/ProjectSettingsDialog';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ProjectHub } from '@/components/project/ProjectHub';
@@ -13,18 +14,40 @@ import { ProjectOverview } from '@/components/stages/ProjectOverview';
 import { TellStoryView } from '@/components/stages/TellStoryView';
 import { AvatarCluster } from '@/components/ui/AvatarCluster';
 import { Button } from '@/components/ui/Button';
-import { ProfilePanel } from '@/components/ui/ProfilePanel';
+import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { UserMenu } from '@/components/ui/UserMenu';
+import { getGuideProgress } from '@/data/onboarding';
 import { useProjectHubData } from '@/hooks/useProjectHubData';
 import { useProjectData } from '@/hooks/useProjectData';
-import { ProjectInvite, ProjectSurface, StageId, TeamMember, UserProfileData, WorkspaceProject } from '@/types';
+import { GuideFlowVariant, OnboardingStepId, ProjectInvite, ProjectSurface, StageId, TeamMember, UserProfileData, WorkspaceProject } from '@/types';
+
+function getStagePreferenceMode(metadata: Record<string, unknown>): 'auto' | 'manual' {
+    return metadata.stageMode === 'manual' ? 'manual' : 'auto';
+}
+
+function getManualStagePreference(metadata: Record<string, unknown>): StageId | null {
+    const value = metadata.manualStage;
+    return value === 'overview'
+        || value === 'explore'
+        || value === 'imagine'
+        || value === 'implement'
+        || value === 'tell-story'
+        ? value
+        : null;
+}
 
 interface SandboxAppProps {
     project: WorkspaceProject;
     profile: UserProfileData;
+    currentSurface: ProjectSurface;
+    onSurfaceChange: (surface: ProjectSurface) => void;
     onExit: () => void;
+    onLogout: () => void;
     onUpdateProject: (projectId: string, updates: Partial<WorkspaceProject>) => void;
+    onSyncProjectSummaryStage?: (projectId: string, stage: StageId) => void;
     onOpenProfile: () => void;
+    onOpenLearningCenter: () => void;
     runtimeMode?: 'local-mvp' | 'remote-supabase';
     onInviteMember?: (projectId: string, email: string, permission: TeamMember['permission']) => Promise<{
         delivery: 'invite-created';
@@ -34,20 +57,33 @@ interface SandboxAppProps {
     onRevokeInvite?: (projectId: string, inviteId: string) => Promise<void>;
     onUpdateMemberPermission?: (projectId: string, memberId: string, permission: TeamMember['permission']) => Promise<void>;
     onRemoveMember?: (projectId: string, memberId: string) => Promise<void>;
+    guideStep?: OnboardingStepId | null;
+    guideVariant?: GuideFlowVariant | null;
+    onGuideStepChange?: (step: OnboardingStepId | null) => void;
+    onDismissGuide?: () => void;
 }
 
 export function SandboxApp({
     project: projectSummary,
     profile,
+    currentSurface,
+    onSurfaceChange,
     onExit,
+    onLogout,
     onUpdateProject,
+    onSyncProjectSummaryStage,
     onOpenProfile,
+    onOpenLearningCenter,
     runtimeMode = 'local-mvp',
     onInviteMember,
     onUpdateMemberPermission,
     onSendInviteEmail,
     onRevokeInvite,
-    onRemoveMember
+    onRemoveMember,
+    guideStep,
+    guideVariant,
+    onGuideStepChange,
+    onDismissGuide
 }: SandboxAppProps) {
     const { project, updateProject, isLoaded } = useProjectData(projectSummary.id, projectSummary.name);
     const {
@@ -67,7 +103,12 @@ export function SandboxApp({
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [currentSurface, setCurrentSurface] = useState<ProjectSurface>('hub');
+    const hubNavRef = useRef<HTMLButtonElement | null>(null);
+    const overviewNavRef = useRef<HTMLButtonElement | null>(null);
+    const hubGuideProgress = guideVariant ? getGuideProgress(guideVariant, 'hub') : null;
+    const overviewGuideProgress = guideVariant ? getGuideProgress(guideVariant, 'overview') : null;
+    const stagePreferenceMode = getStagePreferenceMode(hub.brief.metadata);
+    const manualStagePreference = getManualStagePreference(hub.brief.metadata);
 
     const handleCreateHubRecord = async <
         TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'
@@ -85,15 +126,41 @@ export function SandboxApp({
         });
     }, [createRecord, currentSurface, projectSummary.id]);
 
+    const syncProjectStageStatus = useCallback((stage: StageId) => {
+        updateProject({ currentStage: stage });
+        onSyncProjectSummaryStage?.(projectSummary.id, stage);
+    }, [onSyncProjectSummaryStage, projectSummary.id, updateProject]);
+
+    useEffect(() => {
+        if (stagePreferenceMode === 'manual' && manualStagePreference && project.currentStage !== manualStagePreference) {
+            syncProjectStageStatus(manualStagePreference);
+        }
+    }, [manualStagePreference, project.currentStage, stagePreferenceMode, syncProjectStageStatus]);
+
     if (!isLoaded) {
-        return <div className="flex h-screen items-center justify-center bg-[var(--background)] font-display text-[var(--foreground-muted)]">Loading project...</div>;
+        return (
+            <BrandedLoadingScreen
+                fullscreen
+                label="Loading project"
+                detail="Rebuilding the project shell, stage navigation, and collaboration memory."
+            />
+        );
     }
 
     const handleSetSurface = (surface: ProjectSurface) => {
-        if (surface !== 'hub') {
-            updateProject({ currentStage: surface as StageId });
+        if (surface !== 'hub' && stagePreferenceMode === 'auto') {
+            syncProjectStageStatus(surface as StageId);
         }
-        setCurrentSurface(surface);
+
+        if (guideStep === 'hub' && surface === 'overview') {
+            onGuideStepChange?.('overview');
+        }
+
+        if (guideStep === 'overview' && surface === 'explore') {
+            onGuideStepChange?.('explore-home');
+        }
+
+        onSurfaceChange(surface);
         setSidebarOpen(false);
     };
 
@@ -123,15 +190,17 @@ export function SandboxApp({
                         projectSummary={projectSummary}
                         profile={profile}
                         hub={hub}
+                        currentSurface={currentSurface}
                         isLoading={isHubLoading}
                         error={hubError}
                         onUpdateBrief={updateBrief}
                         onCreateRecord={handleCreateHubRecord}
                         onUpdateRecord={handleUpdateHubRecord}
-                        onDeleteRecord={async (resource, id) => {
+                            onDeleteRecord={async (resource, id) => {
                             await deleteRecord(resource, id);
                         }}
                         onOpenStage={(stage) => handleSetSurface(stage)}
+                        onSetProjectStage={syncProjectStageStatus}
                         onSyncContext={handleUpdateContext}
                     />
                 );
@@ -146,6 +215,11 @@ export function SandboxApp({
                         isHubLoading={isHubLoading}
                         onCreateHubRecord={handleCreateHubRecord}
                         onUpdateHubRecord={handleUpdateHubRecord}
+                        methodCardLayout={profile.guidePreferences?.methodCardLayout ?? 'classic'}
+                        guideStep={guideStep}
+                        guideVariant={guideVariant}
+                        onGuideStepChange={onGuideStepChange}
+                        onDismissGuide={onDismissGuide}
                     />
                 );
             case 'imagine':
@@ -157,6 +231,7 @@ export function SandboxApp({
                         isHubLoading={isHubLoading}
                         onCreateHubRecord={handleCreateHubRecord}
                         onUpdateHubRecord={handleUpdateHubRecord}
+                        methodCardLayout={profile.guidePreferences?.methodCardLayout ?? 'classic'}
                     />
                 );
             case 'implement':
@@ -168,6 +243,7 @@ export function SandboxApp({
                         isHubLoading={isHubLoading}
                         onCreateHubRecord={handleCreateHubRecord}
                         onUpdateHubRecord={handleUpdateHubRecord}
+                        methodCardLayout={profile.guidePreferences?.methodCardLayout ?? 'classic'}
                     />
                 );
             case 'tell-story':
@@ -179,6 +255,7 @@ export function SandboxApp({
                         isHubLoading={isHubLoading}
                         onCreateHubRecord={handleCreateHubRecord}
                         onUpdateHubRecord={handleUpdateHubRecord}
+                        methodCardLayout={profile.guidePreferences?.methodCardLayout ?? 'classic'}
                     />
                 );
             default:
@@ -196,10 +273,14 @@ export function SandboxApp({
                 isCollapsed={sidebarCollapsed}
                 onClose={() => setSidebarOpen(false)}
                 onToggleCollapse={() => setSidebarCollapsed((current) => !current)}
+                navButtonRefs={{
+                    hub: hubNavRef,
+                    overview: overviewNavRef
+                }}
             />
 
-            <div className="relative flex flex-1 flex-col overflow-hidden">
-                <header className="surface-panel-strong relative z-20 border-b px-4 py-3 lg:px-6">
+            <div className="relative flex flex-1 min-w-0 flex-col overflow-visible">
+                <header className="surface-panel-strong relative z-[90] overflow-visible border-b px-4 py-3 lg:px-6">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <button onClick={() => setSidebarOpen(true)} className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] p-2 text-[var(--foreground-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300/80 hover:text-[var(--foreground)] lg:hidden">
@@ -224,12 +305,13 @@ export function SandboxApp({
                             >
                                 <Settings2 className="h-4 w-4" />
                             </button>
-                            <ProfilePanel
-                                compact
+                            <UserMenu
                                 name={profile.name}
                                 title={profile.accountRole || profile.title}
                                 tier={profile.subscriptionTier}
-                                onClick={onOpenProfile}
+                                onOpenProfile={onOpenProfile}
+                                onOpenLearningCenter={onOpenLearningCenter}
+                                onLogout={onLogout}
                             />
                             <Button variant="secondary" onClick={onExit} className="hidden lg:inline-flex">
                                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -260,6 +342,44 @@ export function SandboxApp({
                 onClose={() => setSettingsOpen(false)}
                 onSave={handleSaveProjectSettings}
             />
+            <SpotlightGuide
+                open={guideStep === 'hub'}
+                targetRef={hubNavRef}
+                currentStep={hubGuideProgress?.currentStep || 3}
+                totalSteps={hubGuideProgress?.totalSteps || 8}
+                placement="right"
+                title="Project Hub keeps the work coordinated"
+                description="This is the operating layer for the project. It keeps shared tasks, decisions, sessions, roles, and outcomes visible before you go deeper into stage work."
+                purpose="Use Hub to see the state of the project quickly, align the team, and keep key information from scattering across separate tools."
+                primaryAction={onGuideStepChange ? {
+                    label: 'Open Project Context',
+                    onClick: () => {
+                        handleSetSurface('overview');
+                        onGuideStepChange('overview');
+                    }
+                } : undefined}
+                onSkip={onDismissGuide}
+            />
+            <SpotlightGuide
+                open={guideStep === 'overview'}
+                targetRef={overviewNavRef}
+                currentStep={overviewGuideProgress?.currentStep || 4}
+                totalSteps={overviewGuideProgress?.totalSteps || 8}
+                placement="right"
+                title="Project Context captures the brief"
+                description="This page records the challenge background, objectives, and assumptions. It gives both the team and the AI the shared context they need before running methods."
+                purpose="Use Context to define what problem you are solving, what success looks like, and what constraints should stay visible during the work."
+                primaryAction={onGuideStepChange ? {
+                    label: 'Open Explore',
+                    onClick: () => {
+                        handleSetSurface('explore');
+                        onGuideStepChange('explore-home');
+                    }
+                } : undefined}
+                onBack={onGuideStepChange ? () => onGuideStepChange('hub') : undefined}
+                onSkip={onDismissGuide}
+            />
         </div>
     );
 }
+

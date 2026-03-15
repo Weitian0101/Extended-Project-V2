@@ -2,11 +2,12 @@
 
 import { useEffect, useRef } from 'react';
 
-import { AppViewState } from '@/types';
+import { AppViewState, ProjectSurface } from '@/types';
 
 export interface WorkspaceBrowserState {
     view: AppViewState;
     activeProjectId: string | null;
+    activeSurface?: ProjectSurface | null;
 }
 
 interface PersistedWorkspaceHistoryState extends WorkspaceBrowserState {
@@ -19,7 +20,8 @@ interface UseWorkspaceBrowserHistoryOptions {
     onNavigate: (state: WorkspaceBrowserState) => void;
 }
 
-const VALID_VIEWS: AppViewState[] = ['landing', 'auth', 'dashboard', 'sandbox', 'profile', 'logging_out'];
+const VALID_VIEWS: AppViewState[] = ['landing', 'auth', 'dashboard', 'sandbox', 'profile', 'learning-center', 'logging_out'];
+const VALID_SURFACES: ProjectSurface[] = ['hub', 'overview', 'explore', 'imagine', 'implement', 'tell-story'];
 
 function isBrowser() {
     return typeof window !== 'undefined';
@@ -29,22 +31,29 @@ function isValidView(value: unknown): value is AppViewState {
     return typeof value === 'string' && VALID_VIEWS.includes(value as AppViewState);
 }
 
+function isValidSurface(value: unknown): value is ProjectSurface {
+    return typeof value === 'string' && VALID_SURFACES.includes(value as ProjectSurface);
+}
+
 function normalizeState(state: WorkspaceBrowserState): WorkspaceBrowserState {
     const view = state.view === 'logging_out' ? 'landing' : state.view;
     const activeProjectId = typeof state.activeProjectId === 'string' && state.activeProjectId.trim()
         ? state.activeProjectId
         : null;
+    const activeSurface = isValidSurface(state.activeSurface) ? state.activeSurface : 'hub';
 
     if (view === 'sandbox' && !activeProjectId) {
         return {
             view: 'dashboard',
-            activeProjectId: null
+            activeProjectId: null,
+            activeSurface: null
         };
     }
 
     return {
         view,
-        activeProjectId
+        activeProjectId,
+        activeSurface: activeProjectId ? activeSurface : null
     };
 }
 
@@ -58,6 +67,7 @@ function buildUrl(state: WorkspaceBrowserState) {
 
     url.searchParams.delete('view');
     url.searchParams.delete('project');
+    url.searchParams.delete('surface');
 
     if (nextState.view !== 'landing') {
         url.searchParams.set('view', nextState.view);
@@ -65,6 +75,9 @@ function buildUrl(state: WorkspaceBrowserState) {
 
     if (nextState.activeProjectId) {
         url.searchParams.set('project', nextState.activeProjectId);
+        if (nextState.activeSurface) {
+            url.searchParams.set('surface', nextState.activeSurface);
+        }
     }
 
     return `${url.pathname}${url.search}${url.hash}`;
@@ -78,6 +91,7 @@ function parseUrlState(): WorkspaceBrowserState | null {
     const params = new URLSearchParams(window.location.search);
     const rawView = params.get('view');
     const rawProjectId = params.get('project');
+    const rawSurface = params.get('surface');
 
     if (!rawView && !rawProjectId) {
         return null;
@@ -86,7 +100,8 @@ function parseUrlState(): WorkspaceBrowserState | null {
     if (!rawView && rawProjectId) {
         return normalizeState({
             view: 'sandbox',
-            activeProjectId: rawProjectId
+            activeProjectId: rawProjectId,
+            activeSurface: isValidSurface(rawSurface) ? rawSurface : null
         });
     }
 
@@ -96,7 +111,8 @@ function parseUrlState(): WorkspaceBrowserState | null {
 
     return normalizeState({
         view: rawView,
-        activeProjectId: rawProjectId
+        activeProjectId: rawProjectId,
+        activeSurface: isValidSurface(rawSurface) ? rawSurface : null
     });
 }
 
@@ -113,7 +129,8 @@ function parseHistoryState(raw: unknown): WorkspaceBrowserState | null {
 
     return normalizeState({
         view: record.view,
-        activeProjectId: typeof record.activeProjectId === 'string' ? record.activeProjectId : null
+        activeProjectId: typeof record.activeProjectId === 'string' ? record.activeProjectId : null,
+        activeSurface: isValidSurface(record.activeSurface) ? record.activeSurface : null
     });
 }
 
@@ -163,7 +180,8 @@ export function useWorkspaceBrowserHistory({
 
         const nextState = normalizeState({
             view: state.view,
-            activeProjectId: state.activeProjectId
+            activeProjectId: state.activeProjectId,
+            activeSurface: state.activeSurface
         });
         const serializedState = JSON.stringify(nextState);
         const persistedState: PersistedWorkspaceHistoryState = {
@@ -191,5 +209,5 @@ export function useWorkspaceBrowserHistory({
 
         window.history.pushState(persistedState, '', nextUrl);
         lastSerializedStateRef.current = serializedState;
-    }, [isReady, state.activeProjectId, state.view]);
+    }, [isReady, state.activeProjectId, state.activeSurface, state.view]);
 }

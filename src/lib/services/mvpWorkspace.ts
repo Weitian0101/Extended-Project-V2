@@ -6,11 +6,12 @@ import {
     normalizeProjectHubData
 } from '@/lib/collaboration';
 import { WorkspaceExportDto, WorkspaceShellDto } from '@/lib/contracts/api';
-import { AppViewState, ProjectData, ProjectHubData } from '@/types';
+import { AppViewState, ProjectData, ProjectHubData, ProjectSurface } from '@/types';
 
 const STORAGE_KEYS = {
     view: 'app_view',
     activeProjectId: 'app_project_id',
+    activeSurface: 'app_project_surface',
     projects: 'app_projects',
     profile: 'app_profile'
 } as const;
@@ -20,6 +21,7 @@ const EXPORT_VERSION = 'local-mvp-v1' as const;
 export interface WorkspaceSessionState {
     view: AppViewState;
     activeProjectId: string | null;
+    activeSurface?: ProjectSurface | null;
 }
 
 const isBrowser = () => typeof window !== 'undefined';
@@ -127,16 +129,19 @@ export function loadWorkspaceSession(): WorkspaceSessionState {
     if (!isBrowser()) {
         return {
             view: 'landing',
-            activeProjectId: null
+            activeProjectId: null,
+            activeSurface: null
         };
     }
 
     const savedView = window.localStorage.getItem(STORAGE_KEYS.view) as AppViewState | null;
     const savedProjectId = window.localStorage.getItem(STORAGE_KEYS.activeProjectId);
+    const savedSurface = window.localStorage.getItem(STORAGE_KEYS.activeSurface) as ProjectSurface | null;
 
     return {
         view: savedView || 'landing',
-        activeProjectId: savedProjectId || null
+        activeProjectId: savedProjectId || null,
+        activeSurface: savedProjectId ? (savedSurface || 'hub') : null
     };
 }
 
@@ -154,8 +159,10 @@ export function saveWorkspaceSession(session: WorkspaceSessionState) {
 
     if (session.activeProjectId) {
         window.localStorage.setItem(STORAGE_KEYS.activeProjectId, session.activeProjectId);
+        window.localStorage.setItem(STORAGE_KEYS.activeSurface, session.activeSurface || 'hub');
     } else {
         window.localStorage.removeItem(STORAGE_KEYS.activeProjectId);
+        window.localStorage.removeItem(STORAGE_KEYS.activeSurface);
     }
 }
 
@@ -166,6 +173,7 @@ export function clearWorkspaceSession() {
 
     window.localStorage.removeItem(STORAGE_KEYS.view);
     window.localStorage.removeItem(STORAGE_KEYS.activeProjectId);
+    window.localStorage.removeItem(STORAGE_KEYS.activeSurface);
 }
 
 export function loadProjectDocument(projectId?: string, projectName?: string): ProjectData {

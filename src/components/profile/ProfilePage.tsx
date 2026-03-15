@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, BadgeCheck, Building2, CreditCard, Mail, MapPin, PencilLine, ReceiptText, Smartphone } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Building2, CreditCard, Mail, MapPin, PanelsTopLeft, PencilLine, ReceiptText, Smartphone } from 'lucide-react';
 
 import { MembershipPage } from '@/components/profile/MembershipPage';
 import { PlanCheckoutDialog } from '@/components/profile/PlanCheckoutDialog';
@@ -249,6 +249,22 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
     const MembershipIcon = membershipMeta.Icon;
     const statusLabel = formatSubscriptionStatus(profile.subscriptionStatus);
     const isActiveSubscription = profile.subscriptionStatus === 'active';
+    const methodCardLayout = profile.guidePreferences?.methodCardLayout === 'immersive' ? 'immersive' : 'classic';
+
+    const handleMethodCardLayoutChange = async (nextLayout: 'classic' | 'immersive') => {
+        if (methodCardLayout === nextLayout || isSaving) {
+            return;
+        }
+
+        setStatusMessage(null);
+        await onUpdateProfile({
+            guidePreferences: {
+                ...profile.guidePreferences,
+                methodCardLayout: nextLayout
+            }
+        });
+        setStatusMessage(`Method card layout switched to ${nextLayout === 'classic' ? 'Classic' : 'Immersive'}.`);
+    };
 
     return (
         <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
@@ -382,6 +398,88 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                     <DetailRow label="Current total" value={formatMoney(getMembershipPrice(profile.subscriptionTier, profile.billingCycle), 'USD')} />
                                 </div>
                             </button>
+                        </section>
+
+                        <section className="mt-8 surface-panel rounded-[30px] p-6 lg:p-8">
+                            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="max-w-2xl">
+                                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-400/10 dark:text-violet-300">
+                                        <PanelsTopLeft className="h-5 w-5" />
+                                    </div>
+                                    <h2 className="mt-5 text-2xl font-display font-semibold text-[var(--foreground)]">Method card layout</h2>
+                                    <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                        Switch between the classic and immersive card layouts. Your choice is saved to your profile and follows you across sessions.
+                                    </p>
+                                </div>
+                                <div className="inline-flex rounded-full border border-[var(--panel-border)] bg-[var(--panel)] p-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleMethodCardLayoutChange('classic')}
+                                        disabled={isSaving}
+                                        className={cn(
+                                            'rounded-full px-4 py-2 text-sm font-semibold transition-all',
+                                            methodCardLayout === 'classic'
+                                                ? 'bg-[var(--foreground)] text-white shadow-[0_12px_26px_rgba(15,23,42,0.14)]'
+                                                : 'text-[var(--foreground-soft)] hover:text-[var(--foreground)]',
+                                            isSaving ? 'cursor-wait opacity-70' : ''
+                                        )}
+                                    >
+                                        Classic
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleMethodCardLayoutChange('immersive')}
+                                        disabled={isSaving}
+                                        className={cn(
+                                            'rounded-full px-4 py-2 text-sm font-semibold transition-all',
+                                            methodCardLayout === 'immersive'
+                                                ? 'bg-[var(--foreground)] text-white shadow-[0_12px_26px_rgba(15,23,42,0.14)]'
+                                                : 'text-[var(--foreground-soft)] hover:text-[var(--foreground)]',
+                                            isSaving ? 'cursor-wait opacity-70' : ''
+                                        )}
+                                    >
+                                        Immersive
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                                <button
+                                    type="button"
+                                    onClick={() => void handleMethodCardLayoutChange('classic')}
+                                    disabled={isSaving}
+                                    className={cn(
+                                        'rounded-[24px] border px-5 py-5 text-left transition-all',
+                                        methodCardLayout === 'classic'
+                                            ? 'border-slate-900 bg-slate-900 text-white shadow-[0_22px_48px_rgba(15,23,42,0.18)] dark:border-white dark:bg-white dark:text-slate-900'
+                                            : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground)] hover:-translate-y-0.5'
+                                    )}
+                                >
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] opacity-70">Classic layout</div>
+                                    <div className="mt-3 text-xl font-display font-semibold">Classic</div>
+                                    <div className={cn('mt-2 text-sm leading-relaxed', methodCardLayout === 'classic' ? 'text-white/82 dark:text-slate-600' : 'text-[var(--foreground-soft)]')}>
+                                        Keeps the denser split view with the darker reference deck and full grid across the left pane.
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => void handleMethodCardLayoutChange('immersive')}
+                                    disabled={isSaving}
+                                    className={cn(
+                                        'rounded-[24px] border px-5 py-5 text-left transition-all',
+                                        methodCardLayout === 'immersive'
+                                            ? 'border-emerald-500/40 bg-emerald-500 text-white shadow-[0_22px_48px_rgba(16,185,129,0.22)]'
+                                            : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground)] hover:-translate-y-0.5'
+                                    )}
+                                >
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] opacity-75">Immersive layout</div>
+                                    <div className="mt-3 text-xl font-display font-semibold">Immersive</div>
+                                    <div className={cn('mt-2 text-sm leading-relaxed', methodCardLayout === 'immersive' ? 'text-white/86' : 'text-[var(--foreground-soft)]')}>
+                                        Uses the newer airy header, aligned tool panel, and cleaner control placement for users who prefer a lighter visual rhythm.
+                                    </div>
+                                </button>
+                            </div>
                         </section>
                     </>
                 )}
@@ -621,3 +719,4 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
         </div>
     );
 }
+

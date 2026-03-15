@@ -26,6 +26,7 @@ interface ProfileRow {
     subscription_status: UserProfileData['subscriptionStatus'] | null;
     renewal_date: string | null;
     payment_method_label: string | null;
+    guide_preferences?: UserProfileData['guidePreferences'] | null;
     created_at: string;
     last_sign_in_at: string | null;
 }
@@ -136,6 +137,9 @@ const AVATAR_GRADIENTS = [
     'from-violet-500 to-fuchsia-400'
 ] as const;
 
+const PROFILE_SELECT_BASE = 'id, email, full_name, title, phone, location, workspace_name, company, billing_email, account_role, subscription_tier, billing_cycle, subscription_status, renewal_date, payment_method_label, created_at, last_sign_in_at';
+const PROFILE_SELECT_WITH_GUIDE = `${PROFILE_SELECT_BASE}, guide_preferences`;
+
 function getSiteUrl() {
     return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 }
@@ -178,8 +182,65 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
 }
 
+function isMissingGuidePreferencesColumnError(error: unknown) {
+    return isRecord(error)
+        && error.code === '42703'
+        && typeof error.message === 'string'
+        && error.message.includes('guide_preferences');
+}
+
+async function fetchProfileById(
+    supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+    userId: string,
+    mode: 'single' | 'maybeSingle'
+) {
+    const withGuideQuery = supabase
+        .from('profiles')
+        .select(PROFILE_SELECT_WITH_GUIDE)
+        .eq('id', userId);
+    const withGuideResult = mode === 'single'
+        ? await withGuideQuery.single()
+        : await withGuideQuery.maybeSingle();
+
+    if (!isMissingGuidePreferencesColumnError(withGuideResult.error)) {
+        return withGuideResult;
+    }
+
+    const fallbackQuery = supabase
+        .from('profiles')
+        .select(PROFILE_SELECT_BASE)
+        .eq('id', userId);
+
+    return mode === 'single'
+        ? await fallbackQuery.single()
+        : await fallbackQuery.maybeSingle();
+}
+
+async function fetchProfilesByIds(
+    supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+    userIds: string[]
+) {
+    const withGuideResult = await supabase
+        .from('profiles')
+        .select(PROFILE_SELECT_WITH_GUIDE)
+        .in('id', userIds);
+
+    if (!isMissingGuidePreferencesColumnError(withGuideResult.error)) {
+        return withGuideResult;
+    }
+
+    return await supabase
+        .from('profiles')
+        .select(PROFILE_SELECT_BASE)
+        .in('id', userIds);
+}
+
 function normalizeString(value: unknown, fallback = '') {
     return typeof value === 'string' ? value : fallback;
+}
+
+function normalizeNullableString(value: unknown) {
+    return typeof value === 'string' ? value : null;
 }
 
 function normalizePermission(value: unknown): PermissionLevel {
@@ -238,6 +299,17 @@ function mapProfile(profile: ProfileRow): UserProfileData {
         profile.payment_method_label || undefined,
         profile.renewal_date
     );
+    const guidePreferences: UserProfileData['guidePreferences'] = isRecord(profile.guide_preferences)
+        ? {
+            onboardingSeenAt: normalizeNullableString(profile.guide_preferences.onboardingSeenAt),
+            lastLearningCenterVisitAt: normalizeNullableString(profile.guide_preferences.lastLearningCenterVisitAt),
+            methodCardLayout: profile.guide_preferences.methodCardLayout === 'immersive' ? 'immersive' : 'classic'
+        }
+        : {
+            onboardingSeenAt: null,
+            lastLearningCenterVisitAt: null,
+            methodCardLayout: 'classic'
+        };
 
     return {
         id: profile.id,
@@ -252,7 +324,8 @@ function mapProfile(profile: ProfileRow): UserProfileData {
         accountRole: profile.account_role || 'Workspace member',
         ...membership,
         createdAt: profile.created_at,
-        lastSignInAt: profile.last_sign_in_at
+        lastSignInAt: profile.last_sign_in_at,
+        guidePreferences
     };
 }
 
@@ -403,11 +476,11 @@ export async function ensureProfileForCurrentUser() {
         || 'User';
     const nextTitle = (user.user_metadata.title as string | undefined) || 'Innovation collaborator';
 
-    const { data: existingProfileData, error: existingProfileError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, title, phone, location, workspace_name, company, billing_email, account_role, subscription_tier, billing_cycle, subscription_status, renewal_date, payment_method_label, created_at, last_sign_in_at')
-        .eq('id', user.id)
-        .maybeSingle();
+    const { data: existingProfileData, error: existingProfileError } = await fetchProfileById(
+        supabase,
+        user.id,
+        'maybeSingle'
+    );
     const existingProfile = existingProfileData as unknown as ProfileRow | null;
 
     if (existingProfileError) {
@@ -465,11 +538,11 @@ export async function getWorkspaceShell() {
         throw new Error('Unauthenticated');
     }
 
-    const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, title, phone, location, workspace_name, company, billing_email, account_role, subscription_tier, billing_cycle, subscription_status, renewal_date, payment_method_label, created_at, last_sign_in_at')
-        .eq('id', user.id)
-        .single();
+    const { data: profileData, error: profileError } = await fetchProfileById(
+        supabase,
+        user.id,
+        'single'
+    );
     const profileRow = profileData as unknown as ProfileRow | null;
 
     if (profileError || !profileRow) {
@@ -523,10 +596,10 @@ export async function getWorkspaceShell() {
     }
 
     const memberIds = [...new Set(allMembershipRows.map((row) => row.user_id))];
-    const { data: memberProfilesData, error: memberProfilesError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, title, phone, location, workspace_name, company, billing_email, account_role, subscription_tier, billing_cycle, subscription_status, renewal_date, payment_method_label, created_at, last_sign_in_at')
-        .in('id', memberIds);
+    const { data: memberProfilesData, error: memberProfilesError } = await fetchProfilesByIds(
+        supabase,
+        memberIds
+    );
     const memberProfiles = (memberProfilesData || []) as unknown as ProfileRow[];
 
     if (memberProfilesError) {
@@ -980,17 +1053,34 @@ export async function updateCurrentUserProfile(updates: Partial<UserProfileData>
         billing_cycle: updates.billingCycle,
         subscription_status: updates.subscriptionStatus,
         renewal_date: updates.renewalDate,
-        payment_method_label: updates.paymentMethodLabel
+        payment_method_label: updates.paymentMethodLabel,
+        guide_preferences: updates.guidePreferences
     };
 
     const sanitizedPayload = Object.fromEntries(
-        Object.entries(payload).filter(([, value]) => typeof value === 'string' || value === null)
+        Object.entries(payload).filter(([, value]) => typeof value === 'string' || value === null || isRecord(value))
     );
 
     const { error } = await supabase
         .from('profiles')
         .update(sanitizedPayload)
         .eq('id', user.id);
+
+    if (error && isMissingGuidePreferencesColumnError(error)) {
+        const legacyPayload = { ...sanitizedPayload };
+        delete legacyPayload.guide_preferences;
+
+        const { error: fallbackError } = await supabase
+            .from('profiles')
+            .update(legacyPayload)
+            .eq('id', user.id);
+
+        if (fallbackError) {
+            throw fallbackError;
+        }
+
+        return;
+    }
 
     if (error) {
         throw error;

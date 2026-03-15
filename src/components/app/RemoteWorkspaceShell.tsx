@@ -7,14 +7,18 @@ import { AuthPage } from '@/components/auth/AuthPage';
 import { LandingPage } from '@/components/auth/LandingPage';
 import { SignOutPage } from '@/components/auth/SignOutPage';
 import { Dashboard } from '@/components/dashboard/Dashboard';
+import { LearningCenterPage } from '@/components/guide/LearningCenterPage';
 import { ProfilePage } from '@/components/profile/ProfilePage';
 import { SandboxApp } from '@/components/SandboxApp';
+import { GUIDE_VIEWPORT_MIN_WIDTH } from '@/data/onboarding';
+import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { DEFAULT_USER } from '@/data/workspaceSeed';
 import { WorkspaceExportDto, WorkspaceShellDto } from '@/lib/contracts/api';
 import { loadWorkspaceBrowserState, useWorkspaceBrowserHistory } from '@/hooks/useWorkspaceBrowserHistory';
 import { clearWorkspaceSession, loadWorkspaceSession, saveWorkspaceSession } from '@/lib/services/mvpWorkspace';
+import { fetchApiJson } from '@/lib/services/remoteApi';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { AppViewState, PermissionLevel, UserProfileData, WorkspaceProject } from '@/types';
+import { AppViewState, GuideFlowVariant, OnboardingStepId, PermissionLevel, ProjectSurface, UserProfileData, WorkspaceProject } from '@/types';
 
 type CredentialMode = 'signin' | 'register';
 type AuthActionHint = 'resend-confirmation';
@@ -40,22 +44,29 @@ interface EmailRegistrationStatus {
     confirmed: boolean;
 }
 
+function mergeProfileUpdate(
+    currentProfile: UserProfileData,
+    requestedUpdates: Partial<UserProfileData>,
+    nextProfile?: Partial<UserProfileData>
+): UserProfileData {
+    return {
+        ...currentProfile,
+        ...requestedUpdates,
+        ...nextProfile,
+        guidePreferences: {
+            ...currentProfile.guidePreferences,
+            ...requestedUpdates.guidePreferences,
+            ...nextProfile?.guidePreferences
+        }
+    };
+}
+
 function getAuthBaseUrl() {
     if (typeof window !== 'undefined') {
         return window.location.origin;
     }
 
     return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-}
-
-async function parseApiResponse<T>(response: Response): Promise<T> {
-    const body = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-        throw new Error(body.error || 'Request failed.');
-    }
-
-    return body as T;
 }
 
 function parseEmailRegistrationStatus(value: unknown): EmailRegistrationStatus {
@@ -77,10 +88,12 @@ export function RemoteWorkspaceShell() {
     const supabase = useMemo(() => createSupabaseBrowserClient(), []);
     const [view, setView] = useState<AppViewState>('landing');
     const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+    const [activeSurface, setActiveSurface] = useState<ProjectSurface>('hub');
     const [projects, setProjects] = useState<WorkspaceProject[]>([]);
     const [profile, setProfile] = useState<UserProfileData>(DEFAULT_USER);
     const [collaborationOverview, setCollaborationOverview] = useState<WorkspaceShellDto['collaborationOverview']>();
     const [profileReturnView, setProfileReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
+    const [learningCenterReturnView, setLearningCenterReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
     const [sessionUser, setSessionUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [workspaceLoading, setWorkspaceLoading] = useState(false);
@@ -88,23 +101,31 @@ export function RemoteWorkspaceShell() {
     const [workspaceStatus, setWorkspaceStatus] = useState<string | null>(null);
     const [profileSaving, setProfileSaving] = useState(false);
     const [isNavigationHydrated, setIsNavigationHydrated] = useState(false);
+    const [guideStep, setGuideStep] = useState<OnboardingStepId | null>(null);
+    const [guideVariant, setGuideVariant] = useState<GuideFlowVariant | null>(null);
+    const [isGuideViewportEligible, setIsGuideViewportEligible] = useState(
+        () => (typeof window === 'undefined' ? true : window.innerWidth >= GUIDE_VIEWPORT_MIN_WIDTH)
+    );
 
     useEffect(() => {
         const savedSession = loadWorkspaceSession();
         const restoredNavigationState = loadWorkspaceBrowserState({
             view: savedSession.view === 'logging_out' ? 'landing' : savedSession.view,
-            activeProjectId: savedSession.activeProjectId
+            activeProjectId: savedSession.activeProjectId,
+            activeSurface: savedSession.activeSurface
         });
 
         setView(restoredNavigationState.view);
         setActiveProjectId(restoredNavigationState.activeProjectId);
+        setActiveSurface(restoredNavigationState.activeSurface || 'hub');
         setIsNavigationHydrated(true);
     }, []);
 
     useWorkspaceBrowserHistory({
         state: {
             view,
-            activeProjectId
+            activeProjectId,
+            activeSurface
         },
         isReady: isNavigationHydrated && !authLoading,
         onNavigate: (nextState) => {
@@ -124,6 +145,7 @@ export function RemoteWorkspaceShell() {
 
             setView(nextState.view);
             setActiveProjectId(nextState.activeProjectId);
+            setActiveSurface(nextState.activeSurface || 'hub');
         }
     });
 
@@ -159,10 +181,11 @@ export function RemoteWorkspaceShell() {
         if (!authLoading) {
             saveWorkspaceSession({
                 view,
-                activeProjectId
+                activeProjectId,
+                activeSurface
             });
         }
-    }, [activeProjectId, authLoading, view]);
+    }, [activeProjectId, activeSurface, authLoading, view]);
 
     useEffect(() => {
         const syncWorkspace = async () => {
@@ -172,6 +195,7 @@ export function RemoteWorkspaceShell() {
                 setProfile(DEFAULT_USER);
                 setCollaborationOverview(undefined);
                 setActiveProjectId(null);
+                setActiveSurface('hub');
                 setWorkspaceLoading(false);
                 setView((currentView) => (
                     currentView === 'landing' || currentView === 'auth' ? currentView : 'landing'
@@ -183,10 +207,9 @@ export function RemoteWorkspaceShell() {
             setAuthError(null);
 
             try {
-                const response = await fetch('/api/auth/bootstrap', {
+                const data = await fetchApiJson<WorkspaceResponse>('/api/auth/bootstrap', {
                     method: 'POST'
                 });
-                const data = await parseApiResponse<WorkspaceResponse>(response);
 
                 setProjects(data.workspace.projects);
                 setProfile(data.workspace.profile);
@@ -206,11 +229,53 @@ export function RemoteWorkspaceShell() {
         void syncWorkspace();
     }, [authLoading, sessionUser]);
 
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const updateGuideViewportEligibility = () => {
+            const nextEligibility = window.innerWidth >= GUIDE_VIEWPORT_MIN_WIDTH;
+            setIsGuideViewportEligible(nextEligibility);
+
+            if (!nextEligibility) {
+                setGuideStep(null);
+                setGuideVariant(null);
+            }
+        };
+
+        window.addEventListener('resize', updateGuideViewportEligibility);
+
+        return () => window.removeEventListener('resize', updateGuideViewportEligibility);
+    }, []);
+
+    useEffect(() => {
+        if (
+            authLoading
+            || workspaceLoading
+            || !isGuideViewportEligible
+            || guideStep
+            || guideVariant
+            || profile.guidePreferences?.onboardingSeenAt
+            || projects.length > 0
+        ) {
+            return;
+        }
+
+        if (view === 'dashboard') {
+            const frameId = window.requestAnimationFrame(() => {
+                setGuideVariant('new-user');
+                setGuideStep('dashboard-summary');
+            });
+
+            return () => window.cancelAnimationFrame(frameId);
+        }
+    }, [authLoading, guideStep, guideVariant, isGuideViewportEligible, profile.guidePreferences?.onboardingSeenAt, projects.length, view, workspaceLoading]);
+
     const refreshWorkspace = async () => {
-        const response = await fetch('/api/workspace', {
+        const data = await fetchApiJson<WorkspaceResponse>('/api/workspace', {
             cache: 'no-store'
         });
-        const data = await parseApiResponse<WorkspaceResponse>(response);
         setProjects(data.workspace.projects);
         setProfile(data.workspace.profile);
         setCollaborationOverview(data.workspace.collaborationOverview);
@@ -372,11 +437,9 @@ export function RemoteWorkspaceShell() {
         setAuthError(null);
         setWorkspaceStatus(null);
 
-        const response = await fetch('/api/auth/demo-admin', {
+        await fetchApiJson<Record<string, never>>('/api/auth/demo-admin', {
             method: 'POST'
         });
-
-        await parseApiResponse(response);
         window.location.assign('/');
     };
 
@@ -385,14 +448,13 @@ export function RemoteWorkspaceShell() {
         setAuthError(null);
 
         try {
-            const response = await fetch('/api/projects', {
+            const data = await fetchApiJson<{ project: WorkspaceProject }>('/api/projects', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({})
             });
-            const data = await parseApiResponse<{ project: WorkspaceProject }>(response);
             setProjects((current) => [data.project, ...current]);
             return data.project;
         } catch (error) {
@@ -401,27 +463,33 @@ export function RemoteWorkspaceShell() {
         }
     };
 
+    const handleOpenProject = (projectId: string) => {
+        if (guideStep === 'dashboard-open') {
+            setGuideStep('hub');
+        }
+
+        setActiveSurface('hub');
+        setActiveProjectId(projectId);
+        setView('sandbox');
+    };
+
     const handleUpdateProject = async (projectId: string, updates: Partial<WorkspaceProject>) => {
         setWorkspaceStatus(null);
-        await parseApiResponse(
-            await fetch(`/api/projects/${projectId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updates)
-            })
-        );
+        await fetchApiJson<Record<string, never>>(`/api/projects/${projectId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updates)
+        });
         await refreshWorkspace();
     };
 
     const handleDeleteProject = async (projectId: string) => {
         setWorkspaceStatus(null);
-        await parseApiResponse(
-            await fetch(`/api/projects/${projectId}`, {
-                method: 'DELETE'
-            })
-        );
+        await fetchApiJson<Record<string, never>>(`/api/projects/${projectId}`, {
+            method: 'DELETE'
+        });
 
         setProjects((current) => current.filter((project) => project.id !== projectId));
         if (activeProjectId === projectId) {
@@ -432,18 +500,16 @@ export function RemoteWorkspaceShell() {
 
     const handleInviteMember = async (projectId: string, email: string, permission: PermissionLevel) => {
         setWorkspaceStatus(null);
-        const result = await parseApiResponse<InviteMemberResponse>(
-            await fetch(`/api/projects/${projectId}/members`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    email,
-                    permission
-                })
+        const result = await fetchApiJson<InviteMemberResponse>(`/api/projects/${projectId}/members`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email,
+                permission
             })
-        );
+        });
 
         await refreshWorkspace();
         return result;
@@ -451,47 +517,39 @@ export function RemoteWorkspaceShell() {
 
     const handleSendInviteEmail = async (projectId: string, inviteId: string) => {
         setWorkspaceStatus(null);
-        await parseApiResponse(
-            await fetch(`/api/projects/${projectId}/invites/${inviteId}/send`, {
-                method: 'POST'
-            })
-        );
+        await fetchApiJson<Record<string, never>>(`/api/projects/${projectId}/invites/${inviteId}/send`, {
+            method: 'POST'
+        });
     };
 
     const handleRevokeInvite = async (projectId: string, inviteId: string) => {
         setWorkspaceStatus(null);
-        await parseApiResponse(
-            await fetch(`/api/projects/${projectId}/invites/${inviteId}`, {
-                method: 'DELETE'
-            })
-        );
+        await fetchApiJson<Record<string, never>>(`/api/projects/${projectId}/invites/${inviteId}`, {
+            method: 'DELETE'
+        });
         await refreshWorkspace();
     };
 
     const handleUpdateMemberPermission = async (projectId: string, memberId: string, permission: PermissionLevel) => {
         setWorkspaceStatus(null);
-        await parseApiResponse(
-            await fetch(`/api/projects/${projectId}/members/${memberId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    permission
-                })
+        await fetchApiJson<Record<string, never>>(`/api/projects/${projectId}/members/${memberId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                permission
             })
-        );
+        });
 
         await refreshWorkspace();
     };
 
     const handleRemoveMember = async (projectId: string, memberId: string) => {
         setWorkspaceStatus(null);
-        await parseApiResponse(
-            await fetch(`/api/projects/${projectId}/members/${memberId}`, {
-                method: 'DELETE'
-            })
-        );
+        await fetchApiJson<Record<string, never>>(`/api/projects/${projectId}/members/${memberId}`, {
+            method: 'DELETE'
+        });
 
         await refreshWorkspace();
     };
@@ -502,26 +560,44 @@ export function RemoteWorkspaceShell() {
         setWorkspaceStatus(null);
 
         try {
-            const response = await fetch('/api/profile', {
+            setProfile((currentProfile) => mergeProfileUpdate(currentProfile, updates));
+            const data = await fetchApiJson<{ profile: UserProfileData }>('/api/profile', {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(updates)
             });
-            const data = await parseApiResponse<{ profile: UserProfileData }>(response);
-            setProfile(data.profile);
+            setProfile((currentProfile) => mergeProfileUpdate(currentProfile, updates, data.profile));
         } finally {
             setProfileSaving(false);
         }
     };
 
+    const handleDismissGuide = async () => {
+        const onboardingSeenAt = profile.guidePreferences?.onboardingSeenAt || new Date().toISOString();
+        setProfile((currentProfile) => ({
+            ...currentProfile,
+            guidePreferences: {
+                ...currentProfile.guidePreferences,
+                onboardingSeenAt
+            }
+        }));
+        setGuideStep(null);
+        setGuideVariant(null);
+        await handleUpdateProfile({
+            guidePreferences: {
+                ...profile.guidePreferences,
+                onboardingSeenAt
+            }
+        });
+    };
+
     const handleExportWorkspace = async () => {
         setAuthError(null);
-        const response = await fetch('/api/workspace/export', {
+        const data = await fetchApiJson<{ snapshot: WorkspaceExportDto }>('/api/workspace/export', {
             cache: 'no-store'
         });
-        const data = await parseApiResponse<{ snapshot: WorkspaceExportDto }>(response);
         const blob = new Blob([JSON.stringify(data.snapshot, null, 2)], { type: 'application/json' });
         const downloadUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -538,7 +614,13 @@ export function RemoteWorkspaceShell() {
         setAuthError(null);
         const raw = await file.text();
         const snapshot = JSON.parse(raw);
-        const response = await fetch('/api/workspace/import', {
+        const data = await fetchApiJson<{
+            result: {
+                importedProjects: number;
+                importedMembers: number;
+                importedInvites: number;
+            };
+        }>('/api/workspace/import', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -547,13 +629,6 @@ export function RemoteWorkspaceShell() {
                 snapshot
             })
         });
-        const data = await parseApiResponse<{
-            result: {
-                importedProjects: number;
-                importedMembers: number;
-                importedInvites: number;
-            };
-        }>(response);
 
         await refreshWorkspace();
         setWorkspaceStatus(
@@ -575,11 +650,30 @@ export function RemoteWorkspaceShell() {
         setView('profile');
     };
 
+    const handleOpenLearningCenter = (source: 'dashboard' | 'sandbox') => {
+        setLearningCenterReturnView(source);
+        setView('learning-center');
+    };
+
+    const handleReplayOnboarding = () => {
+        if (!isGuideViewportEligible) {
+            return;
+        }
+
+        setGuideVariant(projects.length === 0 ? 'new-user' : 'existing-user');
+        setGuideStep('dashboard-summary');
+        setActiveProjectId(null);
+        setActiveSurface('hub');
+        setView('dashboard');
+    };
+
     if (authLoading || (workspaceLoading && sessionUser && projects.length === 0 && view !== 'profile')) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-[var(--background)] text-[var(--foreground-muted)]">
-                Loading workspace...
-            </div>
+            <BrandedLoadingScreen
+                fullscreen
+                label="Loading workspace"
+                detail="Connecting your account, projects, and guide preferences."
+            />
         );
     }
 
@@ -613,14 +707,12 @@ export function RemoteWorkspaceShell() {
                     projects={projects}
                     profile={profile}
                     currentUserId={profile.id}
-                    onOpenProject={(projectId) => {
-                        setActiveProjectId(projectId);
-                        setView('sandbox');
-                    }}
+                    onOpenProject={handleOpenProject}
                     onCreateProject={handleCreateProject}
                     onUpdateProject={handleUpdateProject}
                     onDeleteProject={handleDeleteProject}
                     onOpenProfile={() => handleOpenProfile('dashboard')}
+                    onOpenLearningCenter={() => handleOpenLearningCenter('dashboard')}
                     onLogout={handleLogout}
                     onExportWorkspace={handleExportWorkspace}
                     onImportWorkspace={handleImportWorkspace}
@@ -632,6 +724,10 @@ export function RemoteWorkspaceShell() {
                     workspaceStatus={workspaceStatus}
                     workspaceError={authError}
                     collaborationOverview={collaborationOverview}
+                    guideStep={guideStep}
+                    guideVariant={guideVariant}
+                    onGuideStepChange={setGuideStep}
+                    onDismissGuide={() => void handleDismissGuide()}
                 />
             );
 
@@ -640,19 +736,35 @@ export function RemoteWorkspaceShell() {
                 <SandboxApp
                     project={activeProject}
                     profile={profile}
+                    currentSurface={activeSurface}
+                    onSurfaceChange={setActiveSurface}
                     onExit={() => {
                         void refreshWorkspace();
                         setActiveProjectId(null);
+                        setActiveSurface('hub');
                         setView('dashboard');
                     }}
                     onUpdateProject={handleUpdateProject}
+                    onSyncProjectSummaryStage={(projectId, stage) => {
+                        setProjects((current) => current.map((item) => (
+                            item.id === projectId
+                                ? { ...item, currentStage: stage }
+                                : item
+                        )));
+                    }}
                     onOpenProfile={() => handleOpenProfile('sandbox')}
+                    onOpenLearningCenter={() => handleOpenLearningCenter('sandbox')}
+                    onLogout={handleLogout}
                     runtimeMode="remote-supabase"
                     onInviteMember={handleInviteMember}
                     onSendInviteEmail={handleSendInviteEmail}
                     onRevokeInvite={handleRevokeInvite}
                     onUpdateMemberPermission={handleUpdateMemberPermission}
                     onRemoveMember={handleRemoveMember}
+                    guideStep={guideStep}
+                    guideVariant={guideVariant}
+                    onGuideStepChange={setGuideStep}
+                    onDismissGuide={() => void handleDismissGuide()}
                 />
             ) : (
                 <Dashboard
@@ -660,14 +772,12 @@ export function RemoteWorkspaceShell() {
                     projects={projects}
                     profile={profile}
                     currentUserId={profile.id}
-                    onOpenProject={(projectId) => {
-                        setActiveProjectId(projectId);
-                        setView('sandbox');
-                    }}
+                    onOpenProject={handleOpenProject}
                     onCreateProject={handleCreateProject}
                     onUpdateProject={handleUpdateProject}
                     onDeleteProject={handleDeleteProject}
                     onOpenProfile={() => handleOpenProfile('dashboard')}
+                    onOpenLearningCenter={() => handleOpenLearningCenter('dashboard')}
                     onLogout={handleLogout}
                     onExportWorkspace={handleExportWorkspace}
                     onImportWorkspace={handleImportWorkspace}
@@ -679,6 +789,10 @@ export function RemoteWorkspaceShell() {
                     workspaceStatus={workspaceStatus}
                     workspaceError={authError}
                     collaborationOverview={collaborationOverview}
+                    guideStep={guideStep}
+                    guideVariant={guideVariant}
+                    onGuideStepChange={setGuideStep}
+                    onDismissGuide={() => void handleDismissGuide()}
                 />
             );
 
@@ -689,6 +803,15 @@ export function RemoteWorkspaceShell() {
                     isSaving={profileSaving}
                     onUpdateProfile={handleUpdateProfile}
                     onBack={() => setView(profileReturnView)}
+                />
+            );
+
+        case 'learning-center':
+            return (
+                <LearningCenterPage
+                    profile={profile}
+                    onBack={() => setView(learningCenterReturnView)}
+                    onReplayOnboarding={handleReplayOnboarding}
                 />
             );
 

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { StageMethodView } from '@/components/stages/StageMethodView';
-import { ProjectHubData } from '@/types';
+import { MethodCardLayout, ProjectHubData } from '@/types';
 
 interface TellStoryViewProps {
     projectId: string;
@@ -10,9 +10,10 @@ interface TellStoryViewProps {
     isHubLoading?: boolean;
     onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
     onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    methodCardLayout?: MethodCardLayout;
 }
 
-export function TellStoryView({ projectId, projectName, hub, isHubLoading = false, onCreateHubRecord, onUpdateHubRecord }: TellStoryViewProps) {
+export function TellStoryView({ projectId, projectName, hub, isHubLoading = false, onCreateHubRecord, onUpdateHubRecord, methodCardLayout = 'classic' }: TellStoryViewProps) {
     return (
         <StageMethodView
             projectId={projectId}
@@ -21,6 +22,7 @@ export function TellStoryView({ projectId, projectName, hub, isHubLoading = fals
             isHubLoading={isHubLoading}
             onCreateHubRecord={onCreateHubRecord}
             onUpdateHubRecord={onUpdateHubRecord}
+            methodCardLayout={methodCardLayout}
             stage="tell-story"
             stageTitle="Tell Story Stage"
             entryHeadline="Shape the narrative so people understand the work and act on it."

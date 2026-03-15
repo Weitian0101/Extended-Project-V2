@@ -11,7 +11,6 @@ import {
     Download,
     Folder,
     Layers3,
-    LogOut,
     MessageSquareMore,
     MoreVertical,
     PencilLine,
@@ -24,15 +23,17 @@ import {
 } from 'lucide-react';
 
 import { ProjectSettingsDialog } from '@/components/dashboard/ProjectSettingsDialog';
+import { SpotlightGuide } from '@/components/guide/SpotlightGuide';
 import { AvatarCluster } from '@/components/ui/AvatarCluster';
 import { BrandLockup } from '@/components/ui/BrandLockup';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { ProfilePanel } from '@/components/ui/ProfilePanel';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { UserMenu } from '@/components/ui/UserMenu';
+import { getGuideProgress, shouldShowCreateStep } from '@/data/onboarding';
 import { getMembershipPlan } from '@/lib/membership';
 import { cn } from '@/lib/utils';
-import { ProjectInvite, TeamMember, UserProfileData, WorkspaceCollaborationOverview, WorkspaceProject } from '@/types';
+import { GuideFlowVariant, OnboardingStepId, ProjectInvite, TeamMember, UserProfileData, WorkspaceCollaborationOverview, WorkspaceProject } from '@/types';
 
 interface DashboardProps {
     runtimeMode?: 'local-mvp' | 'remote-supabase';
@@ -44,6 +45,7 @@ interface DashboardProps {
     onUpdateProject: (projectId: string, updates: Partial<WorkspaceProject>) => Promise<void> | void;
     onDeleteProject: (projectId: string) => void;
     onOpenProfile: () => void;
+    onOpenLearningCenter: () => void;
     onLogout: () => void;
     onExportWorkspace?: () => void;
     onImportWorkspace?: (file: File) => Promise<void>;
@@ -58,6 +60,10 @@ interface DashboardProps {
     workspaceStatus?: string | null;
     workspaceError?: string | null;
     collaborationOverview?: WorkspaceCollaborationOverview;
+    guideStep?: OnboardingStepId | null;
+    guideVariant?: GuideFlowVariant | null;
+    onGuideStepChange?: (step: OnboardingStepId | null) => void;
+    onDismissGuide?: () => void;
 }
 
 interface OverviewCardItem {
@@ -117,6 +123,7 @@ export function Dashboard({
     onUpdateProject,
     onDeleteProject,
     onOpenProfile,
+    onOpenLearningCenter,
     onLogout,
     runtimeMode = 'local-mvp',
     onExportWorkspace,
@@ -128,7 +135,11 @@ export function Dashboard({
     onRemoveMember,
     workspaceStatus,
     workspaceError,
-    collaborationOverview
+    collaborationOverview,
+    guideStep,
+    guideVariant,
+    onGuideStepChange,
+    onDismissGuide
 }: DashboardProps) {
     const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
     const [menuProjectId, setMenuProjectId] = useState<string | null>(null);
@@ -140,11 +151,26 @@ export function Dashboard({
     const workspaceMenuRef = useRef<HTMLDivElement | null>(null);
     const activeMenuRef = useRef<HTMLDivElement | null>(null);
     const importInputRef = useRef<HTMLInputElement | null>(null);
+    const newProjectButtonRef = useRef<HTMLButtonElement | null>(null);
+    const emptyStateCreateButtonRef = useRef<HTMLButtonElement | null>(null);
+    const firstProjectCardRef = useRef<HTMLDivElement | null>(null);
+    const activityTrackersRef = useRef<HTMLDivElement | null>(null);
     const collaboratorCount = new Set(projects.flatMap((project) => project.members.map((member) => member.id))).size;
     const currentPlan = getMembershipPlan(profile.subscriptionTier);
     const latestProject = getLatestProject(projects);
     const totalNeedsReview = projects.reduce((sum, project) => sum + (project.pendingReviewCount || 0), 0);
     const totalOpenTasks = projects.reduce((sum, project) => sum + (project.openTasksCount || 0), 0);
+    const hasGuide = Boolean(guideStep && guideVariant);
+    const showCreateStep = guideVariant ? shouldShowCreateStep(guideVariant) : false;
+    const dashboardSummaryGuide = guideVariant && guideStep === 'dashboard-summary'
+        ? getGuideProgress(guideVariant, 'dashboard-summary')
+        : null;
+    const dashboardCreateGuide = guideVariant && guideStep === 'dashboard-create'
+        ? getGuideProgress(guideVariant, 'dashboard-create')
+        : null;
+    const dashboardOpenGuide = guideVariant && guideStep === 'dashboard-open'
+        ? getGuideProgress(guideVariant, 'dashboard-open')
+        : null;
 
     useEffect(() => {
         if (!menuProjectId && !workspaceMenuOpen) return;
@@ -195,6 +221,11 @@ export function Dashboard({
             const createdProject = await Promise.resolve(onCreateProject());
 
             if (createdProject) {
+                if (guideStep === 'dashboard-create') {
+                    onGuideStepChange?.('dashboard-open');
+                    return;
+                }
+
                 setPendingOpenProjectId(createdProject.id);
                 setSettingsProject(createdProject);
             }
@@ -203,6 +234,14 @@ export function Dashboard({
         } finally {
             setIsCreatingProject(false);
         }
+    };
+
+    const handleProjectOpen = (projectId: string) => {
+        if (guideStep === 'dashboard-open' || (guideStep === 'dashboard-summary' && !showCreateStep)) {
+            onGuideStepChange?.('hub');
+        }
+
+        onOpenProject(projectId);
     };
 
     const overviewCards = [
@@ -297,20 +336,14 @@ export function Dashboard({
                     <BrandLockup compact />
                     <div className="flex items-center gap-2 lg:gap-3">
                         <ThemeToggle compact />
-                        <ProfilePanel
-                            compact
+                        <UserMenu
                             name={profile.name}
                             title={profile.accountRole || profile.title}
                             tier={profile.subscriptionTier}
-                            onClick={onOpenProfile}
+                            onOpenProfile={onOpenProfile}
+                            onOpenLearningCenter={onOpenLearningCenter}
+                            onLogout={onLogout}
                         />
-                        <button
-                            onClick={onLogout}
-                            className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-rose-500"
-                        >
-                            <LogOut className="h-4 w-4" />
-                            <span className="hidden lg:inline">Sign Out</span>
-                        </button>
                     </div>
                 </div>
             </header>
@@ -375,7 +408,12 @@ export function Dashboard({
                                 )}
                             </div>
                         )}
-                        <Button size="lg" onClick={() => void handleCreateProjectClick()} disabled={isCreatingProject}>
+                        <Button
+                            ref={newProjectButtonRef}
+                            size="lg"
+                            onClick={() => void handleCreateProjectClick()}
+                            disabled={isCreatingProject}
+                        >
                             <Plus className="mr-2 h-5 w-5" />
                             {isCreatingProject ? 'Creating...' : 'New Project'}
                         </Button>
@@ -418,7 +456,7 @@ export function Dashboard({
                         </div>
                     </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div ref={activityTrackersRef} className="grid gap-4 sm:grid-cols-2">
                         {overviewCards.map((card) => (
                             <OverviewInsightCard
                                 key={card.title}
@@ -450,17 +488,36 @@ export function Dashboard({
                     </div>
                 )}
 
-                <div className="relative z-0 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-                    {projects.map((project) => {
-                        const owner = getOwner(project);
+                {projects.length === 0 ? (
+                    <div className="surface-panel relative z-0 rounded-[32px] border border-dashed border-[var(--panel-border)] p-8">
+                        <div className="max-w-2xl">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-600">First project</div>
+                            <h3 className="mt-4 text-3xl font-display font-semibold text-[var(--foreground)]">Start with one real workspace.</h3>
+                            <p className="mt-3 text-sm leading-relaxed text-[var(--foreground-soft)] lg:text-base">
+                                Create a project to unlock Project Hub, stage methods, and the full onboarding flow.
+                                If you prefer a quick refresher first, open Learning Center from the avatar menu.
+                            </p>
+                            <div className="mt-6">
+                                <Button ref={emptyStateCreateButtonRef} size="lg" onClick={() => void handleCreateProjectClick()} disabled={isCreatingProject}>
+                                    <Plus className="mr-2 h-5 w-5" />
+                                    {isCreatingProject ? 'Creating...' : 'Create your first project'}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="relative z-0 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                        {projects.map((project, index) => {
+                            const owner = getOwner(project);
 
-                        return (
-                            <div
-                                key={project.id}
-                                onClick={() => onOpenProject(project.id)}
-                                className="surface-panel group relative cursor-pointer overflow-hidden rounded-[30px] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,0.16)]"
-                            >
-                                <div className={`absolute inset-x-0 top-0 h-1 rounded-t-[30px] bg-gradient-to-r ${project.accent}`} />
+                            return (
+                                <div
+                                    key={project.id}
+                                    ref={index === 0 ? firstProjectCardRef : null}
+                                    onClick={() => handleProjectOpen(project.id)}
+                                    className="surface-panel group relative cursor-pointer overflow-hidden rounded-[30px] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,0.16)]"
+                                >
+                                    <div className={`absolute inset-x-0 top-0 h-1 rounded-t-[30px] bg-gradient-to-r ${project.accent}`} />
 
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex items-center gap-3">
@@ -569,10 +626,11 @@ export function Dashboard({
                                         <ArrowUpRight className="h-4 w-4" />
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </main>
 
             <ProjectSettingsDialog
@@ -618,6 +676,53 @@ export function Dashboard({
                     setProjectPendingDelete(null);
                 }}
             />
+            <SpotlightGuide
+                open={hasGuide && guideStep === 'dashboard-summary'}
+                targetRef={activityTrackersRef}
+                currentStep={dashboardSummaryGuide?.currentStep || 1}
+                totalSteps={dashboardSummaryGuide?.totalSteps || 9}
+                placement="left"
+                title="These four panels tell you where to jump in"
+                description="They track what needs review, which sessions are coming up, what is assigned to you, and the latest activity across every project."
+                purpose="Use them to spot blocked work quickly, reopen an active project, and see where the team needs your attention first."
+                primaryAction={guideVariant ? {
+                    label: showCreateStep ? 'Show project creation' : 'Show project entry',
+                    onClick: () => onGuideStepChange?.(showCreateStep ? 'dashboard-create' : 'dashboard-open')
+                } : undefined}
+                onSkip={onDismissGuide}
+            />
+            <SpotlightGuide
+                open={hasGuide && guideStep === 'dashboard-create'}
+                targetRef={projects.length === 0 ? emptyStateCreateButtonRef : newProjectButtonRef}
+                currentStep={dashboardCreateGuide?.currentStep || 2}
+                totalSteps={dashboardCreateGuide?.totalSteps || 9}
+                placement="top"
+                title="Create the project that will hold the whole workflow"
+                description="A project is where this challenge lives. It gives you one place for the hub, context, Beyond Post-its methods, captured outcomes, and AI support."
+                purpose="Click here to create your first working space. Once it appears on the dashboard, you can open it and continue the guided flow."
+                primaryAction={{
+                    label: 'Create first project',
+                    onClick: () => void handleCreateProjectClick()
+                }}
+                onBack={() => onGuideStepChange?.('dashboard-summary')}
+                onSkip={onDismissGuide}
+            />
+            <SpotlightGuide
+                open={hasGuide && guideStep === 'dashboard-open'}
+                targetRef={firstProjectCardRef}
+                currentStep={dashboardOpenGuide?.currentStep || 3}
+                totalSteps={dashboardOpenGuide?.totalSteps || 9}
+                placement="left"
+                title="Open the project from its card"
+                description="Each project card takes you into the working space for that challenge and keeps its latest stage, tasks, and activity visible from the dashboard."
+                purpose="Click the card to move from workspace overview into the project itself. That is where the hub, context, methods, and AI tools live."
+                primaryAction={latestProject ? {
+                    label: 'Open this project',
+                    onClick: () => handleProjectOpen(latestProject.id)
+                } : undefined}
+                onBack={() => onGuideStepChange?.(showCreateStep ? 'dashboard-create' : 'dashboard-summary')}
+                onSkip={onDismissGuide}
+            />
         </div>
     );
 }
@@ -643,6 +748,7 @@ function OverviewInsightCard({
 }) {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const closeTimerRef = useRef<number | null>(null);
+    const primaryProjectId = items[0]?.projectId;
 
     const openPreview = () => {
         if (closeTimerRef.current) {
@@ -667,11 +773,31 @@ function OverviewInsightCard({
         }
     }, []);
 
+    const handlePrimaryOpen = () => {
+        if (primaryProjectId) {
+            onOpenProject(primaryProjectId);
+        }
+    };
+
     return (
         <div
-            className="relative isolate z-20 surface-panel-strong overflow-visible rounded-[28px] p-5 transition-[z-index] hover:z-30"
+            className={cn(
+                'relative isolate z-20 surface-panel-strong overflow-visible rounded-[28px] p-5 transition-[z-index] hover:z-30',
+                primaryProjectId && 'cursor-pointer'
+            )}
             onMouseEnter={openPreview}
             onMouseLeave={closePreview}
+            onFocus={openPreview}
+            onBlur={closePreview}
+            onClick={handlePrimaryOpen}
+            onKeyDown={(event) => {
+                if ((event.key === 'Enter' || event.key === ' ') && primaryProjectId) {
+                    event.preventDefault();
+                    handlePrimaryOpen();
+                }
+            }}
+            role={primaryProjectId ? 'button' : undefined}
+            tabIndex={primaryProjectId ? 0 : -1}
         >
             <div className={cn('absolute inset-0 rounded-[28px] bg-gradient-to-br opacity-80', accent)} />
             <div className="relative">
@@ -686,7 +812,7 @@ function OverviewInsightCard({
                 </div>
 
                 <div className="mt-4 text-sm text-[var(--foreground-soft)]">
-                    {count > 0 ? 'Hover to preview and jump into the project.' : emptyState}
+                    {count > 0 ? 'Hover to preview details. Click to jump into the project.' : emptyState}
                 </div>
             </div>
 
@@ -704,7 +830,10 @@ function OverviewInsightCard({
                             <button
                                 key={item.id}
                                 type="button"
-                                onClick={() => onOpenProject(item.projectId)}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    onOpenProject(item.projectId);
+                                }}
                                 className="group/item relative flex w-full items-start justify-between gap-3 overflow-hidden rounded-[16px] border border-transparent bg-[var(--panel)] px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--panel-border)] hover:bg-[var(--panel-strong)]"
                             >
                                 <span className={cn('absolute inset-y-2 left-1.5 w-1 rounded-full bg-gradient-to-b opacity-0 transition-opacity group-hover/item:opacity-100', accent)} />

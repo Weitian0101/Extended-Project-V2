@@ -14,7 +14,12 @@ export const DEFAULT_USER: UserProfileData = {
     accountRole: 'Workspace owner',
     ...buildMembershipProfile('business', 'monthly', 'active'),
     createdAt: new Date('2026-01-19T10:00:00.000Z').toISOString(),
-    lastSignInAt: new Date('2026-03-14T08:45:00.000Z').toISOString()
+    lastSignInAt: new Date('2026-03-14T08:45:00.000Z').toISOString(),
+    guidePreferences: {
+        onboardingSeenAt: null,
+        lastLearningCenterVisitAt: null,
+        methodCardLayout: 'classic'
+    }
 };
 
 export const DEFAULT_TEAM: TeamMember[] = [
@@ -60,32 +65,4 @@ export const DEFAULT_TEAM: TeamMember[] = [
     }
 ];
 
-export const DEFAULT_PROJECTS: WorkspaceProject[] = [
-    {
-        id: '1',
-        name: 'Sustainable Packaging',
-        accent: 'from-emerald-500 to-lime-300',
-        ownerId: 'user',
-        updated: '2 mins ago',
-        summary: 'Packaging system refresh for lower waste and better supply visibility.',
-        members: DEFAULT_TEAM
-    },
-    {
-        id: '2',
-        name: 'AI Education App',
-        accent: 'from-sky-500 to-cyan-300',
-        ownerId: 'user',
-        updated: '2 days ago',
-        summary: 'Guided product concept for classroom pilots and teacher workflows.',
-        members: DEFAULT_TEAM.slice(0, 3)
-    },
-    {
-        id: '3',
-        name: 'Smart Home Hub',
-        accent: 'from-rose-500 to-orange-300',
-        ownerId: 'maya',
-        updated: '5 days ago',
-        summary: 'Service concept exploring onboarding, automation, and support loops.',
-        members: [DEFAULT_TEAM[1], DEFAULT_TEAM[2], DEFAULT_TEAM[3]]
-    }
-];
+export const DEFAULT_PROJECTS: WorkspaceProject[] = [];

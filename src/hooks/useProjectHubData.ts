@@ -24,6 +24,7 @@ import {
     TaskItem,
     UserProfileData
 } from '@/types';
+import { fetchApiJson } from '@/lib/services/remoteApi';
 
 type HubCollectionResource = 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'activity' | 'presence';
 
@@ -37,16 +38,6 @@ type HubRecordMap = {
     activity: ActivityEvent;
     presence: PresenceState;
 };
-
-async function parseResponse<T>(response: Response): Promise<T> {
-    const body = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-        throw new Error(body.error || 'Request failed.');
-    }
-
-    return body as T;
-}
 
 function replaceRecord<T extends { id: string }>(items: T[], next: T) {
     return items.map((item) => item.id === next.id ? next : item);
@@ -81,9 +72,9 @@ export function useProjectHubData({
 
             try {
                 if (remoteMode) {
-                    const result = await parseResponse<{ hub: ProjectHubData }>(
-                        await fetch(`/api/projects/${projectId}/hub`, { cache: 'no-store' })
-                    );
+                    const result = await fetchApiJson<{ hub: ProjectHubData }>(`/api/projects/${projectId}/hub`, {
+                        cache: 'no-store'
+                    });
 
                     if (isMounted) {
                         setHub(result.hub);
@@ -111,19 +102,18 @@ export function useProjectHubData({
 
     const updateBrief = useCallback(async (updates: Partial<ProjectBrief>) => {
         if (remoteMode) {
-            const result = await parseResponse<{ brief: ProjectBrief }>(
-                await fetch(`/api/projects/${projectId}/hub`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        ...hub.brief,
-                        ...updates
-                    })
+            const result = await fetchApiJson<{ brief: ProjectBrief }>(`/api/projects/${projectId}/hub`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ...hub.brief,
+                    ...updates
                 })
-            );
+            });
 
+            setError(null);
             setHub((current) => ({
                 ...current,
                 brief: result.brief
@@ -156,16 +146,15 @@ export function useProjectHubData({
 
     const createRecord = useCallback(async <TResource extends Exclude<HubCollectionResource, 'activity'>>(resource: TResource, payload: Partial<HubRecordMap[TResource]>) => {
         if (remoteMode) {
-            const result = await parseResponse<{ item: HubRecordMap[TResource] }>(
-                await fetch(`/api/projects/${projectId}/hub/${resource}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-            );
+            const result = await fetchApiJson<{ item: HubRecordMap[TResource] }>(`/api/projects/${projectId}/hub/${resource}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
 
+            setError(null);
             setHub((current) => ({
                 ...current,
                 [resource]: [result.item, ...(current[resource] as HubRecordMap[TResource][])]
@@ -237,16 +226,15 @@ export function useProjectHubData({
 
     const updateRecord = useCallback(async <TResource extends Exclude<HubCollectionResource, 'activity'>>(resource: TResource, recordId: string, payload: Partial<HubRecordMap[TResource]>) => {
         if (remoteMode) {
-            const result = await parseResponse<{ item: HubRecordMap[TResource] }>(
-                await fetch(`/api/projects/${projectId}/hub/${resource}/${recordId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-            );
+            const result = await fetchApiJson<{ item: HubRecordMap[TResource] }>(`/api/projects/${projectId}/hub/${resource}/${recordId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
 
+            setError(null);
             setHub((current) => ({
                 ...current,
                 [resource]: replaceRecord(current[resource] as HubRecordMap[TResource][], result.item)
@@ -285,11 +273,11 @@ export function useProjectHubData({
 
     const deleteRecord = useCallback(async (resource: Exclude<HubCollectionResource, 'activity' | 'presence'>, recordId: string) => {
         if (remoteMode) {
-            await parseResponse<{ ok: true }>(
-                await fetch(`/api/projects/${projectId}/hub/${resource}/${recordId}`, {
-                    method: 'DELETE'
-                })
-            );
+            await fetchApiJson<{ ok: true }>(`/api/projects/${projectId}/hub/${resource}/${recordId}`, {
+                method: 'DELETE'
+            });
+
+            setError(null);
         }
 
         setHub((current) => {
