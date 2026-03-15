@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { ArrowDownCircle, Bot, ChevronLeft, Expand, Send, Sparkles, Workflow, X, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
+import { RoundedSelect } from '@/components/ui/RoundedSelect';
 import { cn } from '@/lib/utils';
 import { MethodCard, ProjectContext, ProjectHubData, ToolRun } from '@/types';
 import { aiGateway } from '@/lib/services/aiGateway';
@@ -529,12 +530,17 @@ export function MethodSplitView({
                             <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-5">
                                 <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Capture Outcome</div>
                                 <div className="mt-4 space-y-3">
-                                    <select value={captureDraft.type} onChange={(event) => setCaptureDraft((current) => ({ ...current, type: event.target.value, status: event.target.value === 'artifact' ? 'draft' : current.status }))} className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]">
-                                        <option value="artifact">Artifact</option>
-                                        <option value="card">Board Card</option>
-                                        <option value="decision">Decision</option>
-                                        <option value="task">Task</option>
-                                    </select>
+                                    <RoundedSelect
+                                        value={captureDraft.type}
+                                        onChange={(value) => setCaptureDraft((current) => ({ ...current, type: value, status: value === 'artifact' ? 'draft' : current.status }))}
+                                        options={[
+                                            { value: 'artifact', label: 'Artifact' },
+                                            { value: 'card', label: 'Board Card' },
+                                            { value: 'decision', label: 'Decision' },
+                                            { value: 'task', label: 'Task' }
+                                        ]}
+                                        buttonClassName="bg-[var(--panel-strong)]"
+                                    />
                                     <input value={captureDraft.title} onChange={(event) => setCaptureDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Outcome title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
                                     <textarea value={captureDraft.summary} onChange={(event) => setCaptureDraft((current) => ({ ...current, summary: event.target.value }))} placeholder="What should the team see or act on?" className="h-28 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
                                     <Button onClick={() => void handleCaptureOutcome()}>Capture Outcome</Button>

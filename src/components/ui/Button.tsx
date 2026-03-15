@@ -18,7 +18,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                         'border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground)] shadow-[0_12px_28px_rgba(15,23,42,0.08)] hover:-translate-y-0.5 hover:border-slate-300/70 hover:bg-[var(--panel)] hover:shadow-[0_18px_38px_rgba(15,23,42,0.1)]': variant === 'secondary',
                         'border-[var(--panel-border)] bg-transparent text-[var(--foreground-soft)] hover:-translate-y-0.5 hover:border-slate-300/70 hover:bg-[var(--panel)] hover:text-[var(--foreground)]': variant === 'outline',
                         'border-transparent bg-transparent text-[var(--foreground-muted)] hover:-translate-y-0.5 hover:bg-[var(--panel)] hover:text-[var(--foreground)]': variant === 'ghost',
-                        'border-red-500/20 bg-[linear-gradient(135deg,#dc2626,#f97316)] text-white shadow-[0_14px_34px_rgba(239,68,68,0.24)] hover:-translate-y-0.5': variant === 'danger',
+                        'border-rose-500/25 bg-[linear-gradient(135deg,#e11d48,#f43f5e)] text-white shadow-[0_14px_34px_rgba(244,63,94,0.22)] hover:-translate-y-0.5 hover:shadow-[0_20px_42px_rgba(225,29,72,0.24)]': variant === 'danger',
                         'h-9 px-4 text-sm': size === 'sm',
                         'h-11 px-5 py-2 text-sm': size === 'md',
                         'h-12 px-6 text-base': size === 'lg',

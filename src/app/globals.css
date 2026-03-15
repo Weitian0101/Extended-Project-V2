@@ -49,7 +49,7 @@ html.dark {
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-space-grotesk);
+  --font-display: var(--font-manrope);
 }
 
 html {
@@ -84,22 +84,13 @@ body::before {
   z-index: 0;
 }
 
-body[data-app-view="dashboard"] {
-  background: #ffffff;
-  background-image: none;
-}
-
-body[data-app-view="dashboard"]::before {
-  display: none;
-}
-
 .font-handwriting {
   font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
 }
 
 .font-display {
-  font-family: var(--font-space-grotesk), var(--font-geist-sans), sans-serif;
-  letter-spacing: -0.03em;
+  font-family: var(--font-manrope), var(--font-geist-sans), sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .surface-panel {

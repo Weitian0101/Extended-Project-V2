@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Building2, CreditCard, Mail, MapPin, PencilLine, ReceiptText, Smartphone } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Building2, CreditCard, Mail, MapPin, PencilLine, ReceiptText, Smartphone } from 'lucide-react';
 
 import { MembershipPage } from '@/components/profile/MembershipPage';
 import { PlanCheckoutDialog } from '@/components/profile/PlanCheckoutDialog';
@@ -10,6 +10,7 @@ import { BrandLockup } from '@/components/ui/BrandLockup';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { buildMembershipProfile, getMembershipPlan, getMembershipPrice } from '@/lib/membership';
+import { cn } from '@/lib/utils';
 import { BillingCycle, MembershipCheckoutDraft, MembershipTier, UserProfileData } from '@/types';
 
 interface ProfilePageProps {
@@ -68,7 +69,86 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
     return (
         <div className="rounded-[18px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground-muted)]">{label}</div>
-            <div className="mt-1 text-sm text-[var(--foreground-soft)]">{value}</div>
+            <div className="mt-1 min-w-0 truncate whitespace-nowrap text-sm text-[var(--foreground-soft)]" title={typeof value === 'string' ? value : undefined}>{value}</div>
+        </div>
+    );
+}
+
+function ProfileHeroTile({
+    icon: Icon,
+    label,
+    value,
+    helper,
+    tone = 'slate',
+    pulse = false
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    value: React.ReactNode;
+    helper?: string;
+    tone?: 'slate' | 'sky' | 'violet' | 'emerald';
+    pulse?: boolean;
+}) {
+    const toneStyles = {
+        slate: {
+            panel: 'border-slate-200/70 bg-[linear-gradient(180deg,rgba(148,163,184,0.10),rgba(148,163,184,0.03))]',
+            bar: 'from-slate-300/20 via-slate-300/80 to-slate-300/20',
+            icon: 'border-slate-200/80 bg-slate-500/8 text-slate-500 dark:border-slate-700/70 dark:bg-slate-400/10 dark:text-slate-300',
+            value: 'text-[var(--foreground)]'
+        },
+        sky: {
+            panel: 'border-sky-200/70 bg-[linear-gradient(180deg,rgba(56,189,248,0.10),rgba(56,189,248,0.03))]',
+            bar: 'from-sky-300/20 via-sky-400/75 to-cyan-300/20',
+            icon: 'border-sky-200/80 bg-sky-500/10 text-sky-600 dark:border-sky-700/60 dark:bg-sky-400/10 dark:text-sky-300',
+            value: 'text-[var(--foreground)]'
+        },
+        violet: {
+            panel: 'border-violet-200/70 bg-[linear-gradient(180deg,rgba(167,139,250,0.10),rgba(167,139,250,0.03))]',
+            bar: 'from-violet-300/20 via-violet-400/75 to-fuchsia-300/20',
+            icon: 'border-violet-200/80 bg-violet-500/10 text-violet-600 dark:border-violet-700/60 dark:bg-violet-400/10 dark:text-violet-300',
+            value: 'text-[var(--foreground)]'
+        },
+        emerald: {
+            panel: 'border-emerald-200/70 bg-[linear-gradient(180deg,rgba(16,185,129,0.10),rgba(16,185,129,0.03))]',
+            bar: 'from-emerald-300/20 via-emerald-400/75 to-teal-300/20',
+            icon: 'border-emerald-200/80 bg-emerald-500/10 text-emerald-600 dark:border-emerald-700/60 dark:bg-emerald-400/10 dark:text-emerald-300',
+            value: 'text-emerald-700 dark:text-emerald-300'
+        }
+    }[tone];
+
+    return (
+        <div className={cn('relative overflow-hidden rounded-[20px] border px-3 py-2.5 lg:px-3.5 lg:py-3', toneStyles.panel)}>
+            <div className={cn('absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r', toneStyles.bar)} />
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                    <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border', toneStyles.icon)}>
+                        <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
+                        {label}
+                    </div>
+                </div>
+                {pulse && (
+                    <span className="relative mt-0.5 flex h-3 w-3">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+                    </span>
+                )}
+            </div>
+            <div
+                className={cn(
+                    'mt-3 min-w-0 truncate whitespace-nowrap text-[15px] font-semibold leading-tight lg:text-base',
+                    toneStyles.value
+                )}
+                title={typeof value === 'string' ? value : undefined}
+            >
+                {value}
+            </div>
+            {helper && (
+                <div className="mt-0.5 min-w-0 truncate whitespace-nowrap text-[11px] text-[var(--foreground-muted)]" title={helper}>
+                    {helper}
+                </div>
+            )}
         </div>
     );
 }
@@ -167,6 +247,8 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
     const currentPlan = getMembershipPlan(profile.subscriptionTier);
     const membershipMeta = getMembershipMeta(profile.subscriptionTier);
     const MembershipIcon = membershipMeta.Icon;
+    const statusLabel = formatSubscriptionStatus(profile.subscriptionStatus);
+    const isActiveSubscription = profile.subscriptionStatus === 'active';
 
     return (
         <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
@@ -193,25 +275,45 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                 {view === 'overview' && (
                     <>
                         <section className="surface-panel-strong rounded-[36px] p-6 lg:p-10">
-                            <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr]">
+                            <div className="grid gap-8 lg:grid-cols-[0.84fr_1.16fr]">
                                 <div>
                                     <div className="eyebrow">Profile</div>
                                     <h1 className="mt-4 text-4xl font-display font-semibold text-[var(--foreground)] lg:text-5xl">{profile.name}</h1>
                                     <p className="mt-3 max-w-xl text-base leading-relaxed text-[var(--foreground-soft)]">{profile.title}</p>
                                     <div className="mt-5 flex flex-wrap items-center gap-3">
                                         <MembershipBadge tier={profile.subscriptionTier} variant="solid" size="md" showMemberLabel />
-                                        <span className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm font-medium text-[var(--foreground-soft)]">
-                                            {formatSubscriptionStatus(profile.subscriptionStatus)} / {profile.billingCycle}
-                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="rounded-[30px] border border-[var(--panel-border)] bg-[var(--panel)] p-6">
-                                    <div className="grid gap-4 md:grid-cols-4">
-                                        <DetailRow label="Email" value={profile.email} />
-                                        <DetailRow label="Workspace" value={profile.workspace} />
-                                        <DetailRow label="Plan" value={<MembershipBadge tier={profile.subscriptionTier} size="xs" showMemberLabel />} />
-                                        <DetailRow label="Billing" value={profile.billingCycle} />
+                                <div className="rounded-[30px] border border-[var(--panel-border)] bg-[var(--panel)] p-4 lg:p-5">
+                                    <div className="grid gap-3 md:grid-cols-2">
+                                        <ProfileHeroTile
+                                            icon={Mail}
+                                            label="Email"
+                                            value={profile.email}
+                                            tone="sky"
+                                        />
+                                        <ProfileHeroTile
+                                            icon={Building2}
+                                            label="Workspace"
+                                            value={profile.workspace}
+                                            tone="slate"
+                                        />
+                                        <ProfileHeroTile
+                                            icon={MembershipIcon}
+                                            label="Plan"
+                                            value={currentPlan.title}
+                                            helper={`${currentPlan.includedSeats} seat${currentPlan.includedSeats === 1 ? '' : 's'} included`}
+                                            tone="violet"
+                                        />
+                                        <ProfileHeroTile
+                                            icon={BadgeCheck}
+                                            label="Status"
+                                            value={statusLabel}
+                                            helper={`${profile.billingCycle} billing`}
+                                            tone={isActiveSubscription ? 'emerald' : 'slate'}
+                                            pulse={isActiveSubscription}
+                                        />
                                     </div>
                                 </div>
                             </div>

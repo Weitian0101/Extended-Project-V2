@@ -248,6 +248,69 @@ async function getAuthenticatedActor(projectId: string, minimumPermission: 'memb
     };
 }
 
+function hasProjectEditPermission(permission: PermissionLevel) {
+    return permission === 'owner' || permission === 'edit';
+}
+
+function getTodoScopeFromMetadata(metadata: CollaborationMetadata) {
+    const value = metadata.todoScope;
+    return value === 'personal' || value === 'global' ? value : 'none';
+}
+
+function canActorViewTask(task: { owner_id: string | null; created_by: string; metadata: CollaborationMetadata | null }, actorId: string) {
+    const todoScope = getTodoScopeFromMetadata(task.metadata || {});
+    if (todoScope !== 'personal') {
+        return true;
+    }
+
+    return task.owner_id === actorId || task.created_by === actorId;
+}
+
+async function getTaskActorForCreate(projectId: string, raw: unknown) {
+    const actor = await getAuthenticatedActor(projectId, 'member');
+    const body = isRecord(raw) ? raw : {};
+    const todoScope = getTodoScopeFromMetadata(getMetadata(body.metadata));
+
+    if (todoScope === 'personal' || hasProjectEditPermission(actor.permission)) {
+        return actor;
+    }
+
+    throw new Error('Forbidden');
+}
+
+async function getTaskActorForExistingTask(projectId: string, recordId: string) {
+    const actor = await getAuthenticatedActor(projectId, 'member');
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+        .from('project_tasks')
+        .select('owner_id, created_by, metadata')
+        .eq('project_id', projectId)
+        .eq('id', recordId)
+        .maybeSingle();
+    const task = data as { owner_id: string | null; created_by: string; metadata: CollaborationMetadata | null } | null;
+
+    if (error || !task) {
+        throw new Error('Forbidden');
+    }
+
+    const todoScope = getTodoScopeFromMetadata(task.metadata || {});
+    const isTaskOwner = task.owner_id === actor.id || task.created_by === actor.id;
+
+    if (todoScope === 'personal') {
+        if (isTaskOwner || hasProjectEditPermission(actor.permission)) {
+            return actor;
+        }
+
+        throw new Error('Forbidden');
+    }
+
+    if (!hasProjectEditPermission(actor.permission)) {
+        throw new Error('Forbidden');
+    }
+
+    return actor;
+}
+
 function mapBrief(projectRow: ProjectBriefRow): ProjectBrief {
     return {
         projectId: projectRow.id,
@@ -487,7 +550,7 @@ async function insertActivityEvent(projectId: string, actor: AuthenticatedActor,
 }
 
 export async function getProjectHub(projectId: string): Promise<ProjectHubData> {
-    await getAuthenticatedActor(projectId, 'member');
+    const actor = await getAuthenticatedActor(projectId, 'member');
     const supabase = await createSupabaseServerClient();
 
     const [
@@ -539,6 +602,14 @@ export async function getProjectHub(projectId: string): Promise<ProjectHubData> 
         }
     });
 
+    const visibleTaskRows = ((tasksResponse.data as ProjectTaskRow[] | null) || []).filter((task) =>
+        canActorViewTask(task, actor.id)
+    );
+    const visibleTaskIds = new Set(visibleTaskRows.map((task) => task.id));
+    const visibleActivityRows = ((activityResponse.data as ProjectActivityRow[] | null) || []).filter((item) => (
+        item.entity_type !== 'task' || visibleTaskIds.has(item.entity_id)
+    ));
+
     return {
         brief: mapBrief(projectRow),
         cards: (cardsResponse.data as ProjectCardRow[] | null)?.map(mapCard) || fallback.cards,
@@ -546,8 +617,8 @@ export async function getProjectHub(projectId: string): Promise<ProjectHubData> 
         sessions: (sessionsResponse.data as ProjectSessionRow[] | null)?.map(mapSession) || fallback.sessions,
         decisions: (decisionsResponse.data as ProjectDecisionRow[] | null)?.map(mapDecision) || fallback.decisions,
         threads: (threadsResponse.data as ProjectThreadRow[] | null)?.map(mapThread) || fallback.threads,
-        tasks: (tasksResponse.data as ProjectTaskRow[] | null)?.map(mapTask) || fallback.tasks,
-        activity: (activityResponse.data as ProjectActivityRow[] | null)?.map(mapActivity) || fallback.activity,
+        tasks: visibleTaskRows.map(mapTask),
+        activity: visibleActivityRows.map(mapActivity),
         presence: (presenceResponse.data as ProjectPresenceRow[] | null)?.map(mapPresence) || fallback.presence
     };
 }
@@ -814,11 +885,13 @@ async function createThread(projectId: string, raw: unknown, actor: Authenticate
 async function createTask(projectId: string, raw: unknown, actor: AuthenticatedActor) {
     const supabase = await createSupabaseServerClient();
     const body = isRecord(raw) ? raw : {};
+    const metadata = getMetadata(body.metadata);
+    const todoScope = getTodoScopeFromMetadata(metadata);
     const payload = {
         project_id: projectId,
         title: getString(body.title, 'New task'),
         details: getString(body.details),
-        owner_id: getNullableString(body.ownerId),
+        owner_id: getNullableString(body.ownerId) || (todoScope === 'personal' ? actor.id : null),
         due_date: getNullableString(body.dueDate),
         stage: getNullableString(body.stage),
         linked_entity_type: getNullableString(body.linkedEntityType),
@@ -826,7 +899,7 @@ async function createTask(projectId: string, raw: unknown, actor: AuthenticatedA
         created_by: actor.id,
         updated_by: actor.id,
         status: getString(body.status, 'open'),
-        metadata: getMetadata(body.metadata)
+        metadata
     };
 
     const { data, error } = await supabase
@@ -882,7 +955,9 @@ async function createPresence(projectId: string, raw: unknown, actor: Authentica
 }
 
 export async function createProjectHubCollectionRecord(projectId: string, resource: HubCollectionResource, raw: unknown) {
-    const actor = await getAuthenticatedActor(projectId, resource === 'threads' || resource === 'presence' ? 'member' : 'edit');
+    const actor = resource === 'tasks'
+        ? await getTaskActorForCreate(projectId, raw)
+        : await getAuthenticatedActor(projectId, resource === 'threads' || resource === 'presence' ? 'member' : 'edit');
 
     switch (resource) {
         case 'cards':
@@ -936,7 +1011,9 @@ async function updateRecord<T>(
 }
 
 export async function updateProjectHubCollectionRecord(projectId: string, resource: Exclude<HubCollectionResource, 'activity'>, recordId: string, raw: unknown) {
-    const actor = await getAuthenticatedActor(projectId, resource === 'threads' || resource === 'presence' ? 'member' : 'edit');
+    const actor = resource === 'tasks'
+        ? await getTaskActorForExistingTask(projectId, recordId)
+        : await getAuthenticatedActor(projectId, resource === 'threads' || resource === 'presence' ? 'member' : 'edit');
     const body = isRecord(raw) ? raw : {};
     const version = getNumber(body.version, 1);
 
@@ -1093,7 +1170,9 @@ export async function updateProjectHubCollectionRecord(projectId: string, resour
 }
 
 export async function deleteProjectHubCollectionRecord(projectId: string, resource: Exclude<HubCollectionResource, 'activity' | 'presence'>, recordId: string) {
-    const actor = await getAuthenticatedActor(projectId, resource === 'threads' ? 'member' : resource === 'decisions' ? 'owner' : 'edit');
+    const actor = resource === 'tasks'
+        ? await getTaskActorForExistingTask(projectId, recordId)
+        : await getAuthenticatedActor(projectId, resource === 'threads' ? 'member' : resource === 'decisions' ? 'owner' : 'edit');
     const supabase = await createSupabaseServerClient();
 
     const { error } = await supabase

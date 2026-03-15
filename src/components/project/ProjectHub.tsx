@@ -1,34 +1,83 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     CalendarClock,
     CheckCircle2,
     ClipboardList,
+    FileStack,
     Flag,
-    MessageSquare,
+    Gavel,
+    Layers3,
+    ListTodo,
     Milestone,
+    MoreHorizontal,
+    PencilLine,
     Plus,
     Radar,
-    Users2
+    Sparkles,
+    Target,
+    Trash2,
+    Users2,
+    X
 } from 'lucide-react';
 
-import { BOARD_COLUMNS, PROJECT_HUB_TABS, formatPresenceLabel } from '@/lib/collaboration';
-import { cn } from '@/lib/utils';
 import { AvatarCluster } from '@/components/ui/AvatarCluster';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { RoundedSelect } from '@/components/ui/RoundedSelect';
+import { BOARD_COLUMNS, PROJECT_HUB_TABS, formatPresenceLabel } from '@/lib/collaboration';
+import { cn } from '@/lib/utils';
 import {
     CollaborationCard,
+    DecisionLogEntry,
+    ProjectArtifact,
     ProjectBrief,
     ProjectData,
     ProjectHubData,
     ProjectHubTab,
+    ProjectSession,
     StageId,
+    TaskItem,
     UserProfileData,
     WorkspaceProject
 } from '@/types';
 
 type ProjectHubResource = 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'tasks';
+type ComposerMode = 'card' | 'task' | 'session' | 'decision' | 'artifact' | null;
+type ContextMenuState =
+    | { resource: 'cards'; record: CollaborationCard; x: number; y: number }
+    | { resource: 'tasks'; record: TaskItem; x: number; y: number };
+type DetailState =
+    | { resource: 'cards'; record: CollaborationCard }
+    | { resource: 'tasks'; record: TaskItem }
+    | { resource: 'sessions'; record: ProjectSession }
+    | { resource: 'decisions'; record: DecisionLogEntry }
+    | { resource: 'artifacts'; record: ProjectArtifact };
+type DeleteDialogState = { resource: 'cards' | 'tasks'; id: string; title: string };
+
+const UNASSIGNED_ROLE = 'Unassigned';
+
+const ROLE_OPTIONS = [
+    UNASSIGNED_ROLE,
+    'Project Lead',
+    'Product Strategist',
+    'Research Lead',
+    'Facilitator',
+    'Design Lead',
+    'Delivery Lead',
+    'Story Lead',
+    'Observer'
+];
+
+const WORKING_NORM_OPTIONS = [
+    'One decision owner',
+    'Async notes first',
+    'Weekly review ritual',
+    'Evidence before opinion',
+    'Single source of truth',
+    'Client recap after sessions'
+];
 
 interface ProjectHubProps {
     project: ProjectData;
@@ -48,6 +97,7 @@ interface ProjectHubProps {
 export function ProjectHub({
     project,
     projectSummary,
+    profile,
     hub,
     isLoading,
     error,
@@ -55,48 +105,340 @@ export function ProjectHub({
     onCreateRecord,
     onUpdateRecord,
     onDeleteRecord,
-    onOpenStage,
-    onSyncContext
+    onOpenStage
 }: ProjectHubProps) {
+    const currentUserId = profile.id || 'user';
     const [activeTab, setActiveTab] = useState<ProjectHubTab>('brief');
     const [savingBrief, setSavingBrief] = useState(false);
     const [briefDraft, setBriefDraft] = useState<ProjectBrief>(hub.brief);
-    const [boardDraft, setBoardDraft] = useState({ title: '', summary: '', type: 'idea', status: 'open-questions' });
-    const [taskDraft, setTaskDraft] = useState({ title: '', details: '', status: 'open' });
+    const [roleAssignments, setRoleAssignments] = useState<Record<string, string>>({});
+    const [actionError, setActionError] = useState<string | null>(null);
+    const [composerMode, setComposerMode] = useState<ComposerMode>(null);
+    const [editingRecord, setEditingRecord] = useState<{ resource: ProjectHubResource; recordId: string } | null>(null);
+    const [detailState, setDetailState] = useState<DetailState | null>(null);
+    const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+    const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(null);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+    const [taskFilter, setTaskFilter] = useState<'all' | TaskItem['status']>('all');
+    const [boardDraft, setBoardDraft] = useState({ title: '', summary: '', type: 'idea', status: 'open-questions', ownerId: '', dueDate: '' });
+    const [taskDraft, setTaskDraft] = useState({ title: '', details: '', status: 'open', ownerId: '', dueDate: '', todoScope: 'none' });
     const [sessionDraft, setSessionDraft] = useState({ title: '', goal: '', agenda: '', participants: '', scheduledAt: '' });
     const [decisionDraft, setDecisionDraft] = useState({ title: '', background: '', options: '', decision: '', rationale: '' });
     const [artifactDraft, setArtifactDraft] = useState({ title: '', summary: '', type: 'concept', status: 'draft' });
 
-    React.useEffect(() => {
+    useEffect(() => {
         setBriefDraft(hub.brief);
-    }, [hub.brief]);
+        setRoleAssignments(parseRoleAssignments(projectSummary.members, hub.brief.teamRoles));
+    }, [hub.brief, projectSummary.members]);
 
-    const unresolvedBriefThreads = hub.threads.filter((thread) => thread.entityType === 'brief' && thread.status === 'open').length;
-    const nextSession = hub.sessions.find((session) => session.scheduledAt && session.status !== 'canceled');
+    useEffect(() => {
+        if (!contextMenu) return;
+        const closeMenu = () => setContextMenu(null);
+        window.addEventListener('pointerdown', closeMenu);
+        return () => window.removeEventListener('pointerdown', closeMenu);
+    }, [contextMenu]);
+
+    const nextSession = [...hub.sessions]
+        .filter((session) => session.scheduledAt && session.status !== 'canceled')
+        .sort((left, right) => String(left.scheduledAt).localeCompare(String(right.scheduledAt)))[0];
     const openTasks = hub.tasks.filter((task) => task.status !== 'done');
     const reviewItems = hub.cards.filter((card) => card.status === 'ready-for-review').length
         + hub.artifacts.filter((artifact) => artifact.status === 'ready').length
         + hub.decisions.filter((decision) => decision.status === 'proposed').length;
-
+    const unresolvedBriefThreads = hub.threads.filter((thread) => thread.entityType === 'brief' && thread.status === 'open').length;
+    const currentMember = projectSummary.members.find((member) => member.id === currentUserId);
+    const canManageSharedTodos = currentMember?.permission === 'owner' || currentMember?.permission === 'edit';
     const cardsByColumn = useMemo(() => Object.fromEntries(
         BOARD_COLUMNS.map((column) => [column.id, hub.cards.filter((card) => card.status === column.id)])
     ) as Record<CollaborationCard['status'], CollaborationCard[]>, [hub.cards]);
+    const globalTodos = hub.tasks.filter((task) => getTodoScope(task) === 'global');
+    const personalTodos = hub.tasks.filter((task) => getTodoScope(task) === 'personal' && (task.ownerId === currentUserId || task.createdBy === currentUserId));
+    const boardTasks = hub.tasks.filter((task) => getTodoScope(task) !== 'personal');
+    const visibleBoardTasks = taskFilter === 'all'
+        ? boardTasks
+        : boardTasks.filter((task) => task.status === taskFilter);
+    const tasksByOwner = projectSummary.members.map((member) => ({
+        member,
+        tasks: openTasks.filter((task) => task.ownerId === member.id)
+    })).filter((entry) => entry.tasks.length > 0);
 
     const handleBriefSave = async () => {
         setSavingBrief(true);
         try {
-            await onUpdateBrief(briefDraft);
-            onSyncContext({
-                background: briefDraft.background,
-                objectives: briefDraft.objectives,
-                assumptions: briefDraft.assumptions
+            await onUpdateBrief({
+                ...briefDraft,
+                teamRoles: buildRoleSummary(projectSummary.members, roleAssignments)
             });
         } finally {
             setSavingBrief(false);
         }
     };
 
-    const threadCount = (entityType: string, entityId: string) => hub.threads.filter((thread) => thread.entityType === entityType && thread.entityId === entityId).length;
+    const handleCreateCardFromScope = (scope: 'board' | 'global-todo' | 'personal-todo') => {
+        if (scope === 'board') {
+            setEditingRecord(null);
+            setBoardDraft({ title: '', summary: '', type: 'idea', status: 'open-questions', ownerId: '', dueDate: '' });
+            setComposerMode('card');
+            return;
+        }
+
+        setEditingRecord(null);
+        setTaskDraft({
+            title: '',
+            details: '',
+            status: 'open',
+            ownerId: scope === 'personal-todo' ? currentUserId : '',
+            dueDate: '',
+            todoScope: scope === 'global-todo' ? 'global' : 'personal'
+        });
+        setComposerMode('task');
+    };
+
+    const handleEditRecord = (resource: 'cards' | 'tasks' | 'sessions' | 'decisions' | 'artifacts', record: CollaborationCard | TaskItem | ProjectSession | DecisionLogEntry | ProjectArtifact) => {
+        setEditingRecord({ resource, recordId: record.id });
+        setDetailState(null);
+        setContextMenu(null);
+
+        if (resource === 'cards') {
+            const card = record as CollaborationCard;
+            setBoardDraft({
+                title: card.title,
+                summary: card.summary,
+                type: card.type,
+                status: card.status,
+                ownerId: card.ownerId || '',
+                dueDate: card.dueDate || ''
+            });
+            setComposerMode('card');
+            return;
+        }
+
+        if (resource === 'tasks') {
+            const task = record as TaskItem;
+            setTaskDraft({
+                title: task.title,
+                details: task.details,
+                status: task.status,
+                ownerId: task.ownerId || '',
+                dueDate: task.dueDate || '',
+                todoScope: getTodoScope(task)
+            });
+            setComposerMode('task');
+            return;
+        }
+
+        if (resource === 'sessions') {
+            const session = record as ProjectSession;
+            setSessionDraft({
+                title: session.title,
+                goal: session.goal,
+                agenda: session.agenda,
+                participants: session.participants,
+                scheduledAt: toLocalDateTimeInput(session.scheduledAt)
+            });
+            setComposerMode('session');
+            return;
+        }
+
+        if (resource === 'decisions') {
+            const decision = record as DecisionLogEntry;
+            setDecisionDraft({
+                title: decision.title,
+                background: decision.background,
+                options: decision.options,
+                decision: decision.decision,
+                rationale: decision.rationale
+            });
+            setComposerMode('decision');
+            return;
+        }
+
+        const artifact = record as ProjectArtifact;
+        setArtifactDraft({
+            title: artifact.title,
+            summary: artifact.summary,
+            type: artifact.type,
+            status: artifact.status
+        });
+        setComposerMode('artifact');
+    };
+
+    const handleRename = async () => {
+        if (!contextMenu) return;
+        const nextTitle = window.prompt('Rename item', contextMenu.record.title);
+        if (!nextTitle?.trim()) {
+            setContextMenu(null);
+            return;
+        }
+
+        if (contextMenu.resource === 'cards') {
+            await onUpdateRecord('cards', contextMenu.record.id, { ...contextMenu.record, title: nextTitle.trim(), version: contextMenu.record.version });
+        } else {
+            await onUpdateRecord('tasks', contextMenu.record.id, { ...contextMenu.record, title: nextTitle.trim(), version: contextMenu.record.version });
+        }
+        setContextMenu(null);
+    };
+
+    const handleTodoToggle = async (task: TaskItem) => {
+        const nextStatus = task.status === 'done' ? 'open' : 'done';
+        try {
+            setActionError(null);
+            await onUpdateRecord('tasks', task.id, {
+                title: task.title,
+                details: task.details,
+                ownerId: task.ownerId || null,
+                dueDate: task.dueDate || null,
+                stage: task.stage || null,
+                linkedEntityType: task.linkedEntityType || null,
+                linkedEntityId: task.linkedEntityId || null,
+                status: nextStatus,
+                version: task.version,
+                metadata: {
+                    ...task.metadata,
+                    todoScope: getTodoScope(task)
+                }
+            });
+        } catch (toggleError) {
+            setActionError(toggleError instanceof Error ? toggleError.message : 'Unable to update this task.');
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!contextMenu) return;
+        setDeleteDialog({
+            resource: contextMenu.resource,
+            id: contextMenu.record.id,
+            title: contextMenu.record.title
+        });
+        setContextMenu(null);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteDialog) {
+            return;
+        }
+
+        try {
+            setIsDeleteLoading(true);
+            await onDeleteRecord(deleteDialog.resource, deleteDialog.id);
+            setDeleteDialog(null);
+        } finally {
+            setIsDeleteLoading(false);
+        }
+    };
+
+    const handleCardSubmit = async () => {
+        const payload = {
+            ...boardDraft,
+            ownerId: boardDraft.ownerId || null,
+            dueDate: boardDraft.dueDate || null
+        };
+
+        if (editingRecord?.resource === 'cards') {
+            const existing = hub.cards.find((card) => card.id === editingRecord.recordId);
+            if (!existing) return;
+            await onUpdateRecord('cards', existing.id, {
+                ...existing,
+                ...payload,
+                version: existing.version
+            });
+        } else {
+            await onCreateRecord('cards', payload);
+        }
+
+        setBoardDraft({ title: '', summary: '', type: 'idea', status: 'open-questions', ownerId: '', dueDate: '' });
+        setEditingRecord(null);
+        setComposerMode(null);
+    };
+
+    const handleTaskSubmit = async () => {
+        const payload = {
+            ...taskDraft,
+            ownerId: taskDraft.ownerId || null,
+            dueDate: taskDraft.dueDate || null,
+            metadata: {
+                todoScope: taskDraft.todoScope
+            }
+        };
+
+        if (editingRecord?.resource === 'tasks') {
+            const existing = hub.tasks.find((task) => task.id === editingRecord.recordId);
+            if (!existing) return;
+            await onUpdateRecord('tasks', existing.id, {
+                ...existing,
+                ...payload,
+                version: existing.version,
+                metadata: {
+                    ...existing.metadata,
+                    todoScope: taskDraft.todoScope
+                }
+            });
+        } else {
+            await onCreateRecord('tasks', payload);
+        }
+
+        setTaskDraft({ title: '', details: '', status: 'open', ownerId: '', dueDate: '', todoScope: 'none' });
+        setEditingRecord(null);
+        setComposerMode(null);
+    };
+
+    const handleSessionSubmit = async () => {
+        if (editingRecord?.resource === 'sessions') {
+            const existing = hub.sessions.find((session) => session.id === editingRecord.recordId);
+            if (!existing) return;
+            await onUpdateRecord('sessions', existing.id, {
+                ...existing,
+                ...sessionDraft,
+                scheduledAt: sessionDraft.scheduledAt ? new Date(sessionDraft.scheduledAt).toISOString() : null,
+                version: existing.version
+            });
+        } else {
+            await onCreateRecord('sessions', {
+                ...sessionDraft,
+                scheduledAt: sessionDraft.scheduledAt ? new Date(sessionDraft.scheduledAt).toISOString() : null
+            });
+        }
+
+        setSessionDraft({ title: '', goal: '', agenda: '', participants: '', scheduledAt: '' });
+        setEditingRecord(null);
+        setComposerMode(null);
+    };
+
+    const handleDecisionSubmit = async () => {
+        if (editingRecord?.resource === 'decisions') {
+            const existing = hub.decisions.find((decision) => decision.id === editingRecord.recordId);
+            if (!existing) return;
+            await onUpdateRecord('decisions', existing.id, {
+                ...existing,
+                ...decisionDraft,
+                version: existing.version
+            });
+        } else {
+            await onCreateRecord('decisions', decisionDraft);
+        }
+
+        setDecisionDraft({ title: '', background: '', options: '', decision: '', rationale: '' });
+        setEditingRecord(null);
+        setComposerMode(null);
+    };
+
+    const handleArtifactSubmit = async () => {
+        if (editingRecord?.resource === 'artifacts') {
+            const existing = hub.artifacts.find((artifact) => artifact.id === editingRecord.recordId);
+            if (!existing) return;
+            await onUpdateRecord('artifacts', existing.id, {
+                ...existing,
+                ...artifactDraft,
+                version: existing.version
+            });
+        } else {
+            await onCreateRecord('artifacts', artifactDraft);
+        }
+
+        setArtifactDraft({ title: '', summary: '', type: 'concept', status: 'draft' });
+        setEditingRecord(null);
+        setComposerMode(null);
+    };
 
     if (isLoading) {
         return <div className="flex h-full items-center justify-center text-sm text-[var(--foreground-muted)]">Loading project hub...</div>;
@@ -105,31 +447,42 @@ export function ProjectHub({
     return (
         <div className="scrollbar-none h-full overflow-y-auto px-4 py-5 lg:px-8 lg:py-8">
             <div className="mx-auto max-w-7xl space-y-6">
-                <section className="surface-panel-strong rounded-[32px] p-6 shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
-                    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+                <section className="surface-panel-strong relative overflow-hidden rounded-[34px] p-6 lg:p-8">
+                    <div className={cn('absolute inset-0 bg-gradient-to-br opacity-15', projectSummary.accent)} />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_72%)]" />
+                    <div className="relative grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
                         <div>
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Project Hub</div>
-                            <h1 className="mt-3 text-3xl font-display font-semibold text-[var(--foreground)] lg:text-4xl">{project.context.name}</h1>
-                            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[var(--foreground-soft)]">{projectSummary.summary}</p>
-                            <div className="mt-5 flex flex-wrap gap-3">
-                                <button onClick={() => onOpenStage('explore')} className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm font-medium text-[var(--foreground)]">Open Explore</button>
-                                <button onClick={() => onOpenStage('implement')} className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm font-medium text-[var(--foreground)]">Open Implement</button>
-                                <button onClick={() => onOpenStage('tell-story')} className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm font-medium text-[var(--foreground)]">Open Story</button>
+                            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
+                                <Layers3 className="h-3.5 w-3.5 text-sky-500" />
+                                Project Hub
+                            </div>
+                            <h1 className="mt-4 text-3xl font-display font-semibold text-[var(--foreground)] lg:text-5xl">{project.context.name}</h1>
+                            <p className="mt-4 max-w-3xl text-base leading-relaxed text-[var(--foreground-soft)]">{projectSummary.summary}</p>
+                            <div className="mt-6 flex flex-wrap gap-2">
+                                <HubChip label={`Stage: ${formatStageLabel(project.currentStage)}`} />
+                                <HubChip label={`${projectSummary.members.length} members`} />
+                                <HubChip label={`${hub.activity.length} activity events`} />
                             </div>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
-                            <SummaryTile icon={Milestone} label="Next milestone" value={briefDraft.milestones || 'Set the next milestone'} />
-                            <SummaryTile icon={CalendarClock} label="Next session" value={nextSession?.title || 'No session scheduled'} helper={nextSession?.scheduledAt || null} />
-                            <SummaryTile icon={ClipboardList} label="Open tasks" value={`${openTasks.length}`} helper="tracked in board" />
-                            <SummaryTile icon={CheckCircle2} label="Needs review" value={`${reviewItems}`} helper={`${unresolvedBriefThreads} unresolved brief threads`} />
+                            <HubSummaryTile
+                                icon={Milestone}
+                                label="Next milestone"
+                                value={briefDraft.milestones || 'Set the next milestone'}
+                                helper={formatDateOnly(getMetadataString(briefDraft.metadata, 'milestoneDate'), 'No deadline')}
+                                accent="text-sky-600"
+                            />
+                            <HubSummaryTile icon={CalendarClock} label="Next session" value={nextSession?.title || 'No session scheduled'} helper={formatDateTime(nextSession?.scheduledAt, null)} accent="text-emerald-600" />
+                            <HubSummaryTile icon={ClipboardList} label="Open tasks" value={`${openTasks.length}`} accent="text-amber-600" />
+                            <HubSummaryTile icon={CheckCircle2} label="Needs review" value={`${reviewItems}`} helper={`${unresolvedBriefThreads} brief thread${unresolvedBriefThreads === 1 ? '' : 's'}`} accent="text-violet-600" />
                         </div>
                     </div>
-                    <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4">
+                    <div className="relative mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4">
                         <div className="flex items-center gap-3">
                             <AvatarCluster members={projectSummary.members} size="sm" />
                             <div>
                                 <div className="text-sm font-semibold text-[var(--foreground)]">Team presence</div>
-                                <div className="text-xs text-[var(--foreground-muted)]">{hub.presence.length ? formatPresenceLabel(hub.presence[0]) : 'Presence will appear when collaborators join.'}</div>
+                                <div className="text-xs text-[var(--foreground-muted)]">{hub.presence.length ? formatPresenceLabel(hub.presence[0]) : 'Presence appears as collaborators move through the project.'}</div>
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -152,237 +505,887 @@ export function ProjectHub({
                     </div>
                 </section>
 
-                {error && (
-                    <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">{error}</div>
+                {(error || actionError) && (
+                    <div className="rounded-[24px] border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+                        {error || actionError}
+                    </div>
                 )}
 
                 {activeTab === 'brief' && (
-                    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-                        <div className="surface-panel-strong rounded-[32px] p-6">
-                            <SectionHeading icon={Radar} title="Shared brief" description="This is the common operating picture for every collaborator." />
-                            <BriefField label="Challenge" value={briefDraft.background} onChange={(value) => setBriefDraft((current) => ({ ...current, background: value }))} rows={5} />
-                            <BriefField label="Target audience" value={briefDraft.objectives} onChange={(value) => setBriefDraft((current) => ({ ...current, objectives: value }))} rows={4} />
-                            <BriefField label="Unknowns and constraints" value={briefDraft.assumptions} onChange={(value) => setBriefDraft((current) => ({ ...current, assumptions: value }))} rows={4} />
-                            <div className="grid gap-4 lg:grid-cols-2">
-                                <BriefField label="Success metrics" value={briefDraft.successMetrics} onChange={(value) => setBriefDraft((current) => ({ ...current, successMetrics: value }))} rows={4} />
-                                <BriefField label="Milestones" value={briefDraft.milestones} onChange={(value) => setBriefDraft((current) => ({ ...current, milestones: value }))} rows={4} />
-                                <BriefField label="Team roles" value={briefDraft.teamRoles} onChange={(value) => setBriefDraft((current) => ({ ...current, teamRoles: value }))} rows={4} />
-                                <BriefField label="Working norms and key links" value={`${briefDraft.workingNorms}\n${briefDraft.keyLinks}`.trim()} onChange={(value) => {
-                                    const [workingNorms, ...rest] = value.split('\n');
-                                    setBriefDraft((current) => ({
-                                        ...current,
-                                        workingNorms,
-                                        keyLinks: rest.join('\n')
-                                    }));
-                                }} rows={4} />
+                    <div className="grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
+                        <div className="space-y-6">
+                            <div className="surface-panel-strong rounded-[30px] p-6">
+                                <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                    <SectionHeading icon={ListTodo} title="Team todo lists" compact />
+                                    <Button variant="secondary" size="sm" onClick={() => onOpenStage('overview')}>
+                                        Open Project Context
+                                    </Button>
+                                </div>
+                                <div className="grid gap-4 xl:grid-cols-2">
+                                    <TodoListPanel
+                                        title="Global list"
+                                        icon={ClipboardList}
+                                        accent="text-sky-600"
+                                        items={globalTodos}
+                                        emptyState="Nothing has been added to the shared list yet."
+                                        canAdd={canManageSharedTodos}
+                                        canManageItems={canManageSharedTodos}
+                                        onAdd={() => handleCreateCardFromScope('global-todo')}
+                                        onToggle={(task) => void handleTodoToggle(task)}
+                                        onOpen={(task) => setDetailState({ resource: 'tasks', record: task })}
+                                        onEdit={(task) => handleEditRecord('tasks', task)}
+                                        members={projectSummary.members}
+                                    />
+                                    <TodoListPanel
+                                        title="Private list"
+                                        icon={Radar}
+                                        accent="text-violet-600"
+                                        items={personalTodos}
+                                        emptyState="Your personal list is empty."
+                                        canAdd
+                                        canManageItems
+                                        onAdd={() => handleCreateCardFromScope('personal-todo')}
+                                        onToggle={(task) => void handleTodoToggle(task)}
+                                        onOpen={(task) => setDetailState({ resource: 'tasks', record: task })}
+                                        onEdit={(task) => handleEditRecord('tasks', task)}
+                                        members={projectSummary.members}
+                                    />
+                                </div>
                             </div>
-                            <div className="mt-6 flex justify-end">
-                                <Button onClick={() => void handleBriefSave()} disabled={savingBrief}>
-                                    {savingBrief ? 'Saving...' : 'Save Brief'}
-                                </Button>
+                            <div className="surface-panel-strong rounded-[30px] p-6">
+                                <SectionHeading icon={Users2} title="Team roles" />
+                                <div className="space-y-3">
+                                    {projectSummary.members.map((member) => (
+                                        <div key={member.id} className="flex flex-col gap-3 rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4 md:flex-row md:items-center md:justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold text-white ${member.avatarColor}`}>{member.initials}</div>
+                                                <div>
+                                                    <div className="text-sm font-semibold text-[var(--foreground)]">{member.name}</div>
+                                                    <div className="text-xs text-[var(--foreground-muted)]">{member.email || member.role}</div>
+                                                </div>
+                                            </div>
+                                            <RoundedSelect
+                                                value={normalizeRole(roleAssignments[member.id] || member.role)}
+                                                onChange={(value) => setRoleAssignments((current) => ({ ...current, [member.id]: value }))}
+                                                options={ROLE_OPTIONS.map((role) => ({ value: role, label: role }))}
+                                                buttonClassName="min-w-[220px] bg-[var(--panel-strong)]"
+                                            />
+                                        </div>
+                                    ))}
+                                    {projectSummary.pendingInvites?.map((invite) => (
+                                        <div key={invite.id} className="flex flex-col gap-3 rounded-[22px] border border-dashed border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4 md:flex-row md:items-center md:justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--panel-strong)] text-sm font-semibold text-[var(--foreground-muted)]">?</div>
+                                                <div>
+                                                    <div className="text-sm font-semibold text-[var(--foreground)]">{invite.email}</div>
+                                                    <div className="text-xs text-[var(--foreground-muted)]">Pending invite</div>
+                                                </div>
+                                            </div>
+                                            <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground-muted)]">
+                                                {UNASSIGNED_ROLE}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                        <div className="space-y-4">
-                            <MiniPanel icon={Users2} title="Roles" body={briefDraft.teamRoles || 'List the roles and responsibilities that matter in this sprint.'} />
-                            <MiniPanel icon={Flag} title="Success criteria" body={briefDraft.successMetrics || 'Capture the evidence that will tell the team this work is moving.'} />
-                            <MiniPanel icon={MessageSquare} title="Open discussions" body={`${unresolvedBriefThreads} unresolved thread${unresolvedBriefThreads === 1 ? '' : 's'} attached to the brief.`} />
+                        <div className="space-y-6">
+                            <div className="surface-panel-strong rounded-[30px] p-6">
+                                <SectionHeading icon={Target} title="Working setup" />
+                                <div className="grid gap-4 md:grid-cols-[1fr_220px]">
+                                    <StructuredField label="Next milestone" value={briefDraft.milestones} onChange={(value) => setBriefDraft((current) => ({ ...current, milestones: value }))} />
+                                    <StructuredField
+                                        label="Due date"
+                                        value={getMetadataString(briefDraft.metadata, 'milestoneDate')}
+                                        inputType="date"
+                                        onChange={(value) => setBriefDraft((current) => ({
+                                            ...current,
+                                            metadata: {
+                                                ...current.metadata,
+                                                milestoneDate: value || null
+                                            }
+                                        }))}
+                                    />
+                                </div>
+                                <PillEditor
+                                    label="Working norms"
+                                    values={parseListField(briefDraft.workingNorms)}
+                                    suggestions={WORKING_NORM_OPTIONS}
+                                    placeholder="Add a working norm"
+                                    onChange={(values) => setBriefDraft((current) => ({ ...current, workingNorms: serializeListField(values) }))}
+                                />
+                                <PillEditor
+                                    label="Key links"
+                                    values={parseListField(briefDraft.keyLinks)}
+                                    placeholder="Add a link or doc name"
+                                    onChange={(values) => setBriefDraft((current) => ({ ...current, keyLinks: serializeListField(values) }))}
+                                />
+                                <div className="mt-6 flex justify-end">
+                                    <Button onClick={() => void handleBriefSave()} disabled={savingBrief}>{savingBrief ? 'Saving...' : 'Save Brief'}</Button>
+                                </div>
+                            </div>
+                            <div className="surface-panel rounded-[30px] p-6">
+                                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
+                                    <Flag className="h-4 w-4 text-amber-500" />
+                                    Responsibilities
+                                </div>
+                                <div className="mt-4 space-y-3">
+                                    {tasksByOwner.length === 0 && (
+                                        <EmptyPanelCopy text="Open tasks will appear here once work is assigned." />
+                                    )}
+                                    {tasksByOwner.map(({ member, tasks }) => (
+                                        <div key={member.id} className="rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="text-sm font-semibold text-[var(--foreground)]">{member.name}</div>
+                                                <div className="text-xs text-[var(--foreground-muted)]">{tasks.length} task{tasks.length === 1 ? '' : 's'}</div>
+                                            </div>
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {tasks.map((task) => (
+                                                    <button
+                                                        key={task.id}
+                                                        type="button"
+                                                        onClick={() => setDetailState({ resource: 'tasks', record: task })}
+                                                        className="rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)] px-3 py-1.5 text-xs font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]"
+                                                    >
+                                                        {task.title}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <MiniMetric label="Role coverage" value={`${projectSummary.members.length}`} helper="active members" />
+                                    <MiniMetric label="Open threads" value={`${unresolvedBriefThreads}`} helper="brief items" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {activeTab === 'board' && (
-                    <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+                    <div className="space-y-6">
+                        <div className="surface-panel-strong rounded-[30px] p-6">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Board</div>
+                                    <h2 className="mt-3 text-2xl font-display font-semibold text-[var(--foreground)]">Compact lanes for decisions-in-motion</h2>
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    <Button variant="secondary" onClick={() => handleCreateCardFromScope('board')}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        New board card
+                                    </Button>
+                                    <Button variant="outline" onClick={() => handleCreateCardFromScope('global-todo')}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        New task
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="grid gap-4 xl:grid-cols-5">
                             {BOARD_COLUMNS.map((column) => (
                                 <div key={column.id} className="surface-panel rounded-[28px] p-4">
-                                    <div className="text-sm font-semibold text-[var(--foreground)]">{column.label}</div>
-                                    <div className="mt-3 space-y-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <div className="text-base font-semibold text-[var(--foreground)]">{column.label}</div>
+                                            <div className="mt-1 text-xs text-[var(--foreground-muted)]">{cardsByColumn[column.id].length} card{cardsByColumn[column.id].length === 1 ? '' : 's'}</div>
+                                        </div>
+                                        <div className={cn('h-3 w-3 rounded-full', getColumnDot(column.id))} />
+                                    </div>
+                                    <div className="mt-4 space-y-3">
+                                        {cardsByColumn[column.id].length === 0 && (
+                                            <div className="rounded-[20px] border border-dashed border-[var(--panel-border)] bg-[var(--panel)] px-4 py-6 text-center text-sm text-[var(--foreground-muted)]">Empty lane</div>
+                                        )}
                                         {cardsByColumn[column.id].map((card) => (
-                                            <RecordCard
+                                            <div
                                                 key={card.id}
-                                                title={card.title}
-                                                body={card.summary}
-                                                meta={`${card.type} • ${threadCount('card', card.id)} threads`}
-                                                action={<select value={card.status} onChange={(event) => void onUpdateRecord('cards', card.id, { ...card, status: event.target.value, version: card.version })} className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-xs">
-                                                    {BOARD_COLUMNS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                                                </select>}
-                                            />
+                                                onClick={() => setDetailState({ resource: 'cards', record: card })}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter' || event.key === ' ') {
+                                                        event.preventDefault();
+                                                        setDetailState({ resource: 'cards', record: card });
+                                                    }
+                                                }}
+                                                onContextMenu={(event) => {
+                                                    event.preventDefault();
+                                                    setContextMenu({ resource: 'cards', record: card, x: event.clientX, y: event.clientY });
+                                                }}
+                                                role="button"
+                                                tabIndex={0}
+                                                className={cn('w-full cursor-pointer rounded-[22px] border px-4 py-4 text-left transition-transform hover:-translate-y-0.5', getBoardCardTone(card.type))}
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <div className="text-sm font-semibold text-[var(--foreground)]">{card.title}</div>
+                                                        <div className="mt-2 inline-flex rounded-full border border-current/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground-muted)]">{card.type}</div>
+                                                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--foreground-muted)]">
+                                                            {card.ownerId && <span>{resolveMemberName(projectSummary.members, card.ownerId)}</span>}
+                                                            {card.dueDate && <span>{formatDateOnly(card.dueDate)}</span>}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            const bounds = event.currentTarget.getBoundingClientRect();
+                                                            setContextMenu({ resource: 'cards', record: card, x: bounds.right - 176, y: bounds.bottom + 8 });
+                                                        }}
+                                                        className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]"
+                                                    >
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="space-y-4">
-                            <Composer title="Add board card" onSubmit={() => void onCreateRecord('cards', boardDraft).then(() => setBoardDraft({ title: '', summary: '', type: 'idea', status: 'open-questions' }))}>
-                                <input value={boardDraft.title} onChange={(event) => setBoardDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Card title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                                <textarea value={boardDraft.summary} onChange={(event) => setBoardDraft((current) => ({ ...current, summary: event.target.value }))} placeholder="What needs to move?" className="h-28 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <select value={boardDraft.type} onChange={(event) => setBoardDraft((current) => ({ ...current, type: event.target.value }))} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm">
-                                        <option value="idea">Idea</option>
-                                        <option value="insight">Insight</option>
-                                        <option value="experiment">Experiment</option>
-                                        <option value="story">Story</option>
-                                        <option value="risk">Risk</option>
-                                        <option value="dependency">Dependency</option>
-                                    </select>
-                                    <select value={boardDraft.status} onChange={(event) => setBoardDraft((current) => ({ ...current, status: event.target.value }))} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm">
-                                        {BOARD_COLUMNS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                                    </select>
+
+                        <div className="surface-panel-strong rounded-[30px] p-6">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Task lane</div>
+                                    <h3 className="mt-2 text-xl font-display font-semibold text-[var(--foreground)]">Execution tasks</h3>
                                 </div>
-                            </Composer>
-                            <Composer title="Task queue" onSubmit={() => void onCreateRecord('tasks', taskDraft).then(() => setTaskDraft({ title: '', details: '', status: 'open' }))}>
-                                <input value={taskDraft.title} onChange={(event) => setTaskDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Task title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                                <textarea value={taskDraft.details} onChange={(event) => setTaskDraft((current) => ({ ...current, details: event.target.value }))} placeholder="Details and next step" className="h-24 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                                <div className="space-y-3">
-                                    {hub.tasks.map((task) => (
-                                        <RecordCard
-                                            key={task.id}
-                                            title={task.title}
-                                            body={task.details}
-                                            meta={task.status}
-                                            action={<div className="flex gap-2">
-                                                <select value={task.status} onChange={(event) => void onUpdateRecord('tasks', task.id, { ...task, status: event.target.value, version: task.version })} className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-xs">
-                                                    <option value="open">Open</option>
-                                                    <option value="in-progress">In Progress</option>
-                                                    <option value="blocked">Blocked</option>
-                                                    <option value="done">Done</option>
-                                                </select>
-                                                <Button size="sm" variant="ghost" onClick={() => void onDeleteRecord('tasks', task.id)}>Remove</Button>
-                                            </div>}
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="min-w-[220px]">
+                                        <RoundedSelect
+                                            value={taskFilter}
+                                            onChange={(value) => setTaskFilter(value as 'all' | TaskItem['status'])}
+                                            options={[
+                                                { value: 'all', label: 'All statuses' },
+                                                { value: 'open', label: 'Open' },
+                                                { value: 'in-progress', label: 'In progress' },
+                                                { value: 'blocked', label: 'Blocked' },
+                                                { value: 'done', label: 'Done' }
+                                            ]}
+                                            buttonClassName="bg-[var(--panel)]"
+                                            panelClassName="right-0 left-auto w-[220px]"
                                         />
-                                    ))}
+                                    </div>
+                                    <Button variant="ghost" onClick={() => handleCreateCardFromScope('global-todo')}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Add task
+                                    </Button>
                                 </div>
-                            </Composer>
+                            </div>
+                            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                {visibleBoardTasks.length === 0 && (
+                                    <div className="rounded-[24px] border border-dashed border-[var(--panel-border)] bg-[var(--panel)] px-4 py-8 text-sm text-[var(--foreground-muted)]">No tasks yet.</div>
+                                )}
+                                {visibleBoardTasks.map((task) => (
+                                    <div
+                                        key={task.id}
+                                        onClick={() => setDetailState({ resource: 'tasks', record: task })}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Enter' || event.key === ' ') {
+                                                event.preventDefault();
+                                                setDetailState({ resource: 'tasks', record: task });
+                                            }
+                                        }}
+                                        onContextMenu={(event) => {
+                                            event.preventDefault();
+                                            setContextMenu({ resource: 'tasks', record: task, x: event.clientX, y: event.clientY });
+                                        }}
+                                        role="button"
+                                        tabIndex={0}
+                                        className="cursor-pointer rounded-[24px] border border-amber-300/20 bg-[linear-gradient(180deg,rgba(251,191,36,0.12),rgba(251,191,36,0.03))] px-4 py-4 text-left transition-transform hover:-translate-y-0.5"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <div className="text-sm font-semibold text-[var(--foreground)]">{task.title}</div>
+                                                <div className="mt-2 inline-flex rounded-full border border-amber-400/20 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-600">{task.status}</div>
+                                                <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--foreground-muted)]">
+                                                    {task.ownerId && <span>{resolveMemberName(projectSummary.members, task.ownerId)}</span>}
+                                                    {task.dueDate && <span>{formatDateOnly(task.dueDate)}</span>}
+                                                    {getTodoScope(task) !== 'none' && <span>{getTodoScope(task)} list</span>}
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    const bounds = event.currentTarget.getBoundingClientRect();
+                                                    setContextMenu({ resource: 'tasks', record: task, x: bounds.right - 176, y: bounds.bottom + 8 });
+                                                }}
+                                                className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]"
+                                            >
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {activeTab === 'sessions' && (
-                    <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-                        <Composer title="Schedule a session" onSubmit={() => void onCreateRecord('sessions', sessionDraft).then(() => setSessionDraft({ title: '', goal: '', agenda: '', participants: '', scheduledAt: '' }))}>
-                            <input value={sessionDraft.title} onChange={(event) => setSessionDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Session title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <textarea value={sessionDraft.goal} onChange={(event) => setSessionDraft((current) => ({ ...current, goal: event.target.value }))} placeholder="What should this session accomplish?" className="h-24 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <textarea value={sessionDraft.agenda} onChange={(event) => setSessionDraft((current) => ({ ...current, agenda: event.target.value }))} placeholder="Agenda" className="h-24 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <input value={sessionDraft.participants} onChange={(event) => setSessionDraft((current) => ({ ...current, participants: event.target.value }))} placeholder="Participants" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <input type="datetime-local" value={sessionDraft.scheduledAt} onChange={(event) => setSessionDraft((current) => ({ ...current, scheduledAt: event.target.value }))} className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                        </Composer>
-                        <div className="space-y-4">
-                            {hub.sessions.map((session) => (
-                                <RecordCard
-                                    key={session.id}
-                                    title={session.title}
-                                    body={session.goal || session.agenda}
-                                    meta={session.scheduledAt || 'No time yet'}
-                                    action={<div className="flex gap-2">
-                                        <select value={session.status} onChange={(event) => void onUpdateRecord('sessions', session.id, { ...session, status: event.target.value, version: session.version })} className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-xs">
-                                            <option value="planned">Planned</option>
-                                            <option value="in-progress">In Progress</option>
-                                            <option value="completed">Completed</option>
-                                            <option value="canceled">Canceled</option>
-                                        </select>
-                                        <Button size="sm" variant="ghost" onClick={() => void onDeleteRecord('sessions', session.id)}>Remove</Button>
-                                    </div>}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'decisions' && (
-                    <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-                        <Composer title="Log a decision" onSubmit={() => void onCreateRecord('decisions', decisionDraft).then(() => setDecisionDraft({ title: '', background: '', options: '', decision: '', rationale: '' }))}>
-                            <input value={decisionDraft.title} onChange={(event) => setDecisionDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Decision title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <textarea value={decisionDraft.background} onChange={(event) => setDecisionDraft((current) => ({ ...current, background: event.target.value }))} placeholder="Background" className="h-24 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <textarea value={decisionDraft.options} onChange={(event) => setDecisionDraft((current) => ({ ...current, options: event.target.value }))} placeholder="Options" className="h-24 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <textarea value={decisionDraft.decision} onChange={(event) => setDecisionDraft((current) => ({ ...current, decision: event.target.value }))} placeholder="Current call" className="h-24 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <textarea value={decisionDraft.rationale} onChange={(event) => setDecisionDraft((current) => ({ ...current, rationale: event.target.value }))} placeholder="Why this is the right call" className="h-24 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                        </Composer>
-                        <div className="space-y-4">
-                            {hub.decisions.map((decision) => (
-                                <RecordCard
-                                    key={decision.id}
-                                    title={decision.title}
-                                    body={decision.decision || decision.background}
-                                    meta={`${decision.status} • ${threadCount('decision', decision.id)} threads`}
-                                    action={<div className="flex gap-2">
-                                        <select value={decision.status} onChange={(event) => void onUpdateRecord('decisions', decision.id, { ...decision, status: event.target.value, version: decision.version })} className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-xs">
-                                            <option value="proposed">Proposed</option>
-                                            <option value="decided">Decided</option>
-                                            <option value="revisit">Revisit</option>
-                                        </select>
-                                        <Button size="sm" variant="ghost" onClick={() => void onDeleteRecord('decisions', decision.id)}>Remove</Button>
-                                    </div>}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'artifacts' && (
-                    <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-                        <Composer title="Capture an artifact" onSubmit={() => void onCreateRecord('artifacts', artifactDraft).then(() => setArtifactDraft({ title: '', summary: '', type: 'concept', status: 'draft' }))}>
-                            <input value={artifactDraft.title} onChange={(event) => setArtifactDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Artifact title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <textarea value={artifactDraft.summary} onChange={(event) => setArtifactDraft((current) => ({ ...current, summary: event.target.value }))} placeholder="What did the team produce?" className="h-28 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm" />
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <select value={artifactDraft.type} onChange={(event) => setArtifactDraft((current) => ({ ...current, type: event.target.value }))} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm">
-                                    <option value="concept">Concept</option>
-                                    <option value="insight">Insight</option>
-                                    <option value="experiment">Experiment</option>
-                                    <option value="narrative">Narrative</option>
-                                    <option value="attachment">Attachment</option>
-                                </select>
-                                <select value={artifactDraft.status} onChange={(event) => setArtifactDraft((current) => ({ ...current, status: event.target.value }))} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm">
-                                    <option value="draft">Draft</option>
-                                    <option value="ready">Ready for Review</option>
-                                    <option value="approved">Approved</option>
-                                </select>
+                    <div className="space-y-6">
+                        <div className="surface-panel-strong rounded-[30px] p-6">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Sessions</div>
+                                    <h2 className="mt-3 text-2xl font-display font-semibold text-[var(--foreground)]">Workshops and review rituals</h2>
+                                </div>
+                                <Button onClick={() => setComposerMode('session')}>
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Schedule session
+                                </Button>
                             </div>
-                        </Composer>
-                        <div className="space-y-4">
-                            {hub.artifacts.map((artifact) => (
-                                <RecordCard
-                                    key={artifact.id}
-                                    title={artifact.title}
-                                    body={artifact.summary}
-                                    meta={`${artifact.type} • ${artifact.status}`}
-                                    action={<div className="flex gap-2">
-                                        <select value={artifact.status} onChange={(event) => void onUpdateRecord('artifacts', artifact.id, { ...artifact, status: event.target.value, version: artifact.version })} className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-xs">
-                                            <option value="draft">Draft</option>
-                                            <option value="ready">Ready</option>
-                                            <option value="approved">Approved</option>
-                                        </select>
-                                        <Button size="sm" variant="ghost" onClick={() => void onDeleteRecord('artifacts', artifact.id)}>Remove</Button>
-                                    </div>}
-                                />
+                        </div>
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            {hub.sessions.length === 0 && (
+                                <div className="surface-panel rounded-[28px] p-6 text-sm text-[var(--foreground-muted)]">No sessions planned yet.</div>
+                            )}
+                            {hub.sessions.map((session) => (
+                                <button key={session.id} type="button" onClick={() => setDetailState({ resource: 'sessions', record: session })} className="surface-panel overflow-hidden rounded-[28px] p-0 text-left">
+                                    <div className="bg-[linear-gradient(135deg,rgba(56,189,248,0.18),rgba(16,185,129,0.08))] px-5 py-4">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <div className="text-lg font-display font-semibold text-[var(--foreground)]">{session.title}</div>
+                                                <div className="mt-1 text-sm text-[var(--foreground-soft)]">{formatDateTime(session.scheduledAt, 'Time not set')}</div>
+                                            </div>
+                                            <div className="rounded-full border border-white/20 bg-white/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--foreground)]">{session.status}</div>
+                                        </div>
+                                    </div>
+                                    <div className="px-5 py-4 text-sm text-[var(--foreground-soft)]">{session.goal || 'Define the goal for this session.'}</div>
+                                </button>
                             ))}
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'outcomes' && (
+                    <div className="space-y-6">
+                        <div className="surface-panel-strong rounded-[30px] p-6">
+                            <div className="flex items-start gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]">
+                                    <Sparkles className="h-5 w-5 text-violet-500" />
+                                </div>
+                                <div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Outcomes</div>
+                                    <h2 className="mt-2 text-2xl font-display font-semibold text-[var(--foreground)]">Decisions and outputs belong together</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="grid gap-6 lg:grid-cols-2">
+                            <div className="surface-panel-strong rounded-[30px] p-6">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
+                                            <Gavel className="h-4 w-4 text-rose-500" />
+                                            Decisions
+                                        </div>
+                                        <div className="mt-2 text-xl font-display font-semibold text-[var(--foreground)]">Important project calls</div>
+                                    </div>
+                                    <Button variant="secondary" onClick={() => setComposerMode('decision')}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Log decision
+                                    </Button>
+                                </div>
+                                <div className="mt-4 space-y-4">
+                                    {hub.decisions.length === 0 && <EmptyPanelCopy text="No decisions logged yet." />}
+                                    {hub.decisions.map((decision) => (
+                                        <button key={decision.id} type="button" onClick={() => setDetailState({ resource: 'decisions', record: decision })} className="w-full rounded-[24px] border border-rose-300/16 bg-[linear-gradient(180deg,rgba(244,63,94,0.10),rgba(244,63,94,0.03))] px-4 py-4 text-left transition-transform hover:-translate-y-0.5">
+                                            <div className="text-sm font-semibold text-[var(--foreground)]">{decision.title}</div>
+                                            <div className="mt-2 inline-flex rounded-full border border-rose-400/18 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-500">{decision.status}</div>
+                                            <div className="mt-3 line-clamp-2 text-sm text-[var(--foreground-soft)]">{decision.decision || decision.background || 'No decision summary yet.'}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="surface-panel-strong rounded-[30px] p-6">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
+                                            <FileStack className="h-4 w-4 text-sky-500" />
+                                            Outputs
+                                        </div>
+                                        <div className="mt-2 text-xl font-display font-semibold text-[var(--foreground)]">Reusable artifacts</div>
+                                    </div>
+                                    <Button variant="secondary" onClick={() => setComposerMode('artifact')}>
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Capture output
+                                    </Button>
+                                </div>
+                                <div className="mt-4 space-y-4">
+                                    {hub.artifacts.length === 0 && <EmptyPanelCopy text="No outputs captured yet." />}
+                                    {hub.artifacts.map((artifact) => (
+                                        <button key={artifact.id} type="button" onClick={() => setDetailState({ resource: 'artifacts', record: artifact })} className="w-full rounded-[24px] border border-sky-300/16 bg-[linear-gradient(180deg,rgba(56,189,248,0.10),rgba(56,189,248,0.03))] px-4 py-4 text-left transition-transform hover:-translate-y-0.5">
+                                            <div className="text-sm font-semibold text-[var(--foreground)]">{artifact.title}</div>
+                                            <div className="mt-2 inline-flex rounded-full border border-sky-400/18 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-500">{artifact.type} · {artifact.status}</div>
+                                            <div className="mt-3 line-clamp-2 text-sm text-[var(--foreground-soft)]">{artifact.summary || 'No output summary yet.'}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {composerMode && (
+                <ModalShell title={getComposerTitle(composerMode, editingRecord)} onClose={() => {
+                    setComposerMode(null);
+                    setEditingRecord(null);
+                }}>
+                    {composerMode === 'card' && (
+                        <>
+                            <ModalInput label="Card title" value={boardDraft.title} onChange={(value) => setBoardDraft((current) => ({ ...current, title: value }))} />
+                            <ModalInput label="Summary" value={boardDraft.summary} onChange={(value) => setBoardDraft((current) => ({ ...current, summary: value }))} multiline />
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <ModalSelect label="Type" value={boardDraft.type} onChange={(value) => setBoardDraft((current) => ({ ...current, type: value }))} options={['idea', 'insight', 'experiment', 'story', 'risk', 'dependency']} />
+                                <ModalSelect label="Lane" value={boardDraft.status} onChange={(value) => setBoardDraft((current) => ({ ...current, status: value }))} options={BOARD_COLUMNS.map((column) => column.id)} />
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <ModalMemberSelect label="Owner" value={boardDraft.ownerId} onChange={(value) => setBoardDraft((current) => ({ ...current, ownerId: value }))} members={projectSummary.members} />
+                                <ModalInput label="Due date" value={boardDraft.dueDate} onChange={(value) => setBoardDraft((current) => ({ ...current, dueDate: value }))} inputType="date" />
+                            </div>
+                            <ModalActions submitLabel={editingRecord?.resource === 'cards' ? 'Update card' : 'Create card'} onSubmit={() => void handleCardSubmit()} />
+                        </>
+                    )}
+                    {composerMode === 'task' && (
+                        <>
+                            <ModalInput label="Task title" value={taskDraft.title} onChange={(value) => setTaskDraft((current) => ({ ...current, title: value }))} />
+                            <ModalInput label="Details" value={taskDraft.details} onChange={(value) => setTaskDraft((current) => ({ ...current, details: value }))} multiline />
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <ModalSelect label="Status" value={taskDraft.status} onChange={(value) => setTaskDraft((current) => ({ ...current, status: value }))} options={['open', 'in-progress', 'blocked', 'done']} />
+                                <ModalMemberSelect label="Assignee" value={taskDraft.ownerId} onChange={(value) => setTaskDraft((current) => ({ ...current, ownerId: value }))} members={projectSummary.members} />
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <ModalInput label="Due date" value={taskDraft.dueDate} onChange={(value) => setTaskDraft((current) => ({ ...current, dueDate: value }))} inputType="date" />
+                                <ModalSelect label="List scope" value={taskDraft.todoScope} onChange={(value) => setTaskDraft((current) => ({ ...current, todoScope: value }))} options={['none', 'global', 'personal']} />
+                            </div>
+                            <ModalActions submitLabel={editingRecord?.resource === 'tasks' ? 'Update task' : 'Create task'} onSubmit={() => void handleTaskSubmit()} />
+                        </>
+                    )}
+                    {composerMode === 'session' && (
+                        <>
+                            <ModalInput label="Session title" value={sessionDraft.title} onChange={(value) => setSessionDraft((current) => ({ ...current, title: value }))} />
+                            <ModalInput label="Goal" value={sessionDraft.goal} onChange={(value) => setSessionDraft((current) => ({ ...current, goal: value }))} multiline />
+                            <ModalInput label="Agenda" value={sessionDraft.agenda} onChange={(value) => setSessionDraft((current) => ({ ...current, agenda: value }))} multiline />
+                            <ModalInput label="Participants" value={sessionDraft.participants} onChange={(value) => setSessionDraft((current) => ({ ...current, participants: value }))} />
+                            <label className="block">
+                                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Time ({getTimezoneLabel()})</div>
+                                <input type="datetime-local" value={sessionDraft.scheduledAt} onChange={(event) => setSessionDraft((current) => ({ ...current, scheduledAt: event.target.value }))} className="w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--foreground)]" />
+                            </label>
+                            <ModalActions submitLabel={editingRecord?.resource === 'sessions' ? 'Update session' : 'Create session'} onSubmit={() => void handleSessionSubmit()} />
+                        </>
+                    )}
+                    {composerMode === 'decision' && (
+                        <>
+                            <ModalInput label="Decision title" value={decisionDraft.title} onChange={(value) => setDecisionDraft((current) => ({ ...current, title: value }))} />
+                            <ModalInput label="Decision" value={decisionDraft.decision} onChange={(value) => setDecisionDraft((current) => ({ ...current, decision: value }))} multiline />
+                            <ModalInput label="Rationale" value={decisionDraft.rationale} onChange={(value) => setDecisionDraft((current) => ({ ...current, rationale: value }))} multiline />
+                            <ModalInput label="Background" value={decisionDraft.background} onChange={(value) => setDecisionDraft((current) => ({ ...current, background: value }))} multiline />
+                            <ModalInput label="Options" value={decisionDraft.options} onChange={(value) => setDecisionDraft((current) => ({ ...current, options: value }))} multiline />
+                            <ModalActions submitLabel={editingRecord?.resource === 'decisions' ? 'Update decision' : 'Create decision'} onSubmit={() => void handleDecisionSubmit()} />
+                        </>
+                    )}
+                    {composerMode === 'artifact' && (
+                        <>
+                            <ModalInput label="Output title" value={artifactDraft.title} onChange={(value) => setArtifactDraft((current) => ({ ...current, title: value }))} />
+                            <ModalInput label="Summary" value={artifactDraft.summary} onChange={(value) => setArtifactDraft((current) => ({ ...current, summary: value }))} multiline />
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <ModalSelect label="Type" value={artifactDraft.type} onChange={(value) => setArtifactDraft((current) => ({ ...current, type: value }))} options={['concept', 'insight', 'experiment', 'narrative', 'attachment']} />
+                                <ModalSelect label="Status" value={artifactDraft.status} onChange={(value) => setArtifactDraft((current) => ({ ...current, status: value }))} options={['draft', 'ready', 'approved']} />
+                            </div>
+                            <ModalActions submitLabel={editingRecord?.resource === 'artifacts' ? 'Update output' : 'Create output'} onSubmit={() => void handleArtifactSubmit()} />
+                        </>
+                    )}
+                </ModalShell>
+            )}
+
+            {detailState && (
+                <ModalShell title={detailState.record.title} onClose={() => setDetailState(null)}>
+                    <div className="space-y-4">
+                        <DetailBlock label="Status" value={detailState.record.status} />
+                        {'summary' in detailState.record && detailState.record.summary && <DetailBlock label="Summary" value={detailState.record.summary} />}
+                        {'details' in detailState.record && detailState.record.details && <DetailBlock label="Details" value={detailState.record.details} />}
+                        {'goal' in detailState.record && detailState.record.goal && <DetailBlock label="Goal" value={detailState.record.goal} />}
+                        {'agenda' in detailState.record && detailState.record.agenda && <DetailBlock label="Agenda" value={detailState.record.agenda} />}
+                        {'decision' in detailState.record && detailState.record.decision && <DetailBlock label="Decision" value={detailState.record.decision} />}
+                        {'rationale' in detailState.record && detailState.record.rationale && <DetailBlock label="Rationale" value={detailState.record.rationale} />}
+                        {'background' in detailState.record && detailState.record.background && <DetailBlock label="Background" value={detailState.record.background} />}
+                        {'ownerId' in detailState.record && detailState.record.ownerId && <DetailBlock label={'summary' in detailState.record ? 'Owner' : 'Assignee'} value={resolveMemberName(projectSummary.members, detailState.record.ownerId)} />}
+                        {'dueDate' in detailState.record && detailState.record.dueDate && <DetailBlock label="Due date" value={formatDateOnly(detailState.record.dueDate)} />}
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                        <Button
+                            variant="secondary"
+                            onClick={() => {
+                                if (detailState.resource === 'cards') handleEditRecord('cards', detailState.record);
+                                if (detailState.resource === 'tasks') handleEditRecord('tasks', detailState.record);
+                                if (detailState.resource === 'sessions') handleEditRecord('sessions', detailState.record);
+                                if (detailState.resource === 'decisions') handleEditRecord('decisions', detailState.record);
+                                if (detailState.resource === 'artifacts') handleEditRecord('artifacts', detailState.record);
+                            }}
+                        >
+                            Edit
+                        </Button>
+                    </div>
+                </ModalShell>
+            )}
+
+            {contextMenu && (
+                <div className="fixed z-[70] w-44 rounded-[18px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-2 shadow-[0_24px_40px_rgba(15,23,42,0.28)]" style={{ left: contextMenu.x, top: contextMenu.y }} onPointerDown={(event) => event.stopPropagation()}>
+                    <button type="button" onClick={() => handleEditRecord(contextMenu.resource, contextMenu.record)} className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-[var(--foreground-soft)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]">
+                        <PencilLine className="h-4 w-4" />
+                        Edit
+                    </button>
+                    <button type="button" onClick={() => void handleRename()} className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-[var(--foreground-soft)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]">
+                        <PencilLine className="h-4 w-4" />
+                        Rename
+                    </button>
+                    <button type="button" onClick={() => void handleDelete()} className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-rose-500 transition-colors hover:bg-rose-500/10 hover:text-rose-400">
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                    </button>
+                </div>
+            )}
+            <ConfirmDialog
+                open={Boolean(deleteDialog)}
+                title="Delete item"
+                description={deleteDialog ? `Delete "${deleteDialog.title}" from this board?` : ''}
+                confirmLabel="Delete"
+                tone="danger"
+                isLoading={isDeleteLoading}
+                onClose={() => {
+                    if (!isDeleteLoading) {
+                        setDeleteDialog(null);
+                    }
+                }}
+                onConfirm={() => void handleDeleteConfirm()}
+            />
+        </div>
+    );
+}
+
+function parseRoleAssignments(members: WorkspaceProject['members'], teamRoles: string) {
+    const assignments = Object.fromEntries(members.map((member) => [member.id, normalizeRole(member.role)]));
+    teamRoles.split('\n').map((line) => line.trim()).filter(Boolean).forEach((line) => {
+        const [name, role] = line.split(':').map((part) => part.trim());
+        const match = members.find((member) => member.name === name);
+        if (match && role) assignments[match.id] = normalizeRole(role);
+    });
+    return assignments;
+}
+
+function buildRoleSummary(members: WorkspaceProject['members'], assignments: Record<string, string>) {
+    return members.map((member) => `${member.name}: ${normalizeRole(assignments[member.id] || member.role)}`).join('\n');
+}
+
+function normalizeRole(role?: string | null) {
+    if (!role || !ROLE_OPTIONS.includes(role)) {
+        return UNASSIGNED_ROLE;
+    }
+    return role;
+}
+
+function parseListField(value: string) {
+    return value
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+function serializeListField(values: string[]) {
+    return values
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .join('\n');
+}
+
+function getMetadataString(metadata: ProjectBrief['metadata'], key: string) {
+    const value = metadata[key];
+    return typeof value === 'string' ? value : '';
+}
+
+function formatStageLabel(stage?: StageId | null) {
+    if (!stage) return 'Overview';
+    return stage.split('-').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+}
+
+function formatDateTime(value?: string | null, fallback: string | null = 'Not scheduled') {
+    if (!value) return fallback || '';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }).format(parsed);
+}
+
+function formatDateOnly(value?: string | null, fallback: string = 'No deadline') {
+    if (!value) return fallback;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric', year: 'numeric' }).format(parsed);
+}
+
+function getTimezoneLabel() {
+    return new Intl.DateTimeFormat('en-GB', { timeZoneName: 'short' }).formatToParts(new Date()).find((part) => part.type === 'timeZoneName')?.value || 'UTC';
+}
+
+function getComposerTitle(mode: Exclude<ComposerMode, null>, editingRecord: { resource: ProjectHubResource; recordId: string } | null) {
+    const isEditing = Boolean(editingRecord);
+    if (mode === 'card') return isEditing ? 'Edit board card' : 'New board card';
+    if (mode === 'task') return isEditing ? 'Edit task' : 'New task';
+    if (mode === 'session') return isEditing ? 'Edit session' : 'Schedule session';
+    if (mode === 'decision') return isEditing ? 'Edit decision' : 'Log decision';
+    return isEditing ? 'Edit output' : 'Capture output';
+}
+
+function getColumnDot(status: CollaborationCard['status']) {
+    if (status === 'open-questions') return 'bg-sky-400';
+    if (status === 'in-progress') return 'bg-amber-400';
+    if (status === 'ready-for-review') return 'bg-violet-400';
+    if (status === 'approved') return 'bg-emerald-400';
+    return 'bg-slate-400';
+}
+
+function getBoardCardTone(type: CollaborationCard['type']) {
+    if (type === 'insight') return 'border-sky-300/20 bg-[linear-gradient(180deg,rgba(56,189,248,0.10),rgba(56,189,248,0.03))]';
+    if (type === 'experiment') return 'border-emerald-300/20 bg-[linear-gradient(180deg,rgba(16,185,129,0.10),rgba(16,185,129,0.03))]';
+    if (type === 'risk') return 'border-rose-300/20 bg-[linear-gradient(180deg,rgba(244,63,94,0.10),rgba(244,63,94,0.03))]';
+    if (type === 'dependency') return 'border-amber-300/20 bg-[linear-gradient(180deg,rgba(251,191,36,0.10),rgba(251,191,36,0.03))]';
+    if (type === 'story') return 'border-violet-300/20 bg-[linear-gradient(180deg,rgba(167,139,250,0.10),rgba(167,139,250,0.03))]';
+    return 'border-slate-300/18 bg-[linear-gradient(180deg,rgba(148,163,184,0.10),rgba(148,163,184,0.03))]';
+}
+
+function HubChip({ label }: { label: string }) {
+    return <div className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-1.5 text-xs font-medium text-[var(--foreground-soft)]">{label}</div>;
+}
+
+function HubSummaryTile({ icon: Icon, label, value, helper, accent }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; helper?: string | null; accent: string }) {
+    return <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4"><div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]"><Icon className={cn('h-4 w-4', accent)} />{label}</div><div className="mt-3 text-base font-semibold text-[var(--foreground)]">{value}</div>{helper && <div className="mt-1 text-xs text-[var(--foreground-muted)]">{helper}</div>}</div>;
+}
+
+function SectionHeading({ icon: Icon, title, compact = false }: { icon: React.ComponentType<{ className?: string }>; title: string; compact?: boolean }) {
+    return <div className={compact ? '' : 'mb-5'}><div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]"><Icon className="h-4 w-4 text-sky-500" />Hub section</div><h2 className="mt-3 text-2xl font-display font-semibold text-[var(--foreground)]">{title}</h2></div>;
+}
+
+function StructuredField({ label, hint, value, onChange, multiline = false, inputType = 'text' }: { label: string; hint?: string; value: string; onChange: (value: string) => void; multiline?: boolean; inputType?: 'text' | 'date' }) {
+    return <label className="mb-4 block"><div className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">{label}</div>{hint && <div className="mb-2 text-sm text-[var(--foreground-muted)]">{hint}</div>}{multiline ? <textarea rows={4} value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--foreground)]" /> : <input type={inputType} value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--foreground)]" />}</label>;
+}
+
+function PillEditor({
+    label,
+    hint,
+    values,
+    onChange,
+    suggestions = [],
+    placeholder
+}: {
+    label: string;
+    hint?: string;
+    values: string[];
+    onChange: (values: string[]) => void;
+    suggestions?: string[];
+    placeholder: string;
+}) {
+    const [draft, setDraft] = useState('');
+
+    const addValue = (value: string) => {
+        const nextValue = value.trim();
+        if (!nextValue || values.includes(nextValue)) {
+            return;
+        }
+        onChange([...values, nextValue]);
+        setDraft('');
+    };
+
+    return (
+        <div className="mb-4">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">{label}</div>
+            {hint && <div className="mb-3 text-sm text-[var(--foreground-muted)]">{hint}</div>}
+            <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4">
+                <div className="flex flex-wrap gap-2">
+                    {values.length === 0 && (
+                        <div className="text-sm text-[var(--foreground-muted)]">Nothing added yet.</div>
+                    )}
+                    {values.map((value) => (
+                        <span key={value} className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)] px-3 py-1.5 text-sm text-[var(--foreground-soft)]">
+                            {value}
+                            <button
+                                type="button"
+                                onClick={() => onChange(values.filter((item) => item !== value))}
+                                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]"
+                                aria-label={`Remove ${value}`}
+                            >
+                                <X className="h-3.5 w-3.5" />
+                            </button>
+                        </span>
+                    ))}
+                </div>
+                {suggestions.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {suggestions.filter((suggestion) => !values.includes(suggestion)).map((suggestion) => (
+                            <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => addValue(suggestion)}
+                                className="rounded-full border border-dashed border-[var(--panel-border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground-muted)] transition-colors hover:border-solid hover:bg-[var(--panel-strong)] hover:text-[var(--foreground)]"
+                            >
+                                {suggestion}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                    <input
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                                event.preventDefault();
+                                addValue(draft);
+                            }
+                        }}
+                        placeholder={placeholder}
+                        className="w-full rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]"
+                    />
+                    <Button type="button" variant="secondary" onClick={() => addValue(draft)}>
+                        Add
+                    </Button>
+                </div>
             </div>
         </div>
     );
 }
 
-function SummaryTile({ icon: Icon, label, value, helper }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; helper?: string | null }) {
-    return <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4"><div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]"><Icon className="h-4 w-4" />{label}</div><div className="mt-3 text-base font-semibold text-[var(--foreground)]">{value}</div>{helper && <div className="mt-1 text-xs text-[var(--foreground-muted)]">{helper}</div>}</div>;
+function MiniMetric({ label, value, helper }: { label: string; value: string; helper: string }) {
+    return <div className="rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4"><div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">{label}</div><div className="mt-2 text-2xl font-display font-semibold text-[var(--foreground)]">{value}</div><div className="mt-1 text-xs text-[var(--foreground-muted)]">{helper}</div></div>;
 }
 
-function SectionHeading({ icon: Icon, title, description }: { icon: React.ComponentType<{ className?: string }>; title: string; description: string }) {
-    return <div className="mb-5"><div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]"><Icon className="h-4 w-4" />Hub section</div><h2 className="mt-3 text-2xl font-display font-semibold text-[var(--foreground)]">{title}</h2><p className="mt-2 text-sm text-[var(--foreground-soft)]">{description}</p></div>;
+function EmptyPanelCopy({ text }: { text: string }) {
+    return <div className="rounded-[24px] border border-dashed border-[var(--panel-border)] bg-[var(--panel)] px-4 py-8 text-sm text-[var(--foreground-muted)]">{text}</div>;
 }
 
-function BriefField({ label, value, onChange, rows }: { label: string; value: string; onChange: (value: string) => void; rows: number }) {
-    return <label className="mb-4 block"><div className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">{label}</div><textarea rows={rows} value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--foreground)]" /></label>;
+function ModalShell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+    return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"><button type="button" className="absolute inset-0" onClick={onClose} aria-label="Close modal" /><div className="surface-panel-strong relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[30px] p-6"><div className="flex items-center justify-between gap-3"><h3 className="text-2xl font-display font-semibold text-[var(--foreground)]">{title}</h3><Button variant="ghost" size="sm" onClick={onClose}>Close</Button></div><div className="mt-6 space-y-4">{children}</div></div></div>;
 }
 
-function MiniPanel({ icon: Icon, title, body }: { icon: React.ComponentType<{ className?: string }>; title: string; body: string }) {
-    return <div className="surface-panel rounded-[28px] p-5"><Icon className="h-5 w-5 text-sky-500" /><div className="mt-4 text-lg font-display font-semibold text-[var(--foreground)]">{title}</div><p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground-soft)]">{body}</p></div>;
+function ModalInput({ label, value, onChange, multiline = false, inputType = 'text' }: { label: string; value: string; onChange: (value: string) => void; multiline?: boolean; inputType?: 'text' | 'date' }) {
+    return <label className="block"><div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</div>{multiline ? <textarea rows={4} value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--foreground)]" /> : <input type={inputType} value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--foreground)]" />}</label>;
 }
 
-function Composer({ title, children, onSubmit }: { title: string; children: React.ReactNode; onSubmit: () => void }) {
-    return <div className="surface-panel-strong rounded-[28px] p-5"><div className="flex items-center gap-2 text-lg font-display font-semibold text-[var(--foreground)]"><Plus className="h-5 w-5 text-sky-500" />{title}</div><div className="mt-4 space-y-3">{children}</div><div className="mt-4 flex justify-end"><Button onClick={onSubmit}>Create</Button></div></div>;
+function ModalSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
+    return <label className="block"><div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</div><RoundedSelect value={value} onChange={onChange} options={options.map((option) => ({ value: option, label: option }))} /></label>;
 }
 
-function RecordCard({ title, body, meta, action }: { title: string; body: string; meta: string; action: React.ReactNode }) {
-    return <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4"><div className="flex items-start justify-between gap-3"><div><div className="text-sm font-semibold text-[var(--foreground)]">{title}</div><div className="mt-1 text-xs text-[var(--foreground-muted)]">{meta}</div></div>{action}</div><div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground-soft)]">{body || 'No details yet.'}</div></div>;
+function ModalMemberSelect({ label, value, onChange, members }: { label: string; value: string; onChange: (value: string) => void; members: WorkspaceProject['members'] }) {
+    return <label className="block"><div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</div><RoundedSelect value={value} onChange={onChange} placeholder="Unassigned" options={[{ value: '', label: 'Unassigned' }, ...members.map((member) => ({ value: member.id, label: member.name }))]} /></label>;
+}
+
+function ModalActions({ onSubmit, submitLabel = 'Save' }: { onSubmit: () => void; submitLabel?: string }) {
+    return <div className="flex justify-end"><Button onClick={onSubmit}>{submitLabel}</Button></div>;
+}
+
+function DetailBlock({ label, value }: { label: string; value: string }) {
+    return <div className="rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4"><div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</div><div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground-soft)]">{value}</div></div>;
+}
+
+function TodoListPanel({
+    title,
+    icon: Icon,
+    accent,
+    items,
+    emptyState,
+    canAdd,
+    canManageItems,
+    onAdd,
+    onToggle,
+    onOpen,
+    onEdit,
+    members
+}: {
+    title: string;
+    icon: React.ComponentType<{ className?: string }>;
+    accent: string;
+    items: TaskItem[];
+    emptyState: string;
+    canAdd: boolean;
+    canManageItems: boolean;
+    onAdd: () => void;
+    onToggle: (task: TaskItem) => void;
+    onOpen: (task: TaskItem) => void;
+    onEdit: (task: TaskItem) => void;
+    members: WorkspaceProject['members'];
+}) {
+    return (
+        <div className="rounded-[26px] border border-[var(--panel-border)] bg-[var(--panel)] p-5">
+            <div className="flex items-center justify-between gap-3">
+                <div>
+                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
+                        <Icon className={cn('h-4 w-4', accent)} />
+                        {title}
+                    </div>
+                    <div className="mt-2 text-sm text-[var(--foreground-soft)]">{items.length} item{items.length === 1 ? '' : 's'}</div>
+                </div>
+                {canAdd && (
+                    <Button size="sm" variant="secondary" onClick={onAdd}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add
+                    </Button>
+                )}
+            </div>
+            <div className="mt-4 space-y-3">
+                {items.length === 0 && <EmptyPanelCopy text={emptyState} />}
+                {items.map((task) => (
+                    <div key={task.id} className="rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-4">
+                        <div className="flex items-start gap-3">
+                            <button
+                                type="button"
+                                onClick={() => onToggle(task)}
+                                disabled={!canManageItems}
+                                className={cn(
+                                    'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-55',
+                                    task.status === 'done'
+                                        ? 'border-emerald-400 bg-emerald-500 text-white'
+                                        : 'border-[var(--panel-border)] bg-[var(--panel)] text-transparent'
+                                )}
+                            >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                            </button>
+                            <div className="min-w-0 flex-1">
+                                <button type="button" onClick={() => onOpen(task)} className="w-full text-left">
+                                    <div className={cn('text-sm font-semibold text-[var(--foreground)]', task.status === 'done' && 'line-through opacity-70')}>
+                                        {task.title}
+                                    </div>
+                                </button>
+                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--foreground-muted)]">
+                                    {task.ownerId && <span>{resolveMemberName(members, task.ownerId)}</span>}
+                                    {task.dueDate && <span>{formatDateOnly(task.dueDate)}</span>}
+                                </div>
+                            </div>
+                            <button type="button" disabled={!canManageItems} onClick={() => onEdit(task)} className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-55">
+                                <PencilLine className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function getTodoScope(task: TaskItem) {
+    const value = task.metadata?.todoScope;
+    return value === 'global' || value === 'personal' ? value : 'none';
+}
+
+function resolveMemberName(members: WorkspaceProject['members'], memberId?: string | null) {
+    if (!memberId) return 'Unassigned';
+    return members.find((member) => member.id === memberId)?.name || 'Unknown teammate';
+}
+
+function toLocalDateTimeInput(value?: string | null) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const offset = date.getTimezoneOffset();
+    const adjusted = new Date(date.getTime() - offset * 60_000);
+    return adjusted.toISOString().slice(0, 16);
 }

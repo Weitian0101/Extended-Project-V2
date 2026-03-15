@@ -15,6 +15,7 @@ export function AvatarCluster({ members, maxVisible = 3, size = 'md' }: AvatarCl
     const visibleMembers = members.slice(0, maxVisible);
     const hiddenCount = Math.max(members.length - maxVisible, 0);
     const sizeClass = size === 'sm' ? 'h-8 w-8 text-[11px]' : 'h-10 w-10 text-xs';
+    const tooltipOffsetClass = size === 'sm' ? 'top-full mt-2' : 'top-full mt-2.5';
 
     return (
         <div className="flex items-center">
@@ -22,14 +23,17 @@ export function AvatarCluster({ members, maxVisible = 3, size = 'md' }: AvatarCl
                 <div
                     key={member.id}
                     className={cn(
-                        'group relative flex items-center justify-center rounded-full border-2 border-white font-semibold text-white shadow-sm',
+                        'group/avatar relative flex items-center justify-center rounded-full border-2 border-white font-semibold text-white shadow-sm',
                         sizeClass,
                         index === 0 ? '' : '-ml-2',
                         `bg-gradient-to-br ${member.avatarColor}`
                     )}
                 >
                     {member.initials}
-                    <div className="pointer-events-none absolute -top-10 left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-950 px-2.5 py-1 text-[11px] font-medium text-white shadow-lg group-hover:block">
+                    <div className={cn(
+                        'pointer-events-none absolute left-1/2 z-40 hidden -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-950 px-2.5 py-1 text-[11px] font-medium text-white shadow-lg group-hover/avatar:block',
+                        tooltipOffsetClass
+                    )}>
                         {member.name}
                     </div>
                     <span

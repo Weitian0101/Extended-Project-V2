@@ -1,19 +1,13 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 
 import { AuthPage } from '@/components/auth/AuthPage';
 import { Button } from '@/components/ui/Button';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { PermissionLevel } from '@/types';
-
-interface InvitePageProps {
-    params: {
-        token: string;
-    };
-}
 
 interface InvitePayload {
     invite: {
@@ -45,8 +39,10 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
     return body as T;
 }
 
-export default function InvitePage({ params }: InvitePageProps) {
+export default function InvitePage() {
     const router = useRouter();
+    const params = useParams<{ token: string }>();
+    const token = Array.isArray(params?.token) ? params.token[0] : params?.token;
     const supabase = useMemo(() => createSupabaseBrowserClient(), []);
     const [sessionUser, setSessionUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
@@ -63,7 +59,11 @@ export default function InvitePage({ params }: InvitePageProps) {
             const { data, error } = await supabase.auth.getUser();
 
             if (error) {
-                setAuthError(error.message);
+                if (error.name !== 'AuthSessionMissingError' && error.message !== 'Auth session missing!') {
+                    setAuthError(error.message);
+                } else {
+                    setAuthError(null);
+                }
                 setSessionUser(null);
             } else {
                 setSessionUser(data.user ?? null);
@@ -87,9 +87,13 @@ export default function InvitePage({ params }: InvitePageProps) {
     }, [supabase]);
 
     useEffect(() => {
+        if (!token) {
+            return;
+        }
+
         const loadInvite = async () => {
             try {
-                const response = await fetch(`/api/invites/${params.token}`, {
+                const response = await fetch(`/api/invites/${token}`, {
                     cache: 'no-store'
                 });
                 const data = await parseApiResponse<InvitePayload>(response);
@@ -103,19 +107,19 @@ export default function InvitePage({ params }: InvitePageProps) {
         };
 
         void loadInvite();
-    }, [params.token]);
+    }, [token]);
 
     const handleCredentialAuth = async (mode: 'signin' | 'register', email: string, password: string) => {
         setAuthError(null);
 
         if (mode === 'register') {
             const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    emailRedirectTo: getAuthRedirectUrl(params.token)
-                }
-            });
+                    email,
+                    password,
+                    options: {
+                        emailRedirectTo: getAuthRedirectUrl(token)
+                    }
+                });
 
             if (error) {
                 return {
@@ -159,7 +163,7 @@ export default function InvitePage({ params }: InvitePageProps) {
         const { error } = await supabase.auth.signInWithOAuth({
             provider,
             options: {
-                redirectTo: getAuthRedirectUrl(params.token)
+                redirectTo: getAuthRedirectUrl(token)
             }
         });
 
@@ -193,7 +197,7 @@ export default function InvitePage({ params }: InvitePageProps) {
 
         try {
             await parseApiResponse(
-                await fetch(`/api/invites/${params.token}`, {
+                await fetch(`/api/invites/${token}`, {
                     method: 'POST'
                 })
             );
@@ -205,7 +209,7 @@ export default function InvitePage({ params }: InvitePageProps) {
         }
     };
 
-    if (authLoading || inviteLoading) {
+    if (!token || authLoading || inviteLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-[var(--background)] text-[var(--foreground-muted)]">
                 Loading invite...
@@ -233,7 +237,8 @@ export default function InvitePage({ params }: InvitePageProps) {
         return (
             <AuthPage
                 authMode="supabase"
-                infoMessage={`Invitation for ${invite.email} to join "${invite.projectName}". Sign in or register with this email to accept access.`}
+                showRegister={false}
+                infoMessage={`Invitation for ${invite.email} to join "${invite.projectName}". Sign in with this email to accept access.`}
                 errorMessage={authError}
                 onBack={() => router.push('/')}
                 onCredentialsSubmit={handleCredentialAuth}

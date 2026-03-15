@@ -24,8 +24,8 @@ interface WorkspaceResponse {
 }
 
 interface InviteMemberResponse {
-    delivery: 'member-added' | 'invite-created';
-    invite?: {
+    delivery: 'invite-created';
+    invite: {
         id: string;
         email: string;
         permission: PermissionLevel;
@@ -394,10 +394,10 @@ export function RemoteWorkspaceShell() {
             });
             const data = await parseApiResponse<{ project: WorkspaceProject }>(response);
             setProjects((current) => [data.project, ...current]);
-            setActiveProjectId(data.project.id);
-            setView('sandbox');
+            return data.project;
         } catch (error) {
             setAuthError(error instanceof Error ? error.message : 'Unable to create project.');
+            return null;
         }
     };
 
@@ -449,6 +449,25 @@ export function RemoteWorkspaceShell() {
         return result;
     };
 
+    const handleSendInviteEmail = async (projectId: string, inviteId: string) => {
+        setWorkspaceStatus(null);
+        await parseApiResponse(
+            await fetch(`/api/projects/${projectId}/invites/${inviteId}/send`, {
+                method: 'POST'
+            })
+        );
+    };
+
+    const handleRevokeInvite = async (projectId: string, inviteId: string) => {
+        setWorkspaceStatus(null);
+        await parseApiResponse(
+            await fetch(`/api/projects/${projectId}/invites/${inviteId}`, {
+                method: 'DELETE'
+            })
+        );
+        await refreshWorkspace();
+    };
+
     const handleUpdateMemberPermission = async (projectId: string, memberId: string, permission: PermissionLevel) => {
         setWorkspaceStatus(null);
         await parseApiResponse(
@@ -460,6 +479,17 @@ export function RemoteWorkspaceShell() {
                 body: JSON.stringify({
                     permission
                 })
+            })
+        );
+
+        await refreshWorkspace();
+    };
+
+    const handleRemoveMember = async (projectId: string, memberId: string) => {
+        setWorkspaceStatus(null);
+        await parseApiResponse(
+            await fetch(`/api/projects/${projectId}/members/${memberId}`, {
+                method: 'DELETE'
             })
         );
 
@@ -582,6 +612,7 @@ export function RemoteWorkspaceShell() {
                     runtimeMode="remote-supabase"
                     projects={projects}
                     profile={profile}
+                    currentUserId={profile.id}
                     onOpenProject={(projectId) => {
                         setActiveProjectId(projectId);
                         setView('sandbox');
@@ -594,7 +625,10 @@ export function RemoteWorkspaceShell() {
                     onExportWorkspace={handleExportWorkspace}
                     onImportWorkspace={handleImportWorkspace}
                     onInviteMember={handleInviteMember}
+                    onSendInviteEmail={handleSendInviteEmail}
+                    onRevokeInvite={handleRevokeInvite}
                     onUpdateMemberPermission={handleUpdateMemberPermission}
+                    onRemoveMember={handleRemoveMember}
                     workspaceStatus={workspaceStatus}
                     workspaceError={authError}
                     collaborationOverview={collaborationOverview}
@@ -615,13 +649,17 @@ export function RemoteWorkspaceShell() {
                     onOpenProfile={() => handleOpenProfile('sandbox')}
                     runtimeMode="remote-supabase"
                     onInviteMember={handleInviteMember}
+                    onSendInviteEmail={handleSendInviteEmail}
+                    onRevokeInvite={handleRevokeInvite}
                     onUpdateMemberPermission={handleUpdateMemberPermission}
+                    onRemoveMember={handleRemoveMember}
                 />
             ) : (
                 <Dashboard
                     runtimeMode="remote-supabase"
                     projects={projects}
                     profile={profile}
+                    currentUserId={profile.id}
                     onOpenProject={(projectId) => {
                         setActiveProjectId(projectId);
                         setView('sandbox');
@@ -634,7 +672,10 @@ export function RemoteWorkspaceShell() {
                     onExportWorkspace={handleExportWorkspace}
                     onImportWorkspace={handleImportWorkspace}
                     onInviteMember={handleInviteMember}
+                    onSendInviteEmail={handleSendInviteEmail}
+                    onRevokeInvite={handleRevokeInvite}
                     onUpdateMemberPermission={handleUpdateMemberPermission}
+                    onRemoveMember={handleRemoveMember}
                     workspaceStatus={workspaceStatus}
                     workspaceError={authError}
                     collaborationOverview={collaborationOverview}

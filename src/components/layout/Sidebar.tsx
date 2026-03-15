@@ -202,8 +202,8 @@ export function Sidebar({
                                             ? 'border-white/10 bg-white/[0.06] shadow-[0_16px_32px_rgba(2,6,23,0.2)]'
                                             : 'border-slate-200 bg-white shadow-[0_14px_30px_rgba(15,23,42,0.08)]'
                                         : isDark
-                                            ? 'border-transparent text-slate-400 hover:border-white/8 hover:bg-white/[0.04] hover:text-white'
-                                            : 'border-transparent text-slate-500 hover:border-slate-200/80 hover:bg-white/80 hover:text-slate-900',
+                                            ? 'border-white/[0.04] bg-white/[0.025] text-slate-300 hover:border-white/10 hover:bg-white/[0.05] hover:text-white'
+                                            : 'border-slate-200/60 bg-white/62 text-slate-700 hover:border-slate-200/90 hover:bg-white/88 hover:text-slate-900',
                                     isCollapsed && 'lg:justify-center lg:px-3'
                                 )}
                             >
@@ -216,9 +216,10 @@ export function Sidebar({
                                         'rounded-xl border p-2.5 transition-colors',
                                         isActive
                                             ? accent.activeIcon
-                                            : isDark
-                                                ? 'border-white/5 bg-slate-900/40 text-slate-500 group-hover:text-slate-200'
-                                                : 'border-slate-200/80 bg-white text-slate-400 group-hover:text-slate-700'
+                                            : cn(
+                                                accent.activeIcon,
+                                                isDark ? 'border-white/10 bg-white/[0.05] opacity-75 group-hover:opacity-100' : 'opacity-80 group-hover:opacity-100'
+                                            )
                                     )}
                                 >
                                     <Icon className="h-5 w-5" />
@@ -226,10 +227,10 @@ export function Sidebar({
 
                                 {!isCollapsed && (
                                     <div className="text-left">
-                                        <div className={cn('mb-1 text-sm font-semibold leading-none font-display', isActive ? accent.activeText : isDark ? 'text-slate-100' : 'text-slate-800')}>
+                                        <div className={cn('mb-1 text-sm font-semibold leading-none font-display', isActive ? accent.activeText : cn(accent.activeText, isDark ? 'opacity-90' : 'opacity-80'))}>
                                             {item.label}
                                         </div>
-                                        <div className={cn('text-[10px] uppercase tracking-[0.16em]', isActive ? accent.activeText : isDark ? 'text-slate-500' : 'text-slate-400')}>
+                                        <div className={cn('text-[10px] uppercase tracking-[0.16em]', isActive ? accent.activeText : cn(accent.activeText, 'opacity-55'))}>
                                             {item.description}
                                         </div>
                                     </div>

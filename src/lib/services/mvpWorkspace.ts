@@ -33,7 +33,8 @@ const createDefaultProject = (projectId: string, projectName?: string): ProjectD
         name: projectName || 'New Innovation Project',
         background: '',
         objectives: '',
-        assumptions: ''
+        assumptions: '',
+        aiHandoffPrompt: ''
     },
     currentStage: 'overview',
     toolRuns: []
@@ -82,7 +83,8 @@ function normalizeProjectData(projectId: string, projectName?: string, raw?: unk
             name: typeof context.name === 'string' && context.name.trim() ? context.name : (projectName || base.context.name),
             background: typeof context.background === 'string' ? context.background : '',
             objectives: typeof context.objectives === 'string' ? context.objectives : '',
-            assumptions: typeof context.assumptions === 'string' ? context.assumptions : ''
+            assumptions: typeof context.assumptions === 'string' ? context.assumptions : '',
+            aiHandoffPrompt: typeof context.aiHandoffPrompt === 'string' ? context.aiHandoffPrompt : ''
         },
         currentStage: currentStage as ProjectData['currentStage'],
         toolRuns

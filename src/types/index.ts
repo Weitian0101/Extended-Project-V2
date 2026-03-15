@@ -3,7 +3,7 @@ export type ProjectSurface = 'hub' | StageId;
 export type AppViewState = 'landing' | 'auth' | 'dashboard' | 'sandbox' | 'profile' | 'logging_out';
 export type ToolFieldValue = string | string[] | boolean | number | null;
 export type ToolFieldMap = Record<string, ToolFieldValue>;
-export type ProjectHubTab = 'brief' | 'board' | 'sessions' | 'decisions' | 'artifacts';
+export type ProjectHubTab = 'brief' | 'board' | 'sessions' | 'outcomes';
 export type CollaborationMetadataValue = string | number | boolean | null;
 export type CollaborationMetadata = Record<string, CollaborationMetadataValue>;
 export type CollaborationEntityType = 'brief' | 'card' | 'artifact' | 'decision' | 'task' | 'session' | 'tool-run';
@@ -84,6 +84,7 @@ export interface ProjectContext {
     background: string;
     objectives: string;
     assumptions: string;
+    aiHandoffPrompt?: string;
 }
 
 export interface ProjectBrief {
@@ -245,6 +246,8 @@ export interface WorkspaceActivityDigest {
     id: string;
     projectId: string;
     projectName: string;
+    action: ActivityAction;
+    entityType: CollaborationEntityType;
     actorName: string;
     message: string;
     occurredAt: string;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MethodCard, ToolFieldMap, ToolFieldValue, ToolRun } from '@/types';
 import { Button } from '@/components/ui/Button';
+import { RoundedSelect } from '@/components/ui/RoundedSelect';
 import { ChevronLeft, Save, Lightbulb } from 'lucide-react';
 
 interface ToolWorkspaceProps {
@@ -95,16 +96,13 @@ export function ToolWorkspace({ card, existingRun, onSave, onBack }: ToolWorkspa
                             )}
 
                             {step.type === 'select' && step.options && (
-                                <select
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                                <RoundedSelect
                                     value={getTextValue(step.id)}
-                                    onChange={(e) => handleChange(step.id, e.target.value)}
-                                >
-                                    <option value="">-- Select an option --</option>
-                                    {step.options.map((opt) => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
-                                </select>
+                                    onChange={(value) => handleChange(step.id, value)}
+                                    placeholder="Select an option"
+                                    options={step.options.map((opt) => ({ value: opt, label: opt }))}
+                                    buttonClassName="bg-white"
+                                />
                             )}
 
                             {step.type === 'checkbox' && step.options && (

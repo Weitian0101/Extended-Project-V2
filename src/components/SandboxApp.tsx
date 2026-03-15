@@ -27,10 +27,13 @@ interface SandboxAppProps {
     onOpenProfile: () => void;
     runtimeMode?: 'local-mvp' | 'remote-supabase';
     onInviteMember?: (projectId: string, email: string, permission: TeamMember['permission']) => Promise<{
-        delivery: 'member-added' | 'invite-created';
-        invite?: ProjectInvite;
+        delivery: 'invite-created';
+        invite: ProjectInvite;
     }>;
+    onSendInviteEmail?: (projectId: string, inviteId: string) => Promise<void>;
+    onRevokeInvite?: (projectId: string, inviteId: string) => Promise<void>;
     onUpdateMemberPermission?: (projectId: string, memberId: string, permission: TeamMember['permission']) => Promise<void>;
+    onRemoveMember?: (projectId: string, memberId: string) => Promise<void>;
 }
 
 export function SandboxApp({
@@ -41,7 +44,10 @@ export function SandboxApp({
     onOpenProfile,
     runtimeMode = 'local-mvp',
     onInviteMember,
-    onUpdateMemberPermission
+    onUpdateMemberPermission,
+    onSendInviteEmail,
+    onRevokeInvite,
+    onRemoveMember
 }: SandboxAppProps) {
     const { project, updateProject, isLoaded } = useProjectData(projectSummary.id, projectSummary.name);
     const {
@@ -244,9 +250,13 @@ export function SandboxApp({
                 open={settingsOpen}
                 project={projectSummary}
                 projectId={projectSummary.id}
+                currentUserId={profile.id}
                 remoteMode={runtimeMode === 'remote-supabase'}
                 onInviteMember={onInviteMember}
+                onSendInviteEmail={onSendInviteEmail}
+                onRevokeInvite={onRevokeInvite}
                 onUpdateMemberPermission={onUpdateMemberPermission}
+                onRemoveMember={onRemoveMember}
                 onClose={() => setSettingsOpen(false)}
                 onSave={handleSaveProjectSettings}
             />

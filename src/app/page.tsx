@@ -8,7 +8,6 @@ import { AuthPage } from '@/components/auth/AuthPage';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { SandboxApp } from '@/components/SandboxApp';
 import { SignOutPage } from '@/components/auth/SignOutPage';
-import { AppThemeProvider } from '@/components/ui/AppThemeProvider';
 import { DEFAULT_PROJECTS } from '@/data/workspaceSeed';
 import { AppViewState, UserProfileData, WorkspaceProject } from '@/types';
 import { ProfilePage } from '@/components/profile/ProfilePage';
@@ -28,11 +27,7 @@ import {
 } from '@/lib/services/mvpWorkspace';
 
 export default function Home() {
-  return (
-    <AppThemeProvider>
-      {isRemoteBackendEnabled() ? <RemoteWorkspaceShell /> : <HomeShell />}
-    </AppThemeProvider>
-  );
+  return isRemoteBackendEnabled() ? <RemoteWorkspaceShell /> : <HomeShell />;
 }
 
 function HomeShell() {
@@ -124,6 +119,7 @@ function HomeShell() {
     };
 
     setProjects([createdProject, ...projects]);
+    return createdProject;
   };
 
   const handleUpdateProject = (projectId: string, updates: Partial<WorkspaceProject>) => {
@@ -211,6 +207,7 @@ function HomeShell() {
         <Dashboard
           projects={projects}
           profile={profile}
+          currentUserId={profile.id}
           onOpenProject={handleOpenProject}
           onCreateProject={handleCreateProject}
           onUpdateProject={handleUpdateProject}
@@ -238,6 +235,7 @@ function HomeShell() {
         <Dashboard
           projects={projects}
           profile={profile}
+          currentUserId={profile.id}
           onOpenProject={handleOpenProject}
           onCreateProject={handleCreateProject}
           onUpdateProject={handleUpdateProject}

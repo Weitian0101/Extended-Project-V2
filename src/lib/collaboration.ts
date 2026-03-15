@@ -26,8 +26,7 @@ export const PROJECT_HUB_TABS: Array<{ id: ProjectHubTab; label: string; descrip
     { id: 'brief', label: 'Brief', description: 'Shared context and success criteria.' },
     { id: 'board', label: 'Board', description: 'Work items, reviews, and blockers.' },
     { id: 'sessions', label: 'Sessions', description: 'Workshops, reviews, and follow-up.' },
-    { id: 'decisions', label: 'Decisions', description: 'Critical choices and rationale.' },
-    { id: 'artifacts', label: 'Artifacts', description: 'Outputs captured from the work.' }
+    { id: 'outcomes', label: 'Outcomes', description: 'Decisions and reusable outputs.' }
 ];
 
 export const BOARD_COLUMNS: Array<{ id: WorkspaceReviewItem['type'] extends never ? never : ProjectHubData['cards'][number]['status']; label: string }> = [
@@ -332,6 +331,8 @@ export function buildWorkspaceCollaborationOverview(
                 id: item.id,
                 projectId: project.id,
                 projectName: project.name,
+                action: item.action,
+                entityType: item.entityType,
                 actorName: item.actorName,
                 message: item.message,
                 occurredAt: item.occurredAt

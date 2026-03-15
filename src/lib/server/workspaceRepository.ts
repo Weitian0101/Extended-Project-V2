@@ -99,8 +99,8 @@ interface ToolRunRow {
 }
 
 export interface InviteMemberResult {
-    delivery: 'member-added' | 'invite-created';
-    invite?: ProjectInvite;
+    delivery: 'invite-created';
+    invite: ProjectInvite;
 }
 
 export interface ProjectInviteDetails {
@@ -334,6 +334,57 @@ export async function getAuthenticatedUser() {
     }
 
     return data.user;
+}
+
+async function getAuthenticatedProjectManager(projectId: string, requiredPermission: PermissionLevel = 'edit') {
+    const supabase = await createSupabaseServerClient();
+    const user = await getAuthenticatedUser();
+
+    if (!user) {
+        throw new Error('Unauthenticated');
+    }
+
+    const { data, error } = await supabase
+        .from('project_members')
+        .select('permission')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+    const membership = data as { permission: PermissionLevel } | null;
+
+    if (error || !membership) {
+        throw new Error('Forbidden');
+    }
+
+    const allowed = requiredPermission === 'owner'
+        ? ['owner']
+        : ['owner', 'edit'];
+
+    if (!allowed.includes(membership.permission)) {
+        throw new Error('Forbidden');
+    }
+
+    return {
+        user,
+        permission: membership.permission
+    };
+}
+
+async function getPendingInviteRow(projectId: string, inviteId: string) {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+        .from('project_invites')
+        .select('id, project_id, email, role, permission, token, status, invited_by, accepted_by, accepted_at, created_at, updated_at')
+        .eq('project_id', projectId)
+        .eq('id', inviteId)
+        .maybeSingle();
+    const invite = data as unknown as ProjectInviteRow | null;
+
+    if (error || !invite) {
+        throw error || new Error('Invite not found.');
+    }
+
+    return invite;
 }
 
 export async function ensureProfileForCurrentUser() {
@@ -608,57 +659,11 @@ export async function deleteProject(projectId: string) {
 
 export async function addProjectMemberByEmail(projectId: string, email: string, permission: PermissionLevel = 'view'): Promise<InviteMemberResult> {
     const supabase = await createSupabaseServerClient();
-    const currentUser = await getAuthenticatedUser();
+    const { user: currentUser } = await getAuthenticatedProjectManager(projectId, 'edit');
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (!currentUser) {
-        throw new Error('Unauthenticated');
-    }
-
-    const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, title, phone, location, workspace_name, company, billing_email, account_role, subscription_tier, billing_cycle, subscription_status, renewal_date, payment_method_label, created_at, last_sign_in_at')
-        .ilike('email', normalizedEmail)
-        .maybeSingle();
-    const profileRow = profileData as unknown as ProfileRow | null;
-
-    if (profileError) {
-        throw profileError;
-    }
-
-    if (profileRow) {
-        const { error } = await supabase
-            .from('project_members')
-            .upsert({
-                project_id: projectId,
-                user_id: profileRow.id,
-                role: profileRow.title || 'Team Member',
-                permission,
-                status: 'online'
-            }, { onConflict: 'project_id,user_id' });
-
-        if (error) {
-            throw error;
-        }
-
-        const { error: cleanupError } = await supabase
-            .from('project_invites')
-            .update({
-                status: 'accepted',
-                accepted_by: profileRow.id,
-                accepted_at: new Date().toISOString()
-            })
-            .eq('project_id', projectId)
-            .ilike('email', normalizedEmail)
-            .eq('status', 'pending');
-
-        if (cleanupError) {
-            throw cleanupError;
-        }
-
-        return {
-            delivery: 'member-added'
-        };
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+        throw new Error('Enter a valid email address.');
     }
 
     const nextToken = randomUUID();
@@ -723,7 +728,13 @@ export async function addProjectMemberByEmail(projectId: string, email: string, 
 }
 
 export async function updateProjectMember(projectId: string, memberId: string, updates: Partial<Pick<ProjectMemberRow, 'permission' | 'role' | 'status'>>) {
+    const { user } = await getAuthenticatedProjectManager(projectId, 'owner');
     const supabase = await createSupabaseServerClient();
+
+    if (memberId === user.id && typeof updates.permission === 'string') {
+        throw new Error('Owners cannot change their own permission.');
+    }
+
     const { error } = await supabase
         .from('project_members')
         .update(updates)
@@ -733,6 +744,73 @@ export async function updateProjectMember(projectId: string, memberId: string, u
     if (error) {
         throw error;
     }
+}
+
+export async function removeProjectMember(projectId: string, memberId: string) {
+    const { user } = await getAuthenticatedProjectManager(projectId, 'owner');
+    const supabase = await createSupabaseServerClient();
+
+    if (memberId === user.id) {
+        throw new Error('Owners cannot remove themselves from the project.');
+    }
+
+    const { data: projectData, error: projectError } = await supabase
+        .from('projects')
+        .select('owner_id')
+        .eq('id', projectId)
+        .maybeSingle();
+    const project = projectData as { owner_id: string } | null;
+
+    if (projectError || !project) {
+        throw projectError || new Error('Project not found.');
+    }
+
+    if (project.owner_id === memberId) {
+        throw new Error('Remove or transfer project ownership before deleting this member.');
+    }
+
+    const { error } = await supabase
+        .from('project_members')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('user_id', memberId);
+
+    if (error) {
+        throw error;
+    }
+}
+
+export async function getProjectInviteById(projectId: string, inviteId: string): Promise<ProjectInvite> {
+    await getAuthenticatedProjectManager(projectId, 'edit');
+    const invite = await getPendingInviteRow(projectId, inviteId);
+    return mapProjectInvite(invite);
+}
+
+export async function revokeProjectInvite(projectId: string, inviteId: string): Promise<ProjectInvite> {
+    await getAuthenticatedProjectManager(projectId, 'edit');
+    const supabase = await createSupabaseServerClient();
+    const invite = await getPendingInviteRow(projectId, inviteId);
+
+    if (invite.status !== 'pending') {
+        throw new Error('Only pending invites can be revoked.');
+    }
+
+    const { data, error } = await supabase
+        .from('project_invites')
+        .update({
+            status: 'revoked'
+        })
+        .eq('project_id', projectId)
+        .eq('id', inviteId)
+        .select('id, project_id, email, role, permission, token, status, invited_by, accepted_by, accepted_at, created_at, updated_at')
+        .single();
+    const revokedInvite = data as unknown as ProjectInviteRow | null;
+
+    if (error || !revokedInvite) {
+        throw error || new Error('Unable to revoke invite.');
+    }
+
+    return mapProjectInvite(revokedInvite);
 }
 
 export async function getProjectInviteByToken(token: string): Promise<ProjectInviteDetails> {
@@ -776,7 +854,7 @@ export async function getProjectDocument(projectId: string) {
 
     const { data: projectData, error: projectError } = await supabase
         .from('projects')
-        .select('id, owner_id, name, summary, accent, current_stage, background, objectives, assumptions, created_at, updated_at')
+        .select('id, owner_id, name, summary, accent, current_stage, background, objectives, assumptions, success_metrics, created_at, updated_at')
         .eq('id', projectId)
         .single();
     const projectRow = projectData as unknown as ProjectRow | null;
@@ -802,7 +880,8 @@ export async function getProjectDocument(projectId: string) {
             name: projectRow.name,
             background: projectRow.background || '',
             objectives: projectRow.objectives || '',
-            assumptions: projectRow.assumptions || ''
+            assumptions: projectRow.assumptions || '',
+            aiHandoffPrompt: projectRow.success_metrics || ''
         },
         currentStage: projectRow.current_stage,
         toolRuns: toolRunRows.map(mapToolRun)
@@ -821,7 +900,8 @@ export async function saveProjectDocument(projectId: string, document: ProjectDa
             current_stage: document.currentStage,
             background: document.context.background,
             objectives: document.context.objectives,
-            assumptions: document.context.assumptions
+            assumptions: document.context.assumptions,
+            success_metrics: document.context.aiHandoffPrompt || ''
         })
         .eq('id', projectId);
 
@@ -951,7 +1031,7 @@ export async function importWorkspaceSnapshotForCurrentUser(raw: unknown): Promi
     const rawProjectHubs = Array.isArray(raw.projectHubs) ? raw.projectHubs : [];
 
     let importedProjects = 0;
-    let importedMembers = 0;
+    const importedMembers = 0;
     let importedInvites = 0;
 
     for (let index = 0; index < rawProjects.length; index += 1) {
@@ -1019,9 +1099,7 @@ export async function importWorkspaceSnapshotForCurrentUser(raw: unknown): Promi
                 normalizePermission(rawMember.permission)
             );
 
-            if (result.delivery === 'member-added') {
-                importedMembers += 1;
-            } else {
+            if (result.invite) {
                 importedInvites += 1;
             }
         }
@@ -1043,9 +1121,7 @@ export async function importWorkspaceSnapshotForCurrentUser(raw: unknown): Promi
                 normalizePermission(rawInvite.permission)
             );
 
-            if (result.delivery === 'member-added') {
-                importedMembers += 1;
-            } else {
+            if (result.invite) {
                 importedInvites += 1;
             }
         }
