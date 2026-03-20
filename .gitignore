@@ -53,3 +53,7 @@ review-project-context.png
 tell-story-hover*.png
 tell-story-guide-modal.png
 temp-pdf.txt
+
+# local agent/runtime helpers
+.agents/
+skills-lock.json
