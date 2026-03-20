@@ -14,12 +14,12 @@ interface BrandedLoadingScreenProps {
 }
 
 export function BrandedLoadingScreen({
-    label,
-    detail = 'Preparing the workspace and live context...',
     fullscreen = false,
     compact = false,
     className
 }: BrandedLoadingScreenProps) {
+    const [logoSrc, setLogoSrc] = React.useState('/images/logo-small.avif');
+
     return (
         <div
             className={cn(
@@ -28,39 +28,42 @@ export function BrandedLoadingScreen({
                 className
             )}
         >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.12),transparent_32%),radial-gradient(circle_at_bottom,rgba(52,211,153,0.1),transparent_28%)]" />
-            <div className={cn('surface-panel-strong relative overflow-hidden rounded-[30px] border px-8 py-8 text-center', compact ? 'w-full max-w-md' : 'w-full max-w-xl')}>
-                <div className="pointer-events-none absolute inset-x-[18%] top-[-18%] h-28 rounded-full bg-sky-300/18 blur-[84px] dark:bg-sky-400/10" />
-                <div className="relative mx-auto flex w-full max-w-sm flex-col items-center">
-                    <div className="loading-orbit-shell relative flex h-28 w-28 items-center justify-center rounded-full">
-                        <span className="loading-orbit loading-orbit-outer absolute inset-0 rounded-full border border-sky-400/18" />
-                        <span className="loading-orbit loading-orbit-inner absolute inset-[0.8rem] rounded-full border border-emerald-400/20" />
-                        <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-[24px] border border-[var(--panel-border)] bg-white/92 shadow-[0_18px_36px_rgba(15,23,42,0.12)] dark:bg-slate-950/72">
-                            <Image
-                                src="/images/logo.png"
-                                alt="Academy of Design Thinking"
-                                fill
-                                sizes="80px"
-                                style={{ objectFit: 'contain', objectPosition: 'center' }}
-                                className="p-3"
-                            />
-                        </div>
-                    </div>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.14),transparent_32%),radial-gradient(circle_at_bottom,rgba(251,191,36,0.12),transparent_28%)]" />
+            <div className={cn('relative mx-auto flex w-full flex-col items-center text-center', compact ? 'max-w-sm' : 'max-w-md')}>
+                <div className="pointer-events-none absolute inset-x-[14%] top-[-8%] h-32 rounded-full bg-sky-300/22 blur-[96px] dark:bg-sky-400/12" />
 
-                    <div className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--foreground-muted)]">
-                        Academy of Design Thinking
+                <div className="relative flex h-40 w-40 items-center justify-center">
+                    <div className="loading-logo-breathe absolute inset-0 rounded-full bg-sky-400/16 blur-[44px] dark:bg-sky-400/14" />
+                    <div className="loading-logo-breathe absolute inset-[14%] rounded-full bg-amber-300/10 blur-[28px]" style={{ animationDelay: '-1.2s' }} />
+                    <div className="loading-logo-breathe relative h-24 w-24 sm:h-28 sm:w-28">
+                        <Image
+                            src={logoSrc}
+                            alt="Academy of Design Thinking"
+                            width={112}
+                            height={112}
+                            priority
+                            unoptimized
+                            fetchPriority="high"
+                            decoding="sync"
+                            draggable={false}
+                            sizes="112px"
+                            className="h-full w-full object-contain object-center"
+                            onError={() => {
+                                if (logoSrc !== '/images/logo.png') {
+                                    setLogoSrc('/images/logo.png');
+                                }
+                            }}
+                        />
                     </div>
-                    <div className="mt-3 text-2xl font-display font-semibold text-[var(--foreground)]">
-                        {label}
-                    </div>
-                    <div className="mt-2 max-w-sm text-sm leading-relaxed text-[var(--foreground-soft)]">
-                        {detail}
-                    </div>
+                </div>
 
-                    <div className="mt-5 flex items-center gap-2">
-                        <span className="loading-dot h-2.5 w-2.5 rounded-full bg-sky-400/90" />
-                        <span className="loading-dot h-2.5 w-2.5 rounded-full bg-emerald-400/90" style={{ animationDelay: '120ms' }} />
-                        <span className="loading-dot h-2.5 w-2.5 rounded-full bg-amber-300/90" style={{ animationDelay: '240ms' }} />
+                <div className="mt-3 text-lg font-display font-semibold text-[var(--foreground)]">
+                    Loading...
+                </div>
+
+                <div className="mt-5 w-full max-w-xs">
+                    <div className="h-2.5 overflow-hidden rounded-full bg-[var(--panel)]/80">
+                        <div className="loading-progress-bar h-full rounded-full bg-[linear-gradient(90deg,rgba(56,189,248,0.9),rgba(96,165,250,0.82),rgba(251,191,36,0.76))]" />
                     </div>
                 </div>
             </div>

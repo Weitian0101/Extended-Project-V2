@@ -6,6 +6,7 @@ import { ArrowLeft, Menu, Settings2 } from 'lucide-react';
 import { SpotlightGuide } from '@/components/guide/SpotlightGuide';
 import { ProjectSettingsDialog } from '@/components/dashboard/ProjectSettingsDialog';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { ProjectFacilitatorDialog } from '@/components/project/ProjectFacilitatorDialog';
 import { ProjectHub } from '@/components/project/ProjectHub';
 import { ExploreView } from '@/components/stages/ExploreView';
 import { ImagineView } from '@/components/stages/ImagineView';
@@ -20,7 +21,8 @@ import { UserMenu } from '@/components/ui/UserMenu';
 import { getGuideProgress } from '@/data/onboarding';
 import { useProjectHubData } from '@/hooks/useProjectHubData';
 import { useProjectData } from '@/hooks/useProjectData';
-import { GuideFlowVariant, OnboardingStepId, ProjectInvite, ProjectSurface, StageId, TeamMember, UserProfileData, WorkspaceProject } from '@/types';
+import { aiGateway } from '@/lib/services/aiGateway';
+import { AiResponseEntry, GuideFlowVariant, OnboardingStepId, ProjectInvite, ProjectSurface, StageId, TeamMember, UserProfileData, WorkspaceProject } from '@/types';
 
 function getStagePreferenceMode(metadata: Record<string, unknown>): 'auto' | 'manual' {
     return metadata.stageMode === 'manual' ? 'manual' : 'auto';
@@ -36,6 +38,15 @@ function getManualStagePreference(metadata: Record<string, unknown>): StageId | 
         ? value
         : null;
 }
+
+const SURFACE_LABELS: Record<ProjectSurface, string> = {
+    hub: 'Project Hub',
+    overview: 'Project Context',
+    explore: 'Explore',
+    imagine: 'Imagine',
+    implement: 'Implement',
+    'tell-story': 'Tell Story'
+};
 
 interface SandboxAppProps {
     project: WorkspaceProject;
@@ -103,6 +114,10 @@ export function SandboxApp({
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [isProjectFacilitatorOpen, setIsProjectFacilitatorOpen] = useState(false);
+    const [projectFacilitatorInput, setProjectFacilitatorInput] = useState('');
+    const [projectFacilitatorHistory, setProjectFacilitatorHistory] = useState<AiResponseEntry[]>([]);
+    const [isProjectFacilitatorLoading, setIsProjectFacilitatorLoading] = useState(false);
     const hubNavRef = useRef<HTMLButtonElement | null>(null);
     const overviewNavRef = useRef<HTMLButtonElement | null>(null);
     const hubGuideProgress = guideVariant ? getGuideProgress(guideVariant, 'hub') : null;
@@ -136,6 +151,12 @@ export function SandboxApp({
             syncProjectStageStatus(manualStagePreference);
         }
     }, [manualStagePreference, project.currentStage, stagePreferenceMode, syncProjectStageStatus]);
+
+    useEffect(() => {
+        setIsProjectFacilitatorOpen(false);
+        setProjectFacilitatorInput('');
+        setProjectFacilitatorHistory([]);
+    }, [projectSummary.id]);
 
     if (!isLoaded) {
         return (
@@ -180,6 +201,55 @@ export function SandboxApp({
         });
         setSettingsOpen(false);
     };
+
+    const handleProjectFacilitatorSubmit = async (prefill?: string) => {
+        const message = (prefill ?? projectFacilitatorInput).trim();
+        if (!message || isProjectFacilitatorLoading) {
+            return;
+        }
+
+        setProjectFacilitatorInput('');
+
+        setIsProjectFacilitatorLoading(true);
+
+        try {
+            const response = await aiGateway.facilitatorChat({
+                methodId: 'project-shell-facilitator',
+                methodTitle: SURFACE_LABELS[currentSurface],
+                stage: currentSurface === 'hub' ? project.currentStage : currentSurface,
+                project: project.context,
+                message,
+                history: projectFacilitatorHistory
+            });
+
+            setProjectFacilitatorHistory((current) => [...current, {
+                prompt: message,
+                response: response.reply,
+                timestamp: Date.now()
+            }]);
+        } catch (error) {
+            setProjectFacilitatorHistory((current) => [...current, {
+                prompt: message,
+                response: error instanceof Error ? error.message : 'The project facilitator could not prepare a response right now.',
+                timestamp: Date.now()
+            }]);
+        } finally {
+            setIsProjectFacilitatorLoading(false);
+            setIsProjectFacilitatorOpen(true);
+        }
+    };
+
+    const facilitatorSuggestions = currentSurface === 'hub'
+        ? [
+            'What should the team focus on next in this project?',
+            'Turn the current hub state into a 30-minute working agenda.',
+            'What is missing from the project setup before the next session?'
+        ]
+        : [
+            `What is the sharpest next move in ${SURFACE_LABELS[currentSurface]}?`,
+            'Rewrite the next facilitator prompt so the team gets more specific.',
+            'What blind spot should we challenge before moving on?'
+        ];
 
     const renderStage = () => {
         switch (currentSurface) {
@@ -269,10 +339,12 @@ export function SandboxApp({
                 currentSurface={currentSurface}
                 onSetSurface={handleSetSurface}
                 onGoDashboard={onExit}
+                onOpenFacilitator={() => setIsProjectFacilitatorOpen(true)}
                 isOpen={sidebarOpen}
                 isCollapsed={sidebarCollapsed}
                 onClose={() => setSidebarOpen(false)}
                 onToggleCollapse={() => setSidebarCollapsed((current) => !current)}
+                facilitatorHint={currentSurface === 'hub' ? 'Briefs, reviews, next actions' : `${SURFACE_LABELS[currentSurface]} support`}
                 navButtonRefs={{
                     hub: hubNavRef,
                     overview: overviewNavRef
@@ -378,6 +450,19 @@ export function SandboxApp({
                 } : undefined}
                 onBack={onGuideStepChange ? () => onGuideStepChange('hub') : undefined}
                 onSkip={onDismissGuide}
+            />
+            <ProjectFacilitatorDialog
+                open={isProjectFacilitatorOpen}
+                projectName={project.context.name}
+                surfaceLabel={SURFACE_LABELS[currentSurface]}
+                suggestions={facilitatorSuggestions}
+                history={projectFacilitatorHistory}
+                input={projectFacilitatorInput}
+                isLoading={isProjectFacilitatorLoading}
+                onClose={() => setIsProjectFacilitatorOpen(false)}
+                onInputChange={setProjectFacilitatorInput}
+                onSubmit={() => void handleProjectFacilitatorSubmit()}
+                onSelectSuggestion={(prompt) => void handleProjectFacilitatorSubmit(prompt)}
             />
         </div>
     );

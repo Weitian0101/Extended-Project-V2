@@ -770,19 +770,19 @@ function PromptModal({
                             <textarea
                                 value={aiCorrectionInput}
                                 onChange={(event) => onCorrectionChange(event.target.value)}
-                                placeholder="Tell the AI what understanding is off, missing, or overemphasized."
+                                placeholder="Describe what the AI should correct, add, or de-emphasize."
                                 className="h-32 w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]"
                             />
                             <Button variant="secondary" onClick={onAskAi} disabled={!aiCorrectionInput.trim() || isGeneratingReply}>
                                 <Send className="mr-2 h-4 w-4" />
-                                {isGeneratingReply ? 'Thinking...' : 'Ask AI'}
+                                {isGeneratingReply ? 'Thinking...' : 'Review with AI'}
                             </Button>
                         </div>
 
                         <div className="mt-5 space-y-3">
                             {messages.length === 0 && (
                                 <div className="rounded-[22px] border border-dashed border-[var(--panel-border)] px-4 py-6 text-sm text-[var(--foreground-muted)]">
-                                    AI revision notes will appear here.
+                                    Ask the AI to tighten the handoff and its revision notes will appear here.
                                 </div>
                             )}
                             {messages.map((message, index) => (

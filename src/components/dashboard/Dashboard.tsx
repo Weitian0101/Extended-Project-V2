@@ -32,6 +32,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { UserMenu } from '@/components/ui/UserMenu';
 import { getGuideProgress, shouldShowCreateStep } from '@/data/onboarding';
 import { getMembershipPlan } from '@/lib/membership';
+import { saveWorkspaceShell } from '@/lib/services/mvpWorkspace';
 import { cn } from '@/lib/utils';
 import { GuideFlowVariant, OnboardingStepId, ProjectInvite, TeamMember, UserProfileData, WorkspaceCollaborationOverview, WorkspaceProject } from '@/types';
 
@@ -112,6 +113,31 @@ function formatDateTime(value?: string | null, fallback = 'Nothing scheduled') {
 
 function getLatestProject(projects: WorkspaceProject[]) {
     return projects[0];
+}
+
+function getProjectHref(projectId: string) {
+    const params = new URLSearchParams({
+        view: 'sandbox',
+        project: projectId,
+        surface: 'hub'
+    });
+
+    return `/?${params.toString()}`;
+}
+
+function getOverviewTitleLines(title: string) {
+    switch (title) {
+        case 'Needs Review':
+            return ['Needs', 'Review'];
+        case 'Upcoming Sessions':
+            return ['Upcoming', 'Sessions'];
+        case 'Assigned To Me':
+            return ['Assigned', 'To Me'];
+        case 'Recent Activity':
+            return ['Recent', 'Activity'];
+        default:
+            return [title];
+    }
 }
 
 export function Dashboard({
@@ -236,12 +262,43 @@ export function Dashboard({
         }
     };
 
+    const persistProjectLaunch = () => {
+        if (runtimeMode === 'local-mvp') {
+            saveWorkspaceShell({
+                projects,
+                profile
+            });
+        }
+    };
+
+    const openProjectInNewTab = (projectId: string, existingTab?: Window | null) => {
+        if (typeof window === 'undefined') {
+            onOpenProject(projectId);
+            return;
+        }
+
+        persistProjectLaunch();
+        const nextUrl = new URL(getProjectHref(projectId), window.location.origin).toString();
+
+        if (existingTab && !existingTab.closed) {
+            try {
+                existingTab.opener = null;
+            } catch {
+                // Ignore cross-window safety errors and continue navigation.
+            }
+            existingTab.location.replace(nextUrl);
+            return;
+        }
+
+        window.open(nextUrl, '_blank', 'noopener');
+    };
+
     const handleProjectOpen = (projectId: string) => {
         if (guideStep === 'dashboard-open' || (guideStep === 'dashboard-summary' && !showCreateStep)) {
             onGuideStepChange?.('hub');
         }
 
-        onOpenProject(projectId);
+        openProjectInNewTab(projectId);
     };
 
     const overviewCards = [
@@ -328,10 +385,10 @@ export function Dashboard({
     ];
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+        <div className="relative min-h-screen overflow-x-hidden bg-[var(--background)] text-[var(--foreground)]">
             <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.08),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.07),transparent_28%),linear-gradient(180deg,var(--body-top),var(--body-bottom))]" />
 
-            <header className="sticky top-0 z-30 border-b border-[var(--panel-border)] bg-[color:var(--panel-strong)]/90 backdrop-blur-xl">
+            <header className="fixed inset-x-0 top-0 z-40 border-b border-[var(--panel-border)] bg-[color:var(--panel-strong)]/90 backdrop-blur-xl">
                 <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 lg:px-8">
                     <BrandLockup compact />
                     <div className="flex items-center gap-2 lg:gap-3">
@@ -348,7 +405,7 @@ export function Dashboard({
                 </div>
             </header>
 
-            <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 lg:px-8 lg:py-10">
+            <main className="relative z-10 mx-auto max-w-7xl px-4 pb-8 pt-28 lg:px-8 lg:pb-10 lg:pt-32">
                 <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                         <h1 className="text-4xl font-display font-semibold text-[var(--foreground)]">Dashboard</h1>
@@ -467,7 +524,7 @@ export function Dashboard({
                                 emptyState={card.emptyState}
                                 accent={card.accent}
                                 accentText={card.accentText}
-                                onOpenProject={onOpenProject}
+                                onOpenProject={handleProjectOpen}
                             />
                         ))}
                     </div>
@@ -514,9 +571,19 @@ export function Dashboard({
                                 <div
                                     key={project.id}
                                     ref={index === 0 ? firstProjectCardRef : null}
-                                    onClick={() => handleProjectOpen(project.id)}
-                                    className="surface-panel group relative cursor-pointer overflow-hidden rounded-[30px] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,0.16)]"
+                                    className="surface-panel group relative overflow-hidden rounded-[30px] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,0.16)]"
                                 >
+                                    <a
+                                        href={getProjectHref(project.id)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            openProjectInNewTab(project.id);
+                                        }}
+                                        aria-label={`Open ${project.name} in a new tab`}
+                                        className="absolute inset-0 z-10 rounded-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+                                    />
                                     <div className={`absolute inset-x-0 top-0 h-1 rounded-t-[30px] bg-gradient-to-r ${project.accent}`} />
 
                                 <div className="flex items-start justify-between gap-3">
@@ -530,7 +597,7 @@ export function Dashboard({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="relative z-20 flex items-center gap-2">
                                         <AvatarCluster members={project.members.filter((member) => member.status === 'online')} size="sm" />
                                         <div
                                             ref={menuProjectId === project.id ? activeMenuRef : null}
@@ -650,13 +717,24 @@ export function Dashboard({
                     setPendingOpenProjectId(null);
                 }}
                 onSave={(updatedProject) => {
-                    void Promise.resolve(onUpdateProject(updatedProject.id, updatedProject)).then(() => {
-                        setSettingsProject(null);
-                        if (pendingOpenProjectId === updatedProject.id) {
-                            setPendingOpenProjectId(null);
-                            onOpenProject(updatedProject.id);
-                        }
-                    });
+                    const shouldOpenProject = pendingOpenProjectId === updatedProject.id;
+                    const pendingProjectTab = shouldOpenProject && typeof window !== 'undefined'
+                        ? window.open('', '_blank')
+                        : null;
+
+                    void Promise.resolve(onUpdateProject(updatedProject.id, updatedProject))
+                        .then(() => {
+                            setSettingsProject(null);
+                            if (shouldOpenProject) {
+                                setPendingOpenProjectId(null);
+                                openProjectInNewTab(updatedProject.id, pendingProjectTab);
+                            }
+                        })
+                        .catch(() => {
+                            if (pendingProjectTab && !pendingProjectTab.closed) {
+                                pendingProjectTab.close();
+                            }
+                        });
                 }}
             />
             <ConfirmDialog
@@ -749,6 +827,11 @@ function OverviewInsightCard({
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const closeTimerRef = useRef<number | null>(null);
     const primaryProjectId = items[0]?.projectId;
+    const SummaryIcon = items[0]?.icon || Icon;
+    const titleLines = getOverviewTitleLines(title);
+    const summaryText = count > 0
+        ? `${items[0]?.title || `${count} active item${count === 1 ? '' : 's'}`}${count > 1 ? ` +${count - 1} more` : ''}`
+        : emptyState;
 
     const openPreview = () => {
         if (closeTimerRef.current) {
@@ -801,18 +884,27 @@ function OverviewInsightCard({
         >
             <div className={cn('absolute inset-0 rounded-[28px] bg-gradient-to-br opacity-80', accent)} />
             <div className="relative">
-                <div className="flex items-start justify-between gap-3">
-                    <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">{title}</div>
-                        <div className="mt-4 text-4xl font-display font-semibold text-[var(--foreground)]">{count}</div>
+                <div className="flex min-h-[5.85rem] items-start justify-between gap-3">
+                    <div className="flex min-h-full flex-col justify-between">
+                        <div className="min-h-[2.35rem] max-w-[8rem] text-[11px] font-semibold uppercase leading-[1.34] tracking-[0.22em] text-[var(--foreground-muted)]">
+                            {titleLines.map((line) => (
+                                <span key={line} className="block">
+                                    {line}
+                                </span>
+                            ))}
+                        </div>
+                        <div className="mt-3 text-4xl font-display font-semibold text-[var(--foreground)]">{count}</div>
                     </div>
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]">
                         <Icon className={cn('h-5 w-5', accentText)} />
                     </div>
                 </div>
 
-                <div className="mt-4 text-sm text-[var(--foreground-soft)]">
-                    {count > 0 ? 'Hover to preview details. Click to jump into the project.' : emptyState}
+                <div className="mt-4 flex min-h-8 items-center gap-2.5 text-sm leading-relaxed text-[var(--foreground-soft)]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)]">
+                        <SummaryIcon className={cn('h-4 w-4', items[0]?.accentText || accentText)} />
+                    </div>
+                    <div className="flex min-h-8 items-center">{summaryText}</div>
                 </div>
             </div>
 
@@ -827,30 +919,33 @@ function OverviewInsightCard({
                 >
                     <div className="space-y-2">
                         {items.slice(0, 4).map((item) => (
-                            <button
+                            <a
                                 key={item.id}
-                                type="button"
+                                href={getProjectHref(item.projectId)}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 onClick={(event) => {
+                                    event.preventDefault();
                                     event.stopPropagation();
                                     onOpenProject(item.projectId);
                                 }}
-                                className="group/item relative flex w-full items-start justify-between gap-3 overflow-hidden rounded-[16px] border border-transparent bg-[var(--panel)] px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--panel-border)] hover:bg-[var(--panel-strong)]"
+                                className="group/item relative flex w-full items-center justify-between gap-3 overflow-hidden rounded-[16px] border border-transparent bg-[var(--panel)] px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--panel-border)] hover:bg-[var(--panel-strong)]"
                             >
                                 <span className={cn('absolute inset-y-2 left-1.5 w-1 rounded-full bg-gradient-to-b opacity-0 transition-opacity group-hover/item:opacity-100', accent)} />
-                                <div className="flex min-w-0 items-start gap-3">
+                                <div className="flex min-w-0 items-center gap-3">
                                     {item.icon && (
-                                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] transition-transform duration-200 group-hover/item:scale-105">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] transition-transform duration-200 group-hover/item:scale-105">
                                             <item.icon className={cn('h-4 w-4', item.accentText || accentText)} />
                                         </div>
                                     )}
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-medium text-[var(--foreground)]">{item.title}</div>
-                                        {item.subtitle && <div className="mt-1 text-xs text-[var(--foreground-muted)]">{item.subtitle}</div>}
-                                        {item.meta && <div className="mt-1 text-xs font-medium text-[var(--foreground-soft)]">{item.meta}</div>}
+                                    <div className="min-w-0 flex min-h-9 flex-col justify-center gap-1">
+                                        <div className="text-sm font-medium leading-snug text-[var(--foreground)]">{item.title}</div>
+                                        {item.subtitle && <div className="text-xs leading-snug text-[var(--foreground-muted)]">{item.subtitle}</div>}
+                                        {item.meta && <div className="text-xs font-medium leading-snug text-[var(--foreground-soft)]">{item.meta}</div>}
                                     </div>
                                 </div>
-                                <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-[var(--foreground-muted)] transition-all duration-200 group-hover/item:translate-x-0.5 group-hover/item:text-[var(--foreground)]" />
-                            </button>
+                                <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--foreground-muted)] transition-all duration-200 group-hover/item:translate-x-0.5 group-hover/item:text-[var(--foreground)]" />
+                            </a>
                         ))}
                     </div>
                 </div>

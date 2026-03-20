@@ -114,11 +114,23 @@ export function RemoteWorkspaceShell() {
             activeProjectId: savedSession.activeProjectId,
             activeSurface: savedSession.activeSurface
         });
+        let hydrationFrameId: number | null = null;
 
         setView(restoredNavigationState.view);
         setActiveProjectId(restoredNavigationState.activeProjectId);
         setActiveSurface(restoredNavigationState.activeSurface || 'hub');
-        setIsNavigationHydrated(true);
+
+        // Let the restored route state paint before auth/workspace effects can
+        // persist or reinterpret the default landing state.
+        hydrationFrameId = window.requestAnimationFrame(() => {
+            setIsNavigationHydrated(true);
+        });
+
+        return () => {
+            if (hydrationFrameId) {
+                window.cancelAnimationFrame(hydrationFrameId);
+            }
+        };
     }, []);
 
     useWorkspaceBrowserHistory({
@@ -178,16 +190,20 @@ export function RemoteWorkspaceShell() {
     }, [supabase]);
 
     useEffect(() => {
-        if (!authLoading) {
+        if (!authLoading && isNavigationHydrated) {
             saveWorkspaceSession({
                 view,
                 activeProjectId,
                 activeSurface
             });
         }
-    }, [activeProjectId, activeSurface, authLoading, view]);
+    }, [activeProjectId, activeSurface, authLoading, isNavigationHydrated, view]);
 
     useEffect(() => {
+        if (!isNavigationHydrated || authLoading) {
+            return;
+        }
+
         const syncWorkspace = async () => {
             if (!sessionUser) {
                 clearWorkspaceSession();
@@ -227,7 +243,7 @@ export function RemoteWorkspaceShell() {
         };
 
         void syncWorkspace();
-    }, [authLoading, sessionUser]);
+    }, [authLoading, isNavigationHydrated, sessionUser]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {

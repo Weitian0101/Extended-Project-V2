@@ -13,10 +13,12 @@ interface SidebarProps {
     currentSurface: ProjectSurface;
     onSetSurface: (surface: ProjectSurface) => void;
     onGoDashboard?: () => void;
+    onOpenFacilitator?: () => void;
     isOpen?: boolean;
     isCollapsed?: boolean;
     onClose?: () => void;
     onToggleCollapse?: () => void;
+    facilitatorHint?: string;
     navButtonRefs?: Partial<Record<ProjectSurface, React.RefObject<HTMLButtonElement | null>>>;
 }
 
@@ -78,10 +80,12 @@ export function Sidebar({
     currentSurface,
     onSetSurface,
     onGoDashboard,
+    onOpenFacilitator,
     isOpen = true,
     isCollapsed = false,
     onClose,
     onToggleCollapse,
+    facilitatorHint = 'Project-aware chat',
     navButtonRefs
 }: SidebarProps) {
     const { theme } = useAppTheme();
@@ -162,7 +166,7 @@ export function Sidebar({
                             >
                                 <div className="relative h-9 w-9">
                                     <Image
-                                        src="/images/logo.png"
+                                        src="/images/logo-small.avif"
                                         alt="Academy of Design Thinking"
                                         fill
                                         sizes="36px"
@@ -255,17 +259,29 @@ export function Sidebar({
                 </nav>
 
                 <div className={cn('relative z-10 border-t px-6 py-5', isDark ? 'border-white/10 bg-black/10' : 'border-slate-300/70 bg-white/55', isCollapsed && 'lg:px-4')}>
-                    <div className={cn('flex items-center gap-3', isCollapsed && 'lg:justify-center')}>
+                    <button
+                        type="button"
+                        onClick={onOpenFacilitator}
+                        className={cn(
+                            'flex w-full items-center gap-3 rounded-[22px] text-left transition-all duration-200',
+                            onOpenFacilitator && (isDark
+                                ? 'hover:bg-white/[0.05] hover:text-white'
+                                : 'hover:bg-white/80 hover:text-slate-950'),
+                            isCollapsed && 'lg:justify-center'
+                        )}
+                        title="Open AI facilitator"
+                        aria-label="Open AI facilitator"
+                    >
                         <div className={cn('flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white shadow-lg', activeAccent.indicator)}>
                             AI
                         </div>
                         {!isCollapsed && (
                             <div>
                                 <div className={cn('text-xs font-medium', isDark ? 'text-white' : 'text-slate-900')}>AI facilitator</div>
-                                <div className={cn('text-[10px] uppercase tracking-[0.18em]', isDark ? 'text-slate-300/70' : 'text-slate-400')}>Context aware</div>
+                                <div className={cn('text-[10px] uppercase tracking-[0.18em]', isDark ? 'text-slate-300/70' : 'text-slate-400')}>{facilitatorHint}</div>
                             </div>
                         )}
-                    </div>
+                    </button>
                 </div>
             </aside>
         </>

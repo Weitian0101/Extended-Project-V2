@@ -138,8 +138,8 @@ export function MethodSplitView({
     const desktopPanelContent = activePanel === 'ai'
         ? {
             eyebrow: 'Prompt Board',
-            title: 'Facilitate live with AI',
-            description: 'Generate prompts, reframe questions, and keep the activity moving without leaving the card.',
+            title: 'Facilitate live with context',
+            description: 'Generate the next prompt, pressure-test the conversation, and keep the group moving without leaving the card.',
             chip: 'Live facilitation'
         }
         : {
@@ -152,7 +152,7 @@ export function MethodSplitView({
         ? {
             eyebrow: 'Prompt Board',
             title: 'AI Facilitation',
-            description: 'Use the prompts on the right while the reference card stays visible on the left.'
+            description: 'Use the prompts on the right while the reference card stays visible and the session stays in flow.'
         }
         : {
             eyebrow: 'Team Collaboration',
@@ -808,9 +808,9 @@ export function MethodSplitView({
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <div className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', theme.accentText)}>AI Facilitator</div>
-                                <div className="mt-2 text-base font-semibold text-[var(--foreground)]">Prompt board is live for this method.</div>
+                                <div className="mt-2 text-base font-semibold text-[var(--foreground)]">Prompt board is ready for this method.</div>
                                 <div className="mt-2 text-sm leading-relaxed text-[var(--foreground-soft)]">
-                                    Start with the suggested prompts below, or open the facilitator bubble for free-form help while you run the session.
+                                    Pick a prompt below for a focused facilitation nudge, or open the bubble for a live back-and-forth while the team is working.
                                 </div>
                             </div>
                             <div className={cn('rounded-full px-3 py-1 text-xs font-semibold', theme.accentSolid, 'text-white')}>
@@ -842,7 +842,7 @@ export function MethodSplitView({
 
                         {responses.length === 0 && (
                             <div className="text-center py-10 text-[var(--foreground-muted)] italic text-sm rounded-[24px] border border-dashed border-[var(--panel-border)] bg-[var(--panel)]">
-                                Select a prompt above to start the session.
+                                Pick one of the prompts above to start a grounded facilitation thread for this method.
                             </div>
                         )}
 
@@ -1033,7 +1033,7 @@ export function MethodSplitView({
                         </div>
                         <div className="h-64 space-y-3 p-4 bg-[var(--panel)] overflow-y-auto text-sm text-[var(--foreground-soft)] leading-relaxed">
                             <div className={cn('max-w-[88%] rounded-[18px] border px-4 py-3 shadow-sm', theme.accentBorder, theme.accentSoft)}>
-                                Hello. I know about <strong>{context.name}</strong>. Ask for help with facilitation, framing, or the next move in <strong>{card.title}</strong>.
+                                I have the project frame for <strong>{context.name}</strong>. Ask me to sharpen the next prompt, surface a blind spot, or guide the team through <strong>{card.title}</strong>.
                             </div>
                             {responses.map((item, index) => (
                                 <div key={`${item.timestamp}-${index}`} className="space-y-2">
@@ -1048,14 +1048,14 @@ export function MethodSplitView({
                             {isLoading && (
                                 <div className={cn('inline-flex items-center gap-2 rounded-[18px] border px-4 py-3 shadow-sm', theme.accentBorder, theme.accentSoft)}>
                                     <Sparkles className={cn('w-4 h-4 animate-spin', theme.accentText)} />
-                                    Thinking through the next facilitation step...
+                                    Shaping the next facilitation move...
                                 </div>
                             )}
                         </div>
                         <div className="p-3 border-t border-[var(--panel-border)] bg-[var(--panel-strong)] flex gap-2">
                             <input
                                 className="flex-1 text-sm outline-none bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-muted)]"
-                                placeholder="Ask for help..."
+                                placeholder="Ask for a reframe, prompt, or next move"
                                 value={chatInput}
                                 onChange={e => setChatInput(e.target.value)}
                                 onKeyDown={event => {

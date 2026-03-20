@@ -80,6 +80,7 @@ function HomeShell() {
       activeProjectId: savedSession.activeProjectId,
       activeSurface: savedSession.activeSurface
     });
+    let hydrationFrameId: number | null = null;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setView(restoredNavigationState.view);
@@ -88,7 +89,18 @@ function HomeShell() {
     setProjects(savedWorkspace.projects);
     setProfile(savedWorkspace.profile);
     setCollaborationOverview(savedWorkspace.collaborationOverview);
-    setIsWorkspaceHydrated(true);
+
+    // Wait one paint so the restored navigation state is committed before
+    // browser history sync starts mutating the URL.
+    hydrationFrameId = window.requestAnimationFrame(() => {
+      setIsWorkspaceHydrated(true);
+    });
+
+    return () => {
+      if (hydrationFrameId) {
+        window.cancelAnimationFrame(hydrationFrameId);
+      }
+    };
   }, []);
 
   useWorkspaceBrowserHistory({

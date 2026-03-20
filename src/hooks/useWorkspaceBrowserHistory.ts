@@ -189,8 +189,27 @@ export function useWorkspaceBrowserHistory({
             ...nextState
         };
         const nextUrl = buildUrl(nextState);
+        const urlState = parseUrlState();
 
         if (lastSerializedStateRef.current === null) {
+            if (urlState) {
+                const normalizedUrlState = normalizeState(urlState);
+                const serializedUrlState = JSON.stringify(normalizedUrlState);
+
+                if (serializedUrlState !== serializedState) {
+                    window.history.replaceState(
+                        {
+                            kind: 'workspace-navigation',
+                            ...normalizedUrlState
+                        } satisfies PersistedWorkspaceHistoryState,
+                        '',
+                        buildUrl(normalizedUrlState)
+                    );
+                    lastSerializedStateRef.current = serializedUrlState;
+                    return;
+                }
+            }
+
             window.history.replaceState(persistedState, '', nextUrl);
             lastSerializedStateRef.current = serializedState;
             return;

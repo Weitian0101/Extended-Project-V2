@@ -48,6 +48,7 @@ export function BrandLockup({
                         src="/images/logo.png"
                         alt="Academy of Design Thinking"
                         fill
+                        loading="eager"
                         sizes={compact ? '144px' : '176px'}
                         style={{ objectFit: 'contain', objectPosition: 'center' }}
                         className={theme === 'light' ? 'mix-blend-multiply' : ''}

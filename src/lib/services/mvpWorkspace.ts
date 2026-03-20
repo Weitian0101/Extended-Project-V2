@@ -120,9 +120,35 @@ export function loadWorkspaceShell(): WorkspaceShellDto {
     });
 }
 
-export function saveWorkspaceShell(shell: WorkspaceShellDto) {
+export function saveWorkspaceShell(shell: Pick<WorkspaceShellDto, 'projects' | 'profile'>) {
     writeJson(STORAGE_KEYS.projects, shell.projects);
     writeJson(STORAGE_KEYS.profile, shell.profile);
+}
+
+function readSessionValue(key: string) {
+    if (!isBrowser()) {
+        return null;
+    }
+
+    return window.sessionStorage.getItem(key) ?? window.localStorage.getItem(key);
+}
+
+function writeSessionValue(key: string, value: string) {
+    if (!isBrowser()) {
+        return;
+    }
+
+    window.sessionStorage.setItem(key, value);
+    window.localStorage.removeItem(key);
+}
+
+function removeSessionValue(key: string) {
+    if (!isBrowser()) {
+        return;
+    }
+
+    window.sessionStorage.removeItem(key);
+    window.localStorage.removeItem(key);
 }
 
 export function loadWorkspaceSession(): WorkspaceSessionState {
@@ -134,9 +160,9 @@ export function loadWorkspaceSession(): WorkspaceSessionState {
         };
     }
 
-    const savedView = window.localStorage.getItem(STORAGE_KEYS.view) as AppViewState | null;
-    const savedProjectId = window.localStorage.getItem(STORAGE_KEYS.activeProjectId);
-    const savedSurface = window.localStorage.getItem(STORAGE_KEYS.activeSurface) as ProjectSurface | null;
+    const savedView = readSessionValue(STORAGE_KEYS.view) as AppViewState | null;
+    const savedProjectId = readSessionValue(STORAGE_KEYS.activeProjectId);
+    const savedSurface = readSessionValue(STORAGE_KEYS.activeSurface) as ProjectSurface | null;
 
     return {
         view: savedView || 'landing',
@@ -155,14 +181,14 @@ export function saveWorkspaceSession(session: WorkspaceSessionState) {
         return;
     }
 
-    window.localStorage.setItem(STORAGE_KEYS.view, session.view);
+    writeSessionValue(STORAGE_KEYS.view, session.view);
 
     if (session.activeProjectId) {
-        window.localStorage.setItem(STORAGE_KEYS.activeProjectId, session.activeProjectId);
-        window.localStorage.setItem(STORAGE_KEYS.activeSurface, session.activeSurface || 'hub');
+        writeSessionValue(STORAGE_KEYS.activeProjectId, session.activeProjectId);
+        writeSessionValue(STORAGE_KEYS.activeSurface, session.activeSurface || 'hub');
     } else {
-        window.localStorage.removeItem(STORAGE_KEYS.activeProjectId);
-        window.localStorage.removeItem(STORAGE_KEYS.activeSurface);
+        removeSessionValue(STORAGE_KEYS.activeProjectId);
+        removeSessionValue(STORAGE_KEYS.activeSurface);
     }
 }
 
@@ -171,9 +197,9 @@ export function clearWorkspaceSession() {
         return;
     }
 
-    window.localStorage.removeItem(STORAGE_KEYS.view);
-    window.localStorage.removeItem(STORAGE_KEYS.activeProjectId);
-    window.localStorage.removeItem(STORAGE_KEYS.activeSurface);
+    removeSessionValue(STORAGE_KEYS.view);
+    removeSessionValue(STORAGE_KEYS.activeProjectId);
+    removeSessionValue(STORAGE_KEYS.activeSurface);
 }
 
 export function loadProjectDocument(projectId?: string, projectName?: string): ProjectData {

@@ -1,131 +1,273 @@
-# Innovation Sandbox
+# Innovation Sandbox for ADT
 
-Innovation Sandbox is a Next.js 16 app for running the Beyond Post-its workflow across Explore, Imagine, Implement, Test, and Tell Story.
+[Chinese documentation / 中文说明](./README.zh-CN.md)
 
-This repo now supports two runtime modes:
+## Project Context
 
-- `local-mvp`: no backend credentials required, uses browser-local persistence
-- `remote-supabase`: real auth, real database, real project and member persistence
+<p align="left">
+  <img src="./public/images/UCLSoM_Logo.jpg" alt="UCL School of Management" height="90" />
+  <img src="./public/images/logo.png" alt="Innovation Sandbox for ADT logo" height="90" />
+</p>
 
-The AI layer is still intentionally abstracted behind local service contracts so a client can replace it later with their own provider.
+This repository documents a Sandbox platform designed and built for Academy of Design Thinking. It was produced as part of the requirements for the Information Management for Business programme at University College London.
 
-## What Is Real Now
+Unless otherwise indicated, the implementation and documentation are substantially the result of my own work. The project may be freely copied and distributed provided the source is explicitly acknowledged.
 
-When `remote-supabase` is configured, the app supports:
+## Platform Overview
 
-- real sign-in and sign-up with Supabase Auth
-- Google and GitHub OAuth wiring in the auth UI
-- password reset flow
-- real user profiles
-- real projects stored in Postgres
-- real project members and permission changes
-- reusable invite links for users who have not signed in yet
-- real stage context and tool run persistence
-- remote workspace export and import
-- real API routes for workspace, profile, project, and project document data
+Innovation Sandbox is a Next.js 16 workspace for running the Beyond Post-its process across project setup, exploration, ideation, implementation, and storytelling.
 
-## Free Stack
+The repository can run in two modes:
 
-This project is designed to run on a zero-fixed-cost beta stack:
+- `local-mvp`: browser-only persistence, no cloud setup required
+- `remote-supabase`: Supabase-backed auth, projects, members, invites, and persistent workspace data
 
-- frontend and API routes on Vercel Hobby
-- auth and database on Supabase Free
-- Google OAuth through Supabase Auth social providers
+This is a single Next.js application. The frontend, API routes, auth callbacks, and deployment target all live in the same codebase, so there is no separate backend service to deploy.
 
-That keeps the demo and small-scale testing environment real without locking the client into your personal cloud setup.
+## What You Get
 
-## Environment Variables
+- marketing homepage and branded loading/auth flows
+- dashboard with project cards, review queues, assignments, and recent activity
+- project workspace with hub, context, stage navigation, and AI facilitator entry points
+- local mode for quick demos
+- remote mode for real user accounts and real project persistence
+- workspace export/import
+- invite links and optional invite emails
 
-Create `.env.local` from `.env.example`:
+## Tech Stack
+
+- Next.js 16
+- React 19
+- Supabase Auth + Postgres for remote mode
+- Vercel for web hosting and serverless API routes
+- optional Resend for invite emails
+
+## Deployment Modes
+
+| Mode | When to use it | What is required |
+| --- | --- | --- |
+| `local-mvp` | quick demo, design review, offline prototype | `npm install` and `npm run dev` |
+| `remote-supabase` | real deployment with accounts and persistent data | Supabase project, environment variables, and a Vercel deployment or local dev server |
+
+Remote mode is enabled automatically when both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are present.
+
+## Prerequisites
+
+For a full cloud deployment, prepare these first:
+
+- Node.js 20+
+- npm
+- a GitHub repository
+- a Vercel account
+- a Supabase project
+- optionally a Resend account if invite emails should be sent from the app
+
+## 1. Clone And Install
+
+```bash
+git clone https://github.com/your-org/your-repo.git
+cd your-repo
+npm install
+```
+
+## 2. Create Your Environment File
+
+Copy the example file:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Required variables:
+Current variables:
 
-```env
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
-```
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_APP_URL` | yes | Base URL for local auth redirects, password reset, invite links, and production callback URLs |
+| `NEXT_PUBLIC_SUPABASE_URL` | yes for remote mode | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes for remote mode | Supabase publishable key |
+| `DEMO_ADMIN_EMAIL` | optional | Enables the "Open Test Workspace" button on the sign-in screen |
+| `DEMO_ADMIN_PASSWORD` | optional | Password for the demo admin account |
+| `DEMO_ADMIN_NAME` | optional | Display name for the demo admin account |
+| `RESEND_API_KEY` | optional | Enables sending project invite emails |
+| `INVITE_FROM_EMAIL` | optional | Sender address used for invite emails |
 
-If the Supabase variables are omitted, the app falls back to `local-mvp` mode.
+Notes:
 
-## Supabase Setup
+- If you leave the Supabase variables empty, the app falls back to `local-mvp`.
+- For local development, `NEXT_PUBLIC_APP_URL` should be `http://localhost:3000`.
+- For production on Vercel, `NEXT_PUBLIC_APP_URL` should be your real HTTPS domain.
 
-1. Create a free Supabase project.
-2. Run the SQL migration in [supabase/migrations/20260314_000001_init_innovation_sandbox.sql](/D:/Local_Code/Extended_Project/supabase/migrations/20260314_000001_init_innovation_sandbox.sql).
-3. Copy the project URL and publishable key into `.env.local`.
-4. In Supabase Auth:
-   - enable Email auth
-   - enable Google provider
-   - optionally enable GitHub provider
-5. Set the redirect URL to:
+## 3. Set Up Supabase
 
-```text
-http://localhost:3000/auth/callback
-```
+Create a new Supabase project, then apply every SQL migration in `supabase/migrations/` in this order:
 
-For deployed environments, add:
+1. `20260314_000001_init_innovation_sandbox.sql`
+2. `20260314_000002_profile_membership.sql`
+3. `20260314_000002_project_collaboration.sql`
+4. `20260314_000003_fix_rls_recursion.sql`
+5. `20260314_000004_auth_experience_hardening.sql`
+6. `20260314_000005_fix_owner_project_bootstrap.sql`
+7. `20260314_000006_fix_projects_select_owner_policy.sql`
+8. `20260315_000007_profile_guide_preferences.sql`
+9. `20260315_000008_project_brief_metadata.sql`
 
-```text
-https://your-deployment-domain/auth/callback
-```
+The safest way is to open Supabase SQL Editor and run the files one by one in the order above.
 
-For password reset emails, set the recovery redirect to:
+After that, copy these values from Supabase into `.env.local` and later into Vercel:
 
-```text
-http://localhost:3000/auth/update-password
-https://your-deployment-domain/auth/update-password
-```
-
-## Local Development
-
-```bash
-npm install
-npm run dev
-```
-
-Open `http://localhost:3000`.
-
-## Deployment
-
-Deploy to Vercel as a standard Next.js app.
-
-Set the same public environment variables in the Vercel project:
-
-- `NEXT_PUBLIC_APP_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-## Backup And Migration
+This project does not require a Supabase service-role key for normal deployment.
 
-- local mode exports `local-mvp-v1`
-- remote mode exports `remote-supabase-v1`
-- remote imports can recreate projects, documents, existing members, and pending invite links from either snapshot shape
+## 4. Configure Supabase Auth
 
-## Handoff
+In Supabase Auth settings:
 
-For a clean client handoff, do not rely on transferring your own cloud resources.
+- enable Email auth
+- set the Site URL to your primary app URL
+- add redirect URLs for both local and deployed environments
 
-Instead:
+Recommended redirect URLs:
 
-- give the client this repository
-- give the client `.env.example`
-- give the client the Supabase SQL migration
-- have the client create their own Supabase, Vercel, and OAuth credentials
-- redeploy under the client-owned accounts
+```text
+http://localhost:3000
+http://localhost:3000/auth/callback
+http://localhost:3000/auth/update-password
+https://your-domain.example
+https://your-domain.example/auth/callback
+https://your-domain.example/auth/update-password
+```
 
-The checklist for that rebuild is in [customer-rebuild-checklist.md](/D:/Local_Code/Extended_Project/docs/customer-rebuild-checklist.md).
+Why all three are needed:
 
-The current runtime and endpoint contract is documented in [mvp-api-spec.md](/D:/Local_Code/Extended_Project/docs/mvp-api-spec.md).
+- the app uses the root URL for some confirmation and password-reset flows
+- `/auth/callback` is used for OAuth-style callback handling and invite flows
+- `/auth/update-password` is used by the password reset screen
 
-## AI Replacement Point
+If you plan to use social auth in Supabase later, these redirect URLs already cover the callback routes this app expects.
 
-All AI interactions are routed through:
+## 5. Run Locally
 
-- [aiGateway.ts](/D:/Local_Code/Extended_Project/src/lib/services/aiGateway.ts)
-- [api.ts](/D:/Local_Code/Extended_Project/src/lib/contracts/api.ts)
+For local-only demo mode:
 
-That is the seam to replace when the client later connects a real model provider.
+```bash
+npm run dev
+```
+
+For full remote mode:
+
+1. fill in the Supabase values in `.env.local`
+2. run the same command:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+Useful checks:
+
+- `npm run lint`
+- `npm run build`
+
+## 6. Deploy To Vercel
+
+1. Push the repository to GitHub.
+2. Import the repository into Vercel as a standard Next.js project.
+3. Add the same environment variables in Vercel Project Settings.
+4. Deploy.
+5. After the first deploy, confirm that your production domain is also listed in Supabase Auth redirect URLs and Site URL.
+
+Recommended Vercel environment setup:
+
+- Development: local values if you use Vercel development environments
+- Preview: preview domain values only if you need auth flows to work on previews
+- Production: your real production domain in `NEXT_PUBLIC_APP_URL`
+
+If you only care about production auth flows, setting the variables for Production is enough.
+
+## 7. Optional Features
+
+### Invite Emails
+
+Project invite links work without email delivery. Team members can copy and share invite links manually.
+
+If you want the "Send Email" action to work from Project Settings, also set:
+
+```env
+RESEND_API_KEY=your_resend_api_key
+INVITE_FROM_EMAIL=Innovation Sandbox <onboarding@your-domain.example>
+```
+
+Without `RESEND_API_KEY`, the app still runs, but the invite email endpoint will return an error when used.
+
+### Demo Admin Access
+
+If you want a one-click demo workspace button on the sign-in page, set:
+
+```env
+DEMO_ADMIN_EMAIL=admin@example.com
+DEMO_ADMIN_PASSWORD=change_this_password
+DEMO_ADMIN_NAME=Sandbox Admin
+```
+
+When configured, the sign-in page shows an `Open Test Workspace` button. The backend will try to sign in with that account and will create it if it does not exist yet.
+
+## 8. Production Validation Checklist
+
+Before calling the deployment done, verify:
+
+- the homepage loads correctly
+- sign-in works
+- registration works
+- password reset returns to the app correctly
+- a user can create a project
+- opening a project from the dashboard creates a new tab and keeps the original dashboard tab unchanged
+- refreshing inside a project keeps the user in the same project
+- project edits persist after refresh
+- project invite links can be created
+- invite emails send successfully if Resend is configured
+- workspace export/import works
+- `npm run build` passes locally or in CI
+
+## 9. Troubleshooting
+
+### The app always behaves like a local demo
+
+`remote-supabase` only turns on when both of these are set:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
+### Auth redirects back to the wrong page or fails
+
+Usually one of these is wrong:
+
+- `NEXT_PUBLIC_APP_URL`
+- Supabase Site URL
+- Supabase redirect URLs
+
+Make sure local and production URLs are both configured exactly, including `/auth/callback` and `/auth/update-password`.
+
+### Invite emails fail
+
+Set `RESEND_API_KEY`. The manual invite-link flow still works even without email delivery.
+
+### The demo admin button does not appear
+
+Set both `DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD`.
+
+## Additional Documentation
+
+- [API and runtime notes](docs/mvp-api-spec.md)
+- [Rebuild checklist](docs/customer-rebuild-checklist.md)
+
+## AI Integration Boundary
+
+The current AI layer is intentionally isolated so it can be replaced later without rewriting the product surface.
+
+Primary handoff points:
+
+- `src/lib/services/aiGateway.ts`
+- `src/lib/contracts/api.ts`
