@@ -96,13 +96,17 @@ export function MethodSplitView({
     const [isReferencePreviewOpen, setIsReferencePreviewOpen] = useState(false);
     const [isReferenceHelpOpen, setIsReferenceHelpOpen] = useState(false);
     const [activePanel, setActivePanel] = useState<'ai' | 'team'>('ai');
+    const [isImmersiveDesktopViewport, setIsImmersiveDesktopViewport] = useState(
+        () => (typeof window === 'undefined' ? false : window.innerWidth >= 1280)
+    );
     const [threadDraft, setThreadDraft] = useState({ title: '', body: '', nextStep: '' });
     const [captureDraft, setCaptureDraft] = useState({ type: 'artifact', title: '', summary: '', status: 'draft' });
-    const [referenceHeaderHeight, setReferenceHeaderHeight] = useState(0);
     const hasPersistedResponsesRef = useRef(false);
     const onSaveRef = useRef(onSave);
     const referenceHeaderRef = useRef<HTMLDivElement | null>(null);
     const referenceTabsRef = useRef<HTMLDivElement | null>(null);
+    const immersiveDesktopControlsRef = useRef<HTMLDivElement | null>(null);
+    const immersiveMobileControlsRef = useRef<HTMLDivElement | null>(null);
     const referenceHelpRef = useRef<HTMLDivElement | null>(null);
     const promptBoardRef = useRef<HTMLDivElement | null>(null);
 
@@ -203,28 +207,28 @@ export function MethodSplitView({
     }, [isReferenceHelpOpen]);
 
     useEffect(() => {
-        if (guideStep === 'card-ai') {
-            setActivePanel('ai');
-        }
-    }, [guideStep]);
-
-    useEffect(() => {
-        const headerElement = referenceHeaderRef.current;
-        if (!headerElement || typeof ResizeObserver === 'undefined') {
+        if (typeof window === 'undefined') {
             return;
         }
 
-        const updateHeight = () => {
-            setReferenceHeaderHeight(headerElement.getBoundingClientRect().height);
+        const updateViewportMode = () => {
+            setIsImmersiveDesktopViewport(window.innerWidth >= 1280);
         };
 
-        updateHeight();
+        updateViewportMode();
+        window.addEventListener('resize', updateViewportMode);
 
-        const observer = new ResizeObserver(() => updateHeight());
-        observer.observe(headerElement);
+        return () => window.removeEventListener('resize', updateViewportMode);
+    }, []);
 
-        return () => observer.disconnect();
-    }, [card.id, activePanel]);
+    useEffect(() => {
+        if (guideStep === 'card-ai') {
+            setActivePanel('ai');
+            if (!isImmersiveDesktopViewport) {
+                setIsMobileAiPanelOpen(true);
+            }
+        }
+    }, [guideStep, isImmersiveDesktopViewport]);
 
     const referencePreviewShellStyle: React.CSSProperties = {
         background: 'linear-gradient(180deg, var(--panel-strong), var(--panel))'
@@ -234,10 +238,6 @@ export function MethodSplitView({
         backgroundImage: 'linear-gradient(to right, color-mix(in srgb, var(--line) 100%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--line) 100%, transparent) 1px, transparent 1px)',
         backgroundSize: '28px 28px'
     };
-
-    const desktopPanelStyle: React.CSSProperties = {
-        '--reference-header-height': `${referenceHeaderHeight}px`
-    } as React.CSSProperties;
 
     const buildAiResponse = (prompt: string) => {
         const activeContext = [
@@ -388,10 +388,11 @@ export function MethodSplitView({
     const desktopPanelClasses = cn(
         'relative surface-panel-strong flex flex-col transition-transform duration-300 ease-in-out border-t shadow-[0_-12px_40px_rgba(15,23,42,0.12)]',
         isImmersiveLayout
-            ? 'lg:mb-5 lg:mr-5 lg:mt-[calc(var(--reference-header-height)+1.25rem)] lg:h-[calc(100%-var(--reference-header-height)-2.5rem)] lg:w-[38%] lg:translate-y-0 lg:static lg:rounded-[32px] lg:border lg:shadow-[0_28px_64px_rgba(15,23,42,0.08)]'
+            ? 'absolute bottom-0 left-0 right-0 z-40 h-[82%] rounded-t-[28px] xl:order-1 xl:h-full xl:w-[38%] xl:translate-y-0 xl:static xl:rounded-[32px] xl:border xl:shadow-[0_28px_64px_rgba(15,23,42,0.08)]'
             : 'lg:w-[38%] lg:h-full lg:translate-y-0 lg:static lg:shadow-none',
-        'absolute bottom-0 left-0 right-0 h-[82%] z-40 rounded-t-[28px]',
-        isMobileAiPanelOpen ? 'translate-y-0' : 'translate-y-[110%]'
+        isImmersiveLayout
+            ? (isMobileAiPanelOpen ? 'translate-y-0' : 'translate-y-[110%] xl:translate-y-0')
+            : (isMobileAiPanelOpen ? 'translate-y-0' : 'translate-y-[110%]')
     );
 
     const classicReferencePane = (
@@ -509,7 +510,7 @@ export function MethodSplitView({
     );
 
     return (
-        <div className="relative flex flex-col lg:flex-row h-full overflow-hidden">
+        <div className={cn('relative flex h-full overflow-hidden', isImmersiveLayout ? 'flex-col xl:flex-row' : 'flex-col lg:flex-row')}>
             <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--body-top),var(--body-bottom))]"></div>
             <div className={cn('absolute inset-0 bg-gradient-to-br opacity-90', theme.accentGradient)}></div>
             {isImmersiveLayout && (
@@ -522,31 +523,21 @@ export function MethodSplitView({
             )}
 
             {isImmersiveLayout ? (
-            <div className="relative flex h-full w-full shrink-0 flex-col overflow-hidden bg-[linear-gradient(180deg,var(--panel-strong),var(--panel))] lg:w-[58%]">
+            <div className="relative order-1 flex h-full w-full shrink-0 flex-col overflow-visible bg-[linear-gradient(180deg,var(--panel-strong),var(--panel))] xl:order-2 xl:w-[62%]">
                 <div className={cn('pointer-events-none absolute right-[-6%] top-[-10%] h-[22rem] w-[22rem] rounded-full opacity-55 blur-[92px]', theme.accentGlow)} />
-                <div className="pointer-events-none absolute inset-y-0 right-[-2.5rem] hidden w-20 bg-[linear-gradient(90deg,rgba(255,255,255,0.18),rgba(255,255,255,0.03),transparent)] opacity-75 blur-[22px] dark:bg-[linear-gradient(90deg,rgba(148,163,184,0.12),rgba(15,23,42,0.03),transparent)] lg:block" />
+                <div className="pointer-events-none absolute inset-y-0 right-[-2.5rem] hidden w-20 bg-[linear-gradient(90deg,rgba(255,255,255,0.18),rgba(255,255,255,0.03),transparent)] opacity-75 blur-[22px] dark:bg-[linear-gradient(90deg,rgba(148,163,184,0.12),rgba(15,23,42,0.03),transparent)] xl:block" />
 
-                <div ref={referenceHeaderRef} className="relative z-10 flex items-start justify-between gap-4 border-b border-[var(--panel-border)] px-4 py-4 lg:px-6 lg:py-5">
-                    <div className="min-w-0">
-                        <div className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]', theme.accentBorder, theme.accentSoft, theme.accentText)}>
-                            Reference Deck
-                        </div>
-                        <h2 className="mt-3 text-2xl font-display font-semibold text-[var(--foreground)] lg:text-[2rem]">{card.title}</h2>
-                        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--foreground-soft)] lg:text-base">{card.purpose}</p>
-                    </div>
-                    <div className="hidden lg:flex flex-col items-end gap-3 pt-8">
-                        <Button variant="secondary" size="sm" onClick={onBack}>
-                            <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                        </Button>
-                        <div ref={referenceTabsRef} className="flex items-center gap-2">
-                            <div className="inline-flex items-center gap-1 rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)]/92 p-1 shadow-[0_16px_36px_rgba(15,23,42,0.1)] backdrop-blur-xl">
+                <div ref={referenceHeaderRef} className="relative z-30 hidden border-b border-[var(--panel-border)] px-4 py-4 lg:px-6 lg:py-5 xl:block">
+                    <div ref={immersiveDesktopControlsRef} className="flex items-center justify-end gap-3">
+                        <div ref={referenceTabsRef} className="flex items-center gap-3">
+                            <div className="inline-flex items-center gap-1.5 rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel-strong)]/92 p-1.5 shadow-[0_16px_36px_rgba(15,23,42,0.1)] backdrop-blur-xl">
                                 {referencePages.map(page => (
                                     <button
                                         key={`${page.id}-header`}
                                         type="button"
                                         onClick={() => handleSelectReferencePage(page.id)}
                                         className={cn(
-                                            'rounded-full px-4 py-2 text-xs font-semibold transition-all',
+                                            'rounded-[18px] px-5 py-3 text-sm font-semibold transition-all',
                                             page.id === activeReferencePage.id
                                                 ? `${theme.accentSolid} border-transparent text-white shadow-[0_10px_22px_rgba(15,23,42,0.14)]`
                                                 : 'text-[var(--foreground-soft)] hover:bg-[var(--panel)] hover:text-[var(--foreground)]'
@@ -565,16 +556,16 @@ export function MethodSplitView({
                                 <button
                                     type="button"
                                     onClick={() => setIsReferenceHelpOpen((current) => !current)}
-                                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)]/94 text-[var(--foreground-soft)] shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-colors hover:text-[var(--foreground)]"
+                                    className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)]/94 text-[var(--foreground-soft)] shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-colors hover:text-[var(--foreground)]"
                                     aria-label="How to use this card view"
                                     aria-expanded={isReferenceHelpOpen}
                                 >
-                                    <CircleHelp className="h-4 w-4" />
+                                    <CircleHelp className="h-[1.15rem] w-[1.15rem]" />
                                 </button>
 
                                 <div
                                     className={cn(
-                                        'absolute right-0 top-[calc(100%+0.7rem)] z-20 w-[16rem] rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-4 text-sm leading-relaxed text-[var(--foreground-soft)] shadow-[0_24px_52px_rgba(15,23,42,0.16)] backdrop-blur-xl transition-all duration-200',
+                                        'absolute right-0 top-[calc(100%+0.7rem)] z-50 w-[16rem] rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-4 text-sm leading-relaxed text-[var(--foreground-soft)] shadow-[0_24px_52px_rgba(15,23,42,0.16)] backdrop-blur-xl transition-all duration-200',
                                         isReferenceHelpOpen ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
                                     )}
                                 >
@@ -590,16 +581,13 @@ export function MethodSplitView({
                             <button
                                 type="button"
                                 onClick={() => setIsReferencePreviewOpen(true)}
-                                className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)]/94 px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--foreground-soft)] shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-colors hover:text-[var(--foreground)]"
+                                className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)]/94 px-5 py-3 text-sm font-semibold text-[var(--foreground-soft)] shadow-[0_12px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-colors hover:text-[var(--foreground)]"
                             >
                                 <Expand className="h-3.5 w-3.5" />
                                 Open large view
                             </button>
                         </div>
                     </div>
-                    <Button className="lg:hidden" variant="secondary" size="sm" onClick={onBack}>
-                        <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                    </Button>
                 </div>
 
                 <div className="relative z-10 flex min-h-0 flex-1 overflow-hidden p-4 lg:p-5">
@@ -610,46 +598,61 @@ export function MethodSplitView({
                         <div className={cn('pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r', theme.accentGradient)} />
                         <div className="pointer-events-none absolute inset-0 opacity-[0.08] dark:opacity-[0.2]" style={referencePreviewGridStyle} />
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.26),transparent_46%)] opacity-55 dark:bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.08),transparent_52%)] dark:opacity-80" />
-                        <div className="relative z-20 flex items-center justify-between gap-2 border-b border-[var(--panel-border)] px-3 py-3 lg:hidden">
-                            <div className="flex items-center gap-2">
-                                {referencePages.map(page => (
-                                    <button
-                                        key={`${page.id}-mobile`}
-                                        type="button"
-                                        onClick={() => handleSelectReferencePage(page.id)}
-                                        className={cn(
-                                            'rounded-full border px-3 py-2 text-xs font-semibold',
-                                            page.id === activeReferencePage.id
-                                                ? `${theme.accentSolid} border-transparent text-white`
-                                                : 'border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground-soft)]'
-                                        )}
-                                    >
-                                        {page.id.endsWith('-front') ? 'Front' : 'AI Prompt'}
-                                    </button>
-                                ))}
+                        <div ref={immersiveMobileControlsRef} className="relative z-30 border-b border-[var(--panel-border)] px-3 py-3 xl:hidden">
+                            <div className="flex items-start justify-between gap-3">
+                                <Button variant="secondary" size="sm" onClick={onBack}>
+                                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                                </Button>
+                                <div className="min-w-0 text-right">
+                                    <div className={cn('text-[10px] font-semibold uppercase tracking-[0.22em]', theme.accentText)}>
+                                        Reference Deck
+                                    </div>
+                                    <div className="mt-1 text-base font-display font-semibold text-[var(--foreground)]">
+                                        {card.title}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsReferenceHelpOpen((current) => !current)}
-                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground-soft)]"
-                                    aria-label="How to use this card view"
-                                    aria-expanded={isReferenceHelpOpen}
-                                >
-                                    <CircleHelp className="h-4 w-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsReferencePreviewOpen(true)}
-                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground-soft)]"
-                                    aria-label="Open large view"
-                                >
-                                    <Expand className="h-4 w-4" />
-                                </button>
+                            <div className="mt-3 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    {referencePages.map(page => (
+                                        <button
+                                            key={`${page.id}-mobile`}
+                                            type="button"
+                                            onClick={() => handleSelectReferencePage(page.id)}
+                                            className={cn(
+                                                'rounded-full border px-3 py-2 text-xs font-semibold',
+                                                page.id === activeReferencePage.id
+                                                    ? `${theme.accentSolid} border-transparent text-white`
+                                                    : 'border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground-soft)]'
+                                            )}
+                                        >
+                                            {page.id.endsWith('-front') ? 'Front' : 'AI Prompt'}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsReferenceHelpOpen((current) => !current)}
+                                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground-soft)]"
+                                        aria-label="How to use this card view"
+                                        aria-expanded={isReferenceHelpOpen}
+                                    >
+                                        <CircleHelp className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsReferencePreviewOpen(true)}
+                                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground-soft)]"
+                                        aria-label="Open large view"
+                                    >
+                                        <Expand className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         {isReferenceHelpOpen && (
-                            <div className="relative z-20 mx-3 mt-3 rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm leading-relaxed text-[var(--foreground-soft)] lg:hidden">
+                            <div className="relative z-30 mx-3 mt-3 rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm leading-relaxed text-[var(--foreground-soft)] xl:hidden">
                                 Front explains the method. AI Prompt Page helps you run it faster.
                             </div>
                         )}
@@ -659,7 +662,7 @@ export function MethodSplitView({
                             className="group relative flex h-full w-full cursor-zoom-in items-center justify-center overflow-hidden px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--panel-strong)] lg:px-4 lg:py-4"
                             aria-label="Preview reference image"
                         >
-                            <div key={activeReferencePage.id} className="relative h-full min-h-[36rem] w-full animate-reference-page-in lg:min-h-[42rem]">
+                            <div key={activeReferencePage.id} className="relative h-full min-h-[24rem] w-full animate-reference-page-in sm:min-h-[30rem] lg:min-h-[38rem] xl:min-h-[42rem]">
                                 <Image
                                     src={activeReferencePage.image}
                                     alt="Method Reference"
@@ -676,10 +679,7 @@ export function MethodSplitView({
             </div>
             ) : classicReferencePane}
 
-            <div
-                style={isImmersiveLayout ? desktopPanelStyle : undefined}
-                className={desktopPanelClasses}
-            >
+            <div className={desktopPanelClasses}>
                 <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-[var(--panel-border)]">
                     <div className="space-y-3">
                         <span className={cn('font-semibold flex items-center gap-2', theme.accentText)}>
@@ -718,26 +718,44 @@ export function MethodSplitView({
                     </button>
                 </div>
 
-                <div className="hidden lg:block border-b border-[var(--panel-border)] px-8 py-7 shrink-0">
+                <div className={cn('border-b border-[var(--panel-border)] px-8 py-7 shrink-0', isImmersiveLayout ? 'hidden xl:block' : 'hidden lg:block')}>
                     {isImmersiveLayout ? (
                         <>
                             <div className="flex items-start justify-between gap-4">
                                 <div className="min-w-0">
-                                    <div className={cn('text-[11px] uppercase tracking-[0.22em] font-semibold', theme.accentText)}>
-                                        {desktopPanelContent.eyebrow}
+                                    <div className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]', theme.accentBorder, theme.accentSoft, theme.accentText)}>
+                                        Reference Deck
                                     </div>
-                                    <h3 className="mt-3 text-[1.7rem] font-display font-semibold leading-tight text-[var(--foreground)]">
-                                        {desktopPanelContent.title}
-                                    </h3>
-                                    <p className="mt-2 max-w-md text-sm leading-relaxed text-[var(--foreground-soft)]">
-                                        {desktopPanelContent.description}
+                                    <h2 className="mt-4 text-[2rem] font-display font-semibold leading-[0.98] text-[var(--foreground)]">
+                                        {card.title}
+                                    </h2>
+                                    <p className="mt-3 max-w-md text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                        {card.purpose}
                                     </p>
                                 </div>
-                                <div className={cn('rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em]', theme.accentBorder, theme.accentSoft, theme.accentText)}>
-                                    {desktopPanelContent.chip}
+                                <Button variant="secondary" size="sm" onClick={onBack}>
+                                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                                </Button>
+                            </div>
+                            <div className={cn('mt-6 rounded-[28px] border p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]', theme.accentBorder, theme.accentSoft)}>
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <div className={cn('text-[11px] uppercase tracking-[0.22em] font-semibold', theme.accentText)}>
+                                            {desktopPanelContent.eyebrow}
+                                        </div>
+                                        <h3 className="mt-3 text-[1.45rem] font-display font-semibold leading-tight text-[var(--foreground)]">
+                                            {desktopPanelContent.title}
+                                        </h3>
+                                        <p className="mt-2 max-w-md text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                            {desktopPanelContent.description}
+                                        </p>
+                                    </div>
+                                    <div className={cn('rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em]', theme.accentBorder, theme.accentSoft, theme.accentText)}>
+                                        {desktopPanelContent.chip}
+                                    </div>
                                 </div>
                             </div>
-                            <div className="mt-4 flex gap-2">
+                            <div className="mt-5 flex gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setActivePanel('ai')}
@@ -951,7 +969,9 @@ export function MethodSplitView({
 
             <SpotlightGuide
                 open={guideStep === 'card-pages'}
-                targetRef={referenceTabsRef}
+                targetRef={isImmersiveLayout
+                    ? (isImmersiveDesktopViewport ? immersiveDesktopControlsRef : immersiveMobileControlsRef)
+                    : referenceTabsRef}
                 currentStep={cardPagesGuide?.currentStep || 7}
                 totalSteps={cardPagesGuide?.totalSteps || 8}
                 placement="left"

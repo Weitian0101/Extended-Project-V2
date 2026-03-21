@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Button } from '@/components/ui/Button';
 
@@ -33,76 +34,167 @@ interface RectState {
     height: number;
 }
 
-function resolvePlacement(rect: RectState, preferredPlacement: GuidePlacement) {
-    const viewportPadding = 16;
-    const spacing = 18;
-    const availableTop = rect.top - viewportPadding;
-    const availableBottom = window.innerHeight - rect.top - rect.height - viewportPadding;
-    const availableLeft = rect.left - viewportPadding;
-    const availableRight = window.innerWidth - rect.left - rect.width - viewportPadding;
-
-    if (preferredPlacement === 'bottom' && availableBottom < 290 && availableTop > availableBottom) {
-        return 'top';
-    }
-
-    if (preferredPlacement === 'top' && availableTop < 240 && availableBottom > availableTop) {
-        return 'bottom';
-    }
-
-    if (preferredPlacement === 'right' && availableRight < 340 && availableLeft > availableRight + spacing) {
-        return 'left';
-    }
-
-    if (preferredPlacement === 'left' && availableLeft < 340 && availableRight > availableLeft + spacing) {
-        return 'right';
-    }
-
-    return preferredPlacement;
+interface GuideCardSize {
+    width: number;
+    height: number;
 }
 
-function getPlacementStyle(rect: RectState | null, placement: GuidePlacement) {
-    const cardWidth = Math.min(344, Math.max(window.innerWidth - 32, 280));
-    const cardHeightAllowance = 252;
-    const padding = 18;
+interface ViewportMetrics {
+    width: number;
+    height: number;
+    offsetTop: number;
+    offsetLeft: number;
+}
+
+function clamp(value: number, min: number, max: number) {
+    if (max < min) {
+        return min;
+    }
+
+    return Math.min(Math.max(value, min), max);
+}
+
+function getViewportMetrics(): ViewportMetrics {
+    if (typeof window === 'undefined') {
+        return {
+            width: 1280,
+            height: 720,
+            offsetTop: 0,
+            offsetLeft: 0
+        };
+    }
+
+    const visualViewport = window.visualViewport;
+    if (!visualViewport) {
+        return {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            offsetTop: 0,
+            offsetLeft: 0
+        };
+    }
+
+    return {
+        width: visualViewport.width,
+        height: visualViewport.height,
+        offsetTop: visualViewport.offsetTop,
+        offsetLeft: visualViewport.offsetLeft
+    };
+}
+
+function resolvePlacement(
+    rect: RectState,
+    preferredPlacement: GuidePlacement,
+    cardWidth: number,
+    cardHeight: number,
+    viewport: ViewportMetrics
+) {
     const viewportPadding = 16;
+    const spacing = 18;
+    const availableTop = rect.top - viewport.offsetTop - viewportPadding;
+    const availableBottom = viewport.offsetTop + viewport.height - rect.top - rect.height - viewportPadding;
+    const availableLeft = rect.left - viewport.offsetLeft - viewportPadding;
+    const availableRight = viewport.offsetLeft + viewport.width - rect.left - rect.width - viewportPadding;
+
+    const requiredSpace: Record<GuidePlacement, number> = {
+        top: cardHeight + spacing,
+        bottom: cardHeight + spacing,
+        left: cardWidth + spacing,
+        right: cardWidth + spacing
+    };
+    const availableSpace: Record<GuidePlacement, number> = {
+        top: availableTop,
+        bottom: availableBottom,
+        left: availableLeft,
+        right: availableRight
+    };
+
+    if (availableSpace[preferredPlacement] >= requiredSpace[preferredPlacement]) {
+        return preferredPlacement;
+    }
+
+    const rankedPlacements: GuidePlacement[] = ['bottom', 'top', 'right', 'left'];
+    const sortedPlacements = rankedPlacements.sort((left, right) => {
+        const leftOverflow = availableSpace[left] - requiredSpace[left];
+        const rightOverflow = availableSpace[right] - requiredSpace[right];
+
+        if (left === preferredPlacement) {
+            return -1;
+        }
+
+        if (right === preferredPlacement) {
+            return 1;
+        }
+
+        return rightOverflow - leftOverflow;
+    });
+
+    return sortedPlacements[0];
+}
+
+function getPlacementStyle(rect: RectState | null, placement: GuidePlacement, cardSize: GuideCardSize) {
+    const viewport = getViewportMetrics();
+    const viewportPadding = 16;
+    const padding = 18;
+    const maxWidth = Math.max(Math.min(viewport.width - 24, 360), 220);
+    const minWidth = Math.min(280, maxWidth);
+    const cardWidth = clamp(cardSize.width || maxWidth, minWidth, maxWidth);
+    const maxHeight = Math.max(Math.min(viewport.height - viewportPadding * 2, 520), 180);
+    const cardHeight = Math.min(cardSize.height || 308, maxHeight);
+    const minTop = viewport.offsetTop + viewportPadding;
+    const maxTop = viewport.offsetTop + viewport.height - cardHeight - viewportPadding;
+    const minLeft = viewport.offsetLeft + viewportPadding;
+    const maxLeft = viewport.offsetLeft + viewport.width - cardWidth - viewportPadding;
+    const isCompactViewport = viewport.width < 960 || viewport.height < 780;
 
     if (!rect) {
         return {
-            top: Math.max((window.innerHeight - cardHeightAllowance) / 2, 24),
-            left: Math.max((window.innerWidth - cardWidth) / 2, 16),
-            width: cardWidth
+            top: clamp(viewport.offsetTop + (viewport.height - cardHeight) / 2, minTop, maxTop),
+            left: clamp(viewport.offsetLeft + (viewport.width - cardWidth) / 2, minLeft, maxLeft),
+            width: cardWidth,
+            maxHeight
+        };
+    }
+
+    if (isCompactViewport) {
+        return {
+            top: clamp(viewport.offsetTop + viewport.height - cardHeight - viewportPadding, minTop, maxTop),
+            left: clamp(viewport.offsetLeft + (viewport.width - cardWidth) / 2, minLeft, maxLeft),
+            width: cardWidth,
+            maxHeight
         };
     }
 
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    const resolvedPlacement = resolvePlacement(rect, placement);
+    const resolvedPlacement = resolvePlacement(rect, placement, cardWidth, cardHeight, viewport);
 
     let top = rect.top + rect.height + padding;
     let left = centerX - cardWidth / 2;
 
     if (resolvedPlacement === 'top') {
-        top = rect.top - cardHeightAllowance - padding;
+        top = rect.top - cardHeight - padding;
         left = centerX - cardWidth / 2;
     }
 
     if (resolvedPlacement === 'right') {
-        top = centerY - cardHeightAllowance / 2;
+        top = centerY - cardHeight / 2;
         left = rect.left + rect.width + padding;
     }
 
     if (resolvedPlacement === 'left') {
-        top = centerY - cardHeightAllowance / 2;
+        top = centerY - cardHeight / 2;
         left = rect.left - cardWidth - padding;
     }
 
-    const clampedTop = Math.min(Math.max(top, viewportPadding), window.innerHeight - cardHeightAllowance - viewportPadding);
-    const clampedLeft = Math.min(Math.max(left, viewportPadding), window.innerWidth - cardWidth - viewportPadding);
+    const clampedTop = clamp(top, minTop, maxTop);
+    const clampedLeft = clamp(left, minLeft, maxLeft);
 
     return {
         top: clampedTop,
         left: clampedLeft,
-        width: cardWidth
+        width: cardWidth,
+        maxHeight
     };
 }
 
@@ -121,6 +213,11 @@ export function SpotlightGuide({
     onSkip
 }: SpotlightGuideProps) {
     const [rect, setRect] = useState<RectState | null>(null);
+    const [cardSize, setCardSize] = useState<GuideCardSize>({
+        width: 0,
+        height: 308
+    });
+    const guideCardRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (!open) {
@@ -143,52 +240,129 @@ export function SpotlightGuide({
             });
         };
 
-        targetRef?.current?.scrollIntoView({
+        const targetElement = targetRef?.current;
+        let resizeObserver: ResizeObserver | null = null;
+        const settleTimeoutId = window.setTimeout(updateRect, 240);
+
+        targetElement?.scrollIntoView({
             behavior: 'smooth',
-            block: 'nearest',
-            inline: 'nearest'
+            block: 'center',
+            inline: 'center'
         });
-        updateRect();
+        window.requestAnimationFrame(updateRect);
+        window.requestAnimationFrame(() => window.requestAnimationFrame(updateRect));
         window.addEventListener('resize', updateRect);
         window.addEventListener('scroll', updateRect, true);
+        window.visualViewport?.addEventListener('resize', updateRect);
+        window.visualViewport?.addEventListener('scroll', updateRect);
+
+        if (targetElement && typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(() => updateRect());
+            resizeObserver.observe(targetElement);
+        }
 
         return () => {
+            window.clearTimeout(settleTimeoutId);
+            resizeObserver?.disconnect();
             window.removeEventListener('resize', updateRect);
             window.removeEventListener('scroll', updateRect, true);
+            window.visualViewport?.removeEventListener('resize', updateRect);
+            window.visualViewport?.removeEventListener('scroll', updateRect);
         };
     }, [open, targetRef]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const guideCard = guideCardRef.current;
+        if (!guideCard) {
+            return;
+        }
+
+        const updateCardSize = () => {
+            const nextRect = guideCard.getBoundingClientRect();
+            setCardSize({
+                width: nextRect.width,
+                height: nextRect.height
+            });
+        };
+
+        updateCardSize();
+
+        if (typeof ResizeObserver === 'undefined') {
+            window.addEventListener('resize', updateCardSize);
+            return () => window.removeEventListener('resize', updateCardSize);
+        }
+
+        const resizeObserver = new ResizeObserver(() => updateCardSize());
+        resizeObserver.observe(guideCard);
+        window.addEventListener('resize', updateCardSize);
+
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', updateCardSize);
+        };
+    }, [currentStep, description, open, primaryAction?.label, purpose, secondaryAction?.label, title, totalSteps]);
 
     const cardStyle = useMemo(() => {
         if (!open || typeof window === 'undefined') {
             return undefined;
         }
 
-        return getPlacementStyle(rect, placement);
-    }, [open, placement, rect]);
+        return getPlacementStyle(rect, placement, cardSize);
+    }, [cardSize, open, placement, rect]);
+
+    const highlightStyle = useMemo(() => {
+        if (!open || !rect || typeof window === 'undefined') {
+            return undefined;
+        }
+
+        const viewport = getViewportMetrics();
+        const rawTop = rect.top - 6;
+        const rawLeft = rect.left - 6;
+        const rawBottom = rect.top + rect.height + 6;
+        const rawRight = rect.left + rect.width + 6;
+        const minTop = viewport.offsetTop + 4;
+        const minLeft = viewport.offsetLeft + 4;
+        const maxBottom = viewport.offsetTop + viewport.height - 4;
+        const maxRight = viewport.offsetLeft + viewport.width - 4;
+        const top = clamp(rawTop, minTop, maxBottom - 24);
+        const left = clamp(rawLeft, minLeft, maxRight - 24);
+        const bottom = clamp(rawBottom, top + 24, maxBottom);
+        const right = clamp(rawRight, left + 24, maxRight);
+
+        return {
+            top,
+            left,
+            width: right - left,
+            height: bottom - top
+        };
+    }, [open, rect]);
 
     if (!open) {
         return null;
     }
 
-    return (
-        <div className="pointer-events-none fixed inset-0 z-[80]">
+    const guideOverlay = (
+        <div className="pointer-events-none fixed inset-0 z-[160]">
             <div className="absolute inset-0 bg-slate-950/7" />
 
-            {rect && (
+            {highlightStyle && (
                 <div
                     className="absolute rounded-[28px] border border-sky-300 bg-transparent shadow-[0_0_0_1px_rgba(255,255,255,0.4),0_0_0_10px_rgba(14,165,233,0.08),0_18px_42px_rgba(14,165,233,0.16)] transition-all duration-200"
-                    style={{
-                        top: rect.top - 6,
-                        left: rect.left - 6,
-                        width: rect.width + 12,
-                        height: rect.height + 12
-                    }}
+                    style={highlightStyle}
                 />
             )}
 
             <div
+                ref={guideCardRef}
                 className="pointer-events-auto absolute rounded-[28px] border border-[var(--panel-border)] bg-[color:var(--panel-strong)]/97 p-4 shadow-[0_20px_44px_rgba(15,23,42,0.18)] backdrop-blur-md transition-all duration-200"
-                style={cardStyle}
+                style={{
+                    ...cardStyle,
+                    overflowY: 'auto'
+                }}
             >
                 <div className="flex items-center justify-between gap-4">
                     <div className="inline-flex rounded-full border border-sky-200/80 bg-sky-50/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700">
@@ -234,4 +408,10 @@ export function SpotlightGuide({
             </div>
         </div>
     );
+
+    if (typeof document === 'undefined') {
+        return guideOverlay;
+    }
+
+    return createPortal(guideOverlay, document.body);
 }

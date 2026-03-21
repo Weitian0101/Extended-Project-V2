@@ -15,6 +15,12 @@ import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { DEFAULT_USER } from '@/data/workspaceSeed';
 import { WorkspaceExportDto, WorkspaceShellDto } from '@/lib/contracts/api';
 import { loadWorkspaceBrowserState, useWorkspaceBrowserHistory } from '@/hooks/useWorkspaceBrowserHistory';
+import {
+    clearOnboardingGuideSession,
+    getGuideStepForView,
+    loadOnboardingGuideSession,
+    saveOnboardingGuideSession
+} from '@/lib/services/onboardingGuide';
 import { clearWorkspaceSession, loadWorkspaceSession, saveWorkspaceSession } from '@/lib/services/mvpWorkspace';
 import { fetchApiJson } from '@/lib/services/remoteApi';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -85,6 +91,12 @@ function parseEmailRegistrationStatus(value: unknown): EmailRegistrationStatus {
 }
 
 export function RemoteWorkspaceShell() {
+    type WorkspaceReturnState = {
+        view: 'dashboard' | 'sandbox';
+        activeProjectId: string | null;
+        activeSurface: ProjectSurface;
+    };
+
     const supabase = useMemo(() => createSupabaseBrowserClient(), []);
     const [view, setView] = useState<AppViewState>('landing');
     const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
@@ -92,8 +104,16 @@ export function RemoteWorkspaceShell() {
     const [projects, setProjects] = useState<WorkspaceProject[]>([]);
     const [profile, setProfile] = useState<UserProfileData>(DEFAULT_USER);
     const [collaborationOverview, setCollaborationOverview] = useState<WorkspaceShellDto['collaborationOverview']>();
-    const [profileReturnView, setProfileReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
-    const [learningCenterReturnView, setLearningCenterReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
+    const [profileReturnState, setProfileReturnState] = useState<WorkspaceReturnState>({
+        view: 'dashboard',
+        activeProjectId: null,
+        activeSurface: 'hub'
+    });
+    const [learningCenterReturnState, setLearningCenterReturnState] = useState<WorkspaceReturnState>({
+        view: 'dashboard',
+        activeProjectId: null,
+        activeSurface: 'hub'
+    });
     const [sessionUser, setSessionUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [workspaceLoading, setWorkspaceLoading] = useState(false);
@@ -106,6 +126,23 @@ export function RemoteWorkspaceShell() {
     const [isGuideViewportEligible, setIsGuideViewportEligible] = useState(
         () => (typeof window === 'undefined' ? true : window.innerWidth >= GUIDE_VIEWPORT_MIN_WIDTH)
     );
+
+    const startGuide = (variant: GuideFlowVariant, step: OnboardingStepId) => {
+        setGuideVariant(variant);
+        setGuideStep(step);
+        saveOnboardingGuideSession({ variant, step });
+    };
+
+    const handleGuideStepChange = (step: OnboardingStepId | null) => {
+        setGuideStep(step);
+
+        if (step && guideVariant) {
+            saveOnboardingGuideSession({
+                variant: guideVariant,
+                step
+            });
+        }
+    };
 
     useEffect(() => {
         const savedSession = loadWorkspaceSession();
@@ -207,6 +244,7 @@ export function RemoteWorkspaceShell() {
         const syncWorkspace = async () => {
             if (!sessionUser) {
                 clearWorkspaceSession();
+                clearOnboardingGuideSession();
                 setProjects([]);
                 setProfile(DEFAULT_USER);
                 setCollaborationOverview(undefined);
@@ -266,6 +304,34 @@ export function RemoteWorkspaceShell() {
     }, []);
 
     useEffect(() => {
+        if (authLoading || workspaceLoading || guideStep || guideVariant) {
+            return;
+        }
+
+        if (profile.guidePreferences?.onboardingSeenAt) {
+            clearOnboardingGuideSession();
+            return;
+        }
+
+        const persistedGuide = loadOnboardingGuideSession();
+        if (!persistedGuide) {
+            return;
+        }
+
+        const restoredStep = getGuideStepForView(persistedGuide.step, view);
+        if (!restoredStep) {
+            return;
+        }
+
+        const frameId = window.requestAnimationFrame(() => {
+            setGuideVariant(persistedGuide.variant);
+            setGuideStep(restoredStep);
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
+    }, [authLoading, guideStep, guideVariant, profile.guidePreferences?.onboardingSeenAt, view, workspaceLoading]);
+
+    useEffect(() => {
         if (
             authLoading
             || workspaceLoading
@@ -282,6 +348,10 @@ export function RemoteWorkspaceShell() {
             const frameId = window.requestAnimationFrame(() => {
                 setGuideVariant('new-user');
                 setGuideStep('dashboard-summary');
+                saveOnboardingGuideSession({
+                    variant: 'new-user',
+                    step: 'dashboard-summary'
+                });
             });
 
             return () => window.cancelAnimationFrame(frameId);
@@ -481,7 +551,7 @@ export function RemoteWorkspaceShell() {
 
     const handleOpenProject = (projectId: string) => {
         if (guideStep === 'dashboard-open') {
-            setGuideStep('hub');
+            handleGuideStepChange('hub');
         }
 
         setActiveSurface('hub');
@@ -592,6 +662,7 @@ export function RemoteWorkspaceShell() {
 
     const handleDismissGuide = async () => {
         const onboardingSeenAt = profile.guidePreferences?.onboardingSeenAt || new Date().toISOString();
+        clearOnboardingGuideSession();
         setProfile((currentProfile) => ({
             ...currentProfile,
             guidePreferences: {
@@ -655,6 +726,7 @@ export function RemoteWorkspaceShell() {
     };
 
     const handleLogout = async () => {
+        clearOnboardingGuideSession();
         setView('logging_out');
         await supabase.auth.signOut();
         clearWorkspaceSession();
@@ -662,12 +734,20 @@ export function RemoteWorkspaceShell() {
     };
 
     const handleOpenProfile = (source: 'dashboard' | 'sandbox') => {
-        setProfileReturnView(source);
+        setProfileReturnState({
+            view: source,
+            activeProjectId: source === 'sandbox' ? activeProjectId : null,
+            activeSurface: source === 'sandbox' ? activeSurface : 'hub'
+        });
         setView('profile');
     };
 
     const handleOpenLearningCenter = (source: 'dashboard' | 'sandbox') => {
-        setLearningCenterReturnView(source);
+        setLearningCenterReturnState({
+            view: source,
+            activeProjectId: source === 'sandbox' ? activeProjectId : null,
+            activeSurface: source === 'sandbox' ? activeSurface : 'hub'
+        });
         setView('learning-center');
     };
 
@@ -676,8 +756,7 @@ export function RemoteWorkspaceShell() {
             return;
         }
 
-        setGuideVariant(projects.length === 0 ? 'new-user' : 'existing-user');
-        setGuideStep('dashboard-summary');
+        startGuide(projects.length === 0 ? 'new-user' : 'existing-user', 'dashboard-summary');
         setActiveProjectId(null);
         setActiveSurface('hub');
         setView('dashboard');
@@ -742,7 +821,7 @@ export function RemoteWorkspaceShell() {
                     collaborationOverview={collaborationOverview}
                     guideStep={guideStep}
                     guideVariant={guideVariant}
-                    onGuideStepChange={setGuideStep}
+                    onGuideStepChange={handleGuideStepChange}
                     onDismissGuide={() => void handleDismissGuide()}
                 />
             );
@@ -779,7 +858,7 @@ export function RemoteWorkspaceShell() {
                     onRemoveMember={handleRemoveMember}
                     guideStep={guideStep}
                     guideVariant={guideVariant}
-                    onGuideStepChange={setGuideStep}
+                    onGuideStepChange={handleGuideStepChange}
                     onDismissGuide={() => void handleDismissGuide()}
                 />
             ) : (
@@ -807,7 +886,7 @@ export function RemoteWorkspaceShell() {
                     collaborationOverview={collaborationOverview}
                     guideStep={guideStep}
                     guideVariant={guideVariant}
-                    onGuideStepChange={setGuideStep}
+                    onGuideStepChange={handleGuideStepChange}
                     onDismissGuide={() => void handleDismissGuide()}
                 />
             );
@@ -818,7 +897,11 @@ export function RemoteWorkspaceShell() {
                     profile={profile}
                     isSaving={profileSaving}
                     onUpdateProfile={handleUpdateProfile}
-                    onBack={() => setView(profileReturnView)}
+                    onBack={() => {
+                        setActiveProjectId(profileReturnState.activeProjectId);
+                        setActiveSurface(profileReturnState.activeSurface);
+                        setView(profileReturnState.view);
+                    }}
                 />
             );
 
@@ -826,7 +909,11 @@ export function RemoteWorkspaceShell() {
             return (
                 <LearningCenterPage
                     profile={profile}
-                    onBack={() => setView(learningCenterReturnView)}
+                    onBack={() => {
+                        setActiveProjectId(learningCenterReturnState.activeProjectId);
+                        setActiveSurface(learningCenterReturnState.activeSurface);
+                        setView(learningCenterReturnState.view);
+                    }}
                     onReplayOnboarding={handleReplayOnboarding}
                 />
             );

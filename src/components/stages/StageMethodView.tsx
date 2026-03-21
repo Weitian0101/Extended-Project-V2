@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ArrowRight, BookOpen, Play, ScanSearch, ScrollText, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,6 +11,7 @@ import { getGuideProgress } from '@/data/onboarding';
 import { GuideFlowVariant, MethodCard, MethodCardLayout, OnboardingStepId, ProjectHubData, StageId, ToolRun } from '@/types';
 import { METHOD_LIBRARY } from '@/data/methodLibrary';
 import { STAGE_GUIDE_GROUPS } from '@/data/stageGuides';
+import { clearStageMethodSession, loadStageMethodSession, saveStageMethodSession } from '@/lib/services/stageMethodSession';
 import { cn } from '@/lib/utils';
 
 type BrowsableStage = Extract<StageId, 'explore' | 'imagine' | 'implement' | 'tell-story'>;
@@ -163,18 +164,20 @@ export function StageMethodView({
     onDismissGuide
 }: StageMethodViewProps) {
     const { project, updateProject } = useProjectData(projectId, projectName);
-    const [viewState, setViewState] = useState<'entry' | 'tools' | 'workspace'>('entry');
+    const methods = useMemo(() => METHOD_LIBRARY.filter(method => method.stage === stage), [stage]);
+    const methodsById = useMemo(() => new Map(methods.map(method => [method.id, method])), [methods]);
+    const restoredSession = useMemo(() => loadStageMethodSession(projectId, stage), [projectId, stage]);
+    const [viewState, setViewState] = useState<'entry' | 'tools' | 'workspace'>(() => restoredSession?.viewState ?? 'entry');
     const [showGuide, setShowGuide] = useState(false);
-    const [activeMethod, setActiveMethod] = useState<MethodCard | null>(null);
-    const [activeRunId, setActiveRunId] = useState<string | null>(null);
-    const [activeCategory, setActiveCategory] = useState<string>('all');
+    const [activeMethod, setActiveMethod] = useState<MethodCard | null>(() => (
+        restoredSession?.activeMethodId ? methodsById.get(restoredSession.activeMethodId) ?? null : null
+    ));
+    const [activeRunId, setActiveRunId] = useState<string | null>(() => restoredSession?.activeRunId ?? null);
+    const [activeCategory, setActiveCategory] = useState<string>(() => restoredSession?.activeCategory ?? 'all');
     const [isOpening, setIsOpening] = useState(false);
     const openTimerRef = useRef<number | null>(null);
     const entryContentRef = useRef<HTMLDivElement | null>(null);
     const firstMethodCardRef = useRef<HTMLDivElement | null>(null);
-
-    const methods = METHOD_LIBRARY.filter(method => method.stage === stage);
-    const methodsById = new Map(methods.map(method => [method.id, method]));
     const guideSections = STAGE_GUIDE_GROUPS[stage].map(section => ({
         ...section,
         methods: section.methodIds
@@ -199,17 +202,50 @@ export function StageMethodView({
         };
     }, []);
 
+    const resolvedActiveCategory = activeCategory === 'all' || guideSections.some(section => section.title === activeCategory)
+        ? activeCategory
+        : 'all';
+    const resolvedActiveMethod = activeMethod ? methodsById.get(activeMethod.id) ?? null : null;
+    const resolvedActiveRun = activeRunId
+        ? project.toolRuns.find(toolRun => toolRun.id === activeRunId && toolRun.stage === stage) ?? null
+        : null;
+    const effectiveViewState = viewState === 'workspace' && (!resolvedActiveMethod || !resolvedActiveRun)
+        ? 'tools'
+        : viewState;
+
+    useEffect(() => {
+        if (effectiveViewState === 'entry' && resolvedActiveCategory === 'all') {
+            clearStageMethodSession(projectId, stage);
+            return;
+        }
+
+        saveStageMethodSession(projectId, stage, {
+            viewState: effectiveViewState,
+            activeMethodId: effectiveViewState === 'workspace' ? resolvedActiveMethod?.id ?? null : null,
+            activeRunId: effectiveViewState === 'workspace' ? resolvedActiveRun?.id ?? null : null,
+            activeCategory: resolvedActiveCategory
+        });
+    }, [effectiveViewState, projectId, resolvedActiveCategory, resolvedActiveMethod, resolvedActiveRun, stage]);
+
     const handleEnterAtlas = (nextGuideStep?: OnboardingStepId) => {
         if (isOpening) return;
         setIsOpening(true);
 
         openTimerRef.current = window.setTimeout(() => {
+            setActiveMethod(null);
+            setActiveRunId(null);
             setViewState('tools');
             if (nextGuideStep) {
                 onGuideStepChange?.(nextGuideStep);
             }
             setIsOpening(false);
         }, 240);
+    };
+
+    const handleReturnToAtlas = () => {
+        setActiveMethod(null);
+        setActiveRunId(null);
+        setViewState('tools');
     };
 
     const handleStartTool = (method: MethodCard) => {
@@ -239,25 +275,23 @@ export function StageMethodView({
         });
     };
 
-    const visibleSections = activeCategory === 'all'
+    const visibleSections = resolvedActiveCategory === 'all'
         ? guideSections
-        : guideSections.filter(section => section.title === activeCategory);
+        : guideSections.filter(section => section.title === resolvedActiveCategory);
 
-    if (viewState === 'workspace' && activeMethod && activeRunId) {
-        const run = project.toolRuns.find(toolRun => toolRun.id === activeRunId);
-
+    if (effectiveViewState === 'workspace' && resolvedActiveMethod && resolvedActiveRun) {
         return (
             <MethodSplitView
-                key={`${activeMethod.id}-${activeRunId}`}
-                card={activeMethod}
+                key={`${resolvedActiveMethod.id}-${resolvedActiveRun.id}`}
+                card={resolvedActiveMethod}
                 context={project.context}
-                existingRun={run}
+                existingRun={resolvedActiveRun}
                 hub={hub}
                 isHubLoading={isHubLoading}
                 onCreateHubRecord={onCreateHubRecord}
                 onUpdateHubRecord={onUpdateHubRecord}
                 onSave={handleSaveRun}
-                onBack={() => setViewState('tools')}
+                onBack={handleReturnToAtlas}
                 layout={methodCardLayout}
                 guideStep={guideStep}
                 guideVariant={guideVariant}
@@ -283,7 +317,7 @@ export function StageMethodView({
                         <h2 className="text-lg font-display font-semibold text-[var(--foreground)] lg:text-2xl">{stageTitle}</h2>
                     </div>
                 </div>
-                {viewState === 'entry' && (
+                {effectiveViewState === 'entry' && (
                     <Button size="sm" onClick={() => handleEnterAtlas()}>
                         Open Atlas <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -291,7 +325,7 @@ export function StageMethodView({
             </div>
 
             <div className="scrollbar-none relative z-10 flex-1 overflow-y-auto px-4 py-5 lg:px-8 lg:py-8">
-                {viewState === 'entry' && (
+                {effectiveViewState === 'entry' && (
                     <div className="mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)] lg:gap-12">
                         <button
                             type="button"
@@ -370,7 +404,7 @@ export function StageMethodView({
                     </div>
                 )}
 
-                {viewState === 'tools' && (
+                {effectiveViewState === 'tools' && (
                     <div className="mx-auto max-w-6xl">
                         <div className={cn('surface-panel-strong mb-8 rounded-[32px] px-6 py-6 lg:px-8 lg:py-8', theme.panelGlow)}>
                             <div className="grid gap-5 lg:grid-cols-[1.02fr_0.98fr]">
@@ -399,7 +433,7 @@ export function StageMethodView({
                                             onClick={() => setActiveCategory('all')}
                                             className={cn(
                                                 'rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5',
-                                                activeCategory === 'all' ? theme.badge : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
+                                                resolvedActiveCategory === 'all' ? theme.badge : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
                                             )}
                                         >
                                             All Sections
@@ -411,7 +445,7 @@ export function StageMethodView({
                                                 onClick={() => setActiveCategory(section.title)}
                                                 className={cn(
                                                     'rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5',
-                                                    activeCategory === section.title ? theme.badge : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
+                                                    resolvedActiveCategory === section.title ? theme.badge : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)]'
                                                 )}
                                         >
                                             {`${String(sectionIndexMap.get(section.title) || 0).padStart(2, '0')} ${section.title}`}
@@ -471,7 +505,7 @@ export function StageMethodView({
                                         {section.methods.map(method => (
                                             <div
                                                 key={method.id}
-                                                ref={section.methods[0] === method && activeCategory === 'all' ? firstMethodCardRef : null}
+                                                ref={section.methods[0] === method && resolvedActiveCategory === 'all' ? firstMethodCardRef : null}
                                                 onClick={() => handleStartTool(method)}
                                                 className={cn(
                                                     'surface-panel group relative cursor-pointer overflow-hidden rounded-[28px] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_26px_60px_rgba(15,23,42,0.14)]',
@@ -565,7 +599,7 @@ export function StageMethodView({
                 onSkip={onDismissGuide}
             />
             <SpotlightGuide
-                open={isExploreGuide && guideStep === 'explore-card' && viewState === 'tools'}
+                open={isExploreGuide && guideStep === 'explore-card' && effectiveViewState === 'tools'}
                 targetRef={firstMethodCardRef}
                 currentStep={exploreCardGuide?.currentStep || 6}
                 totalSteps={exploreCardGuide?.totalSteps || 8}

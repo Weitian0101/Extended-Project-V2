@@ -579,7 +579,7 @@ export function Dashboard({
                                         rel="noopener noreferrer"
                                         onClick={(event) => {
                                             event.preventDefault();
-                                            openProjectInNewTab(project.id);
+                                            handleProjectOpen(project.id);
                                         }}
                                         aria-label={`Open ${project.name} in a new tab`}
                                         className="absolute inset-0 z-10 rounded-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"

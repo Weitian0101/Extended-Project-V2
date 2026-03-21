@@ -25,7 +25,7 @@ const GUIDE_PROGRESS: Record<GuideFlowVariant, Record<OnboardingStepId, number>>
     }
 };
 
-export const GUIDE_VIEWPORT_MIN_WIDTH = 1100;
+export const GUIDE_VIEWPORT_MIN_WIDTH = 0;
 
 export function getGuideProgress(variant: GuideFlowVariant, step: OnboardingStepId) {
     const currentStep = GUIDE_PROGRESS[variant][step];

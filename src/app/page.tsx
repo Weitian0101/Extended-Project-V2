@@ -18,6 +18,12 @@ import { RemoteWorkspaceShell } from '@/components/app/RemoteWorkspaceShell';
 import { isRemoteBackendEnabled } from '@/lib/config/backend';
 import { loadWorkspaceBrowserState, useWorkspaceBrowserHistory } from '@/hooks/useWorkspaceBrowserHistory';
 import {
+  clearOnboardingGuideSession,
+  getGuideStepForView,
+  loadOnboardingGuideSession,
+  saveOnboardingGuideSession
+} from '@/lib/services/onboardingGuide';
+import {
   clearWorkspaceSession,
   exportWorkspaceSnapshot,
   importWorkspaceSnapshot,
@@ -47,14 +53,28 @@ function mergeProfileUpdate(
 }
 
 function HomeShell() {
+  type WorkspaceReturnState = {
+    view: 'dashboard' | 'sandbox';
+    activeProjectId: string | null;
+    activeSurface: ProjectSurface;
+  };
+
   const [view, setView] = useState<AppViewState>('landing');
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [activeSurface, setActiveSurface] = useState<ProjectSurface>('hub');
   const [projects, setProjects] = useState<WorkspaceProject[]>(DEFAULT_PROJECTS);
   const [profile, setProfile] = useState<UserProfileData>(DEFAULT_USER);
   const [collaborationOverview, setCollaborationOverview] = useState(loadWorkspaceShell().collaborationOverview);
-  const [profileReturnView, setProfileReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
-  const [learningCenterReturnView, setLearningCenterReturnView] = useState<'dashboard' | 'sandbox'>('dashboard');
+  const [profileReturnState, setProfileReturnState] = useState<WorkspaceReturnState>({
+    view: 'dashboard',
+    activeProjectId: null,
+    activeSurface: 'hub'
+  });
+  const [learningCenterReturnState, setLearningCenterReturnState] = useState<WorkspaceReturnState>({
+    view: 'dashboard',
+    activeProjectId: null,
+    activeSurface: 'hub'
+  });
   const [workspaceStatus, setWorkspaceStatus] = useState<string | null>(null);
   const [isWorkspaceHydrated, setIsWorkspaceHydrated] = useState(false);
   const [guideStep, setGuideStep] = useState<OnboardingStepId | null>(null);
@@ -62,6 +82,23 @@ function HomeShell() {
   const [isGuideViewportEligible, setIsGuideViewportEligible] = useState(
     () => (typeof window === 'undefined' ? true : window.innerWidth >= GUIDE_VIEWPORT_MIN_WIDTH)
   );
+
+  const startGuide = (variant: GuideFlowVariant, step: OnboardingStepId) => {
+    setGuideVariant(variant);
+    setGuideStep(step);
+    saveOnboardingGuideSession({ variant, step });
+  };
+
+  const handleGuideStepChange = (step: OnboardingStepId | null) => {
+    setGuideStep(step);
+
+    if (step && guideVariant) {
+      saveOnboardingGuideSession({
+        variant: guideVariant,
+        step
+      });
+    }
+  };
 
   useEffect(() => {
     document.body.setAttribute('data-app-view', view);
@@ -157,6 +194,34 @@ function HomeShell() {
   }, []);
 
   useEffect(() => {
+    if (!isWorkspaceHydrated || guideStep || guideVariant) {
+      return;
+    }
+
+    if (profile.guidePreferences?.onboardingSeenAt) {
+      clearOnboardingGuideSession();
+      return;
+    }
+
+    const persistedGuide = loadOnboardingGuideSession();
+    if (!persistedGuide) {
+      return;
+    }
+
+    const restoredStep = getGuideStepForView(persistedGuide.step, view);
+    if (!restoredStep) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setGuideVariant(persistedGuide.variant);
+      setGuideStep(restoredStep);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [guideStep, guideVariant, isWorkspaceHydrated, profile.guidePreferences?.onboardingSeenAt, view]);
+
+  useEffect(() => {
     if (
       !isWorkspaceHydrated
       || !isGuideViewportEligible
@@ -172,6 +237,10 @@ function HomeShell() {
       const frameId = window.requestAnimationFrame(() => {
         setGuideVariant('new-user');
         setGuideStep('dashboard-summary');
+        saveOnboardingGuideSession({
+          variant: 'new-user',
+          step: 'dashboard-summary'
+        });
       });
 
       return () => window.cancelAnimationFrame(frameId);
@@ -186,7 +255,7 @@ function HomeShell() {
 
   const handleOpenProject = (projectId: string) => {
     if (guideStep === 'dashboard-open') {
-      setGuideStep('hub');
+      handleGuideStepChange('hub');
     }
     setActiveSurface('hub');
     setActiveProjectId(projectId);
@@ -229,6 +298,7 @@ function HomeShell() {
 
   const handleDismissGuide = () => {
     const onboardingSeenAt = profile.guidePreferences?.onboardingSeenAt || new Date().toISOString();
+    clearOnboardingGuideSession();
     setProfile(currentProfile => ({
       ...currentProfile,
       guidePreferences: {
@@ -247,7 +317,11 @@ function HomeShell() {
   };
 
   const handleOpenLearningCenter = (source: 'dashboard' | 'sandbox') => {
-    setLearningCenterReturnView(source);
+    setLearningCenterReturnState({
+      view: source,
+      activeProjectId: source === 'sandbox' ? activeProjectId : null,
+      activeSurface: source === 'sandbox' ? activeSurface : 'hub'
+    });
     setView('learning-center');
   };
 
@@ -256,8 +330,7 @@ function HomeShell() {
       return;
     }
 
-    setGuideVariant(projects.length === 0 ? 'new-user' : 'existing-user');
-    setGuideStep('dashboard-summary');
+    startGuide(projects.length === 0 ? 'new-user' : 'existing-user', 'dashboard-summary');
     setActiveProjectId(null);
     setActiveSurface('hub');
     setView('dashboard');
@@ -274,12 +347,17 @@ function HomeShell() {
   };
 
   const handleLogout = () => {
+    clearOnboardingGuideSession();
     clearWorkspaceSession();
     setView('logging_out');
   };
 
   const handleOpenProfile = (source: 'dashboard' | 'sandbox') => {
-    setProfileReturnView(source);
+    setProfileReturnState({
+      view: source,
+      activeProjectId: source === 'sandbox' ? activeProjectId : null,
+      activeSurface: source === 'sandbox' ? activeSurface : 'hub'
+    });
     setView('profile');
   };
 
@@ -344,7 +422,7 @@ function HomeShell() {
           collaborationOverview={collaborationOverview}
           guideStep={guideStep}
           guideVariant={guideVariant}
-          onGuideStepChange={setGuideStep}
+          onGuideStepChange={handleGuideStepChange}
           onDismissGuide={handleDismissGuide}
         />
       );
@@ -365,7 +443,7 @@ function HomeShell() {
           runtimeMode="local-mvp"
           guideStep={guideStep}
           guideVariant={guideVariant}
-          onGuideStepChange={setGuideStep}
+          onGuideStepChange={handleGuideStepChange}
           onDismissGuide={handleDismissGuide}
         />
       ) : (
@@ -386,7 +464,7 @@ function HomeShell() {
           collaborationOverview={collaborationOverview}
           guideStep={guideStep}
           guideVariant={guideVariant}
-          onGuideStepChange={setGuideStep}
+          onGuideStepChange={handleGuideStepChange}
           onDismissGuide={handleDismissGuide}
         />
       );
@@ -396,7 +474,11 @@ function HomeShell() {
         <ProfilePage
           profile={profile}
           onUpdateProfile={handleUpdateProfile}
-          onBack={() => setView(profileReturnView)}
+          onBack={() => {
+            setActiveProjectId(profileReturnState.activeProjectId);
+            setActiveSurface(profileReturnState.activeSurface);
+            setView(profileReturnState.view);
+          }}
         />
       );
 
@@ -404,7 +486,11 @@ function HomeShell() {
       return (
         <LearningCenterPage
           profile={profile}
-          onBack={() => setView(learningCenterReturnView)}
+          onBack={() => {
+            setActiveProjectId(learningCenterReturnState.activeProjectId);
+            setActiveSurface(learningCenterReturnState.activeSurface);
+            setView(learningCenterReturnState.view);
+          }}
           onReplayOnboarding={handleReplayOnboarding}
         />
       );
