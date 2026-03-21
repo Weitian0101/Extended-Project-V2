@@ -17,6 +17,7 @@ import { DEFAULT_USER } from '@/data/workspaceSeed';
 import { RemoteWorkspaceShell } from '@/components/app/RemoteWorkspaceShell';
 import { isRemoteBackendEnabled } from '@/lib/config/backend';
 import { loadWorkspaceBrowserState, useWorkspaceBrowserHistory } from '@/hooks/useWorkspaceBrowserHistory';
+import { getWorkspaceDocumentTitle } from '@/lib/documentTitle';
 import {
   clearOnboardingGuideSession,
   getGuideStepForView,
@@ -107,6 +108,14 @@ function HomeShell() {
       document.body.removeAttribute('data-app-view');
     };
   }, [view]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    document.title = getWorkspaceDocumentTitle(activeProjectId, projects);
+  }, [activeProjectId, projects]);
 
   // --- Persistence ---
   useEffect(() => {

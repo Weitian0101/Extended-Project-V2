@@ -20,7 +20,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Innovation Sandbox",
+  title: "ADT Innovation Sandbox",
   description: "Beyond Post-its method workspace with AI facilitation and staged project flows.",
 };
 

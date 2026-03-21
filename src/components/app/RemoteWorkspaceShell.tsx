@@ -23,6 +23,7 @@ import {
 } from '@/lib/services/onboardingGuide';
 import { clearWorkspaceSession, loadWorkspaceSession, saveWorkspaceSession } from '@/lib/services/mvpWorkspace';
 import { fetchApiJson } from '@/lib/services/remoteApi';
+import { getWorkspaceDocumentTitle } from '@/lib/documentTitle';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { AppViewState, GuideFlowVariant, OnboardingStepId, PermissionLevel, ProjectSurface, UserProfileData, WorkspaceProject } from '@/types';
 
@@ -235,6 +236,14 @@ export function RemoteWorkspaceShell() {
             });
         }
     }, [activeProjectId, activeSurface, authLoading, isNavigationHydrated, view]);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        document.title = getWorkspaceDocumentTitle(activeProjectId, projects);
+    }, [activeProjectId, projects]);
 
     useEffect(() => {
         if (!isNavigationHydrated || authLoading) {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ArrowDownCircle, Bot, ChevronLeft, CircleHelp, Expand, Send, Sparkles, Workflow, X, Zap } from 'lucide-react';
+import { ArrowDownCircle, Bot, ChevronDown, ChevronLeft, ChevronUp, CircleHelp, Expand, Send, Sparkles, Workflow, X, Zap } from 'lucide-react';
 
 import { SpotlightGuide } from '@/components/guide/SpotlightGuide';
 import { Button } from '@/components/ui/Button';
@@ -98,6 +98,9 @@ export function MethodSplitView({
     const [activePanel, setActivePanel] = useState<'ai' | 'team'>('ai');
     const [isImmersiveDesktopViewport, setIsImmersiveDesktopViewport] = useState(
         () => (typeof window === 'undefined' ? false : window.innerWidth >= 1280)
+    );
+    const [isImmersiveSummaryCollapsed, setIsImmersiveSummaryCollapsed] = useState(
+        () => (typeof window === 'undefined' ? false : window.innerHeight < 940)
     );
     const [threadDraft, setThreadDraft] = useState({ title: '', body: '', nextStep: '' });
     const [captureDraft, setCaptureDraft] = useState({ type: 'artifact', title: '', summary: '', status: 'draft' });
@@ -722,40 +725,71 @@ export function MethodSplitView({
                     {isImmersiveLayout ? (
                         <>
                             <div className="flex items-start justify-between gap-4">
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                     <div className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]', theme.accentBorder, theme.accentSoft, theme.accentText)}>
                                         Reference Deck
                                     </div>
-                                    <h2 className="mt-4 text-[2rem] font-display font-semibold leading-[0.98] text-[var(--foreground)]">
-                                        {card.title}
-                                    </h2>
-                                    <p className="mt-3 max-w-md text-sm leading-relaxed text-[var(--foreground-soft)]">
-                                        {card.purpose}
-                                    </p>
-                                </div>
-                                <Button variant="secondary" size="sm" onClick={onBack}>
-                                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                                </Button>
-                            </div>
-                            <div className={cn('mt-6 rounded-[28px] border p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]', theme.accentBorder, theme.accentSoft)}>
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="min-w-0">
-                                        <div className={cn('text-[11px] uppercase tracking-[0.22em] font-semibold', theme.accentText)}>
-                                            {desktopPanelContent.eyebrow}
+                                    {isImmersiveSummaryCollapsed && (
+                                        <div className="mt-4">
+                                            <div className="min-w-0 text-xl font-display font-semibold leading-none text-[var(--foreground)]">
+                                                <span className="block truncate">{card.title}</span>
+                                            </div>
                                         </div>
-                                        <h3 className="mt-3 text-[1.45rem] font-display font-semibold leading-tight text-[var(--foreground)]">
-                                            {desktopPanelContent.title}
-                                        </h3>
-                                        <p className="mt-2 max-w-md text-sm leading-relaxed text-[var(--foreground-soft)]">
-                                            {desktopPanelContent.description}
-                                        </p>
-                                    </div>
-                                    <div className={cn('rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em]', theme.accentBorder, theme.accentSoft, theme.accentText)}>
-                                        {desktopPanelContent.chip}
-                                    </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsImmersiveSummaryCollapsed((current) => !current)}
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm font-semibold text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]"
+                                        aria-expanded={!isImmersiveSummaryCollapsed}
+                                        aria-controls="immersive-method-summary"
+                                    >
+                                        {isImmersiveSummaryCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                                        {isImmersiveSummaryCollapsed ? 'Show details' : 'Hide details'}
+                                    </button>
+                                    <Button variant="secondary" size="sm" onClick={onBack} className="min-h-11">
+                                        <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                                    </Button>
                                 </div>
                             </div>
-                            <div className="mt-5 flex gap-2">
+                            <div
+                                id="immersive-method-summary"
+                                className={cn(
+                                    'grid overflow-hidden transition-[grid-template-rows,opacity,margin] duration-300 ease-out',
+                                    isImmersiveSummaryCollapsed ? 'mt-0 grid-rows-[0fr] opacity-0' : 'mt-6 grid-rows-[1fr] opacity-100'
+                                )}
+                            >
+                                {!isImmersiveSummaryCollapsed && (
+                                    <div className="min-h-0 overflow-hidden">
+                                        <h2 className="text-[2rem] font-display font-semibold leading-[0.98] text-[var(--foreground)]">
+                                            {card.title}
+                                        </h2>
+                                        <p className="mt-3 max-w-md text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                            {card.purpose}
+                                        </p>
+                                        <div className={cn('mt-6 rounded-[28px] border p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)]', theme.accentBorder, theme.accentSoft)}>
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="min-w-0">
+                                                    <div className={cn('text-[11px] uppercase tracking-[0.22em] font-semibold', theme.accentText)}>
+                                                        {desktopPanelContent.eyebrow}
+                                                    </div>
+                                                    <h3 className="mt-3 text-[1.45rem] font-display font-semibold leading-tight text-[var(--foreground)]">
+                                                        {desktopPanelContent.title}
+                                                    </h3>
+                                                    <p className="mt-2 max-w-md text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                                        {desktopPanelContent.description}
+                                                    </p>
+                                                </div>
+                                                <div className={cn('rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em]', theme.accentBorder, theme.accentSoft, theme.accentText)}>
+                                                    {desktopPanelContent.chip}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className={cn('flex gap-2', isImmersiveSummaryCollapsed ? 'mt-4' : 'mt-5')}>
                                 <button
                                     type="button"
                                     onClick={() => setActivePanel('ai')}
