@@ -779,8 +779,9 @@ export function Dashboard({
                 description="A project is where this challenge lives. It gives you one place for the hub, context, Beyond Post-its methods, captured outcomes, and AI support."
                 purpose="Click here to create your first working space. Once it appears on the dashboard, you can open it and continue the guided flow."
                 primaryAction={{
-                    label: 'Create first project',
-                    onClick: () => void handleCreateProjectClick()
+                    label: isCreatingProject ? 'Creating...' : 'Create first project',
+                    onClick: () => void handleCreateProjectClick(),
+                    disabled: isCreatingProject
                 }}
                 onBack={() => onGuideStepChange?.('dashboard-summary')}
                 onSkip={onDismissGuide}

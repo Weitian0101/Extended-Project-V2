@@ -15,13 +15,22 @@ import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
 import { DEFAULT_USER } from '@/data/workspaceSeed';
 import { WorkspaceExportDto, WorkspaceShellDto } from '@/lib/contracts/api';
 import { loadWorkspaceBrowserState, useWorkspaceBrowserHistory } from '@/hooks/useWorkspaceBrowserHistory';
+import { createEmptyProjectHubData } from '@/lib/collaboration';
 import {
     clearOnboardingGuideSession,
     getGuideStepForView,
     loadOnboardingGuideSession,
     saveOnboardingGuideSession
 } from '@/lib/services/onboardingGuide';
-import { clearWorkspaceSession, loadWorkspaceSession, saveWorkspaceSession } from '@/lib/services/mvpWorkspace';
+import {
+    clearWorkspaceSession,
+    loadWorkspaceSession,
+    loadWorkspaceShell,
+    saveProjectDocument,
+    saveProjectHub,
+    saveWorkspaceSession,
+    saveWorkspaceShell
+} from '@/lib/services/mvpWorkspace';
 import { fetchApiJson } from '@/lib/services/remoteApi';
 import { getWorkspaceDocumentTitle } from '@/lib/documentTitle';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -91,6 +100,21 @@ function parseEmailRegistrationStatus(value: unknown): EmailRegistrationStatus {
     };
 }
 
+function loadCachedWorkspaceShell() {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const hasProjectCache = window.localStorage.getItem('app_projects');
+    const hasProfileCache = window.localStorage.getItem('app_profile');
+
+    if (!hasProjectCache && !hasProfileCache) {
+        return null;
+    }
+
+    return loadWorkspaceShell();
+}
+
 export function RemoteWorkspaceShell() {
     type WorkspaceReturnState = {
         view: 'dashboard' | 'sandbox';
@@ -102,9 +126,9 @@ export function RemoteWorkspaceShell() {
     const [view, setView] = useState<AppViewState>('landing');
     const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
     const [activeSurface, setActiveSurface] = useState<ProjectSurface>('hub');
-    const [projects, setProjects] = useState<WorkspaceProject[]>([]);
-    const [profile, setProfile] = useState<UserProfileData>(DEFAULT_USER);
-    const [collaborationOverview, setCollaborationOverview] = useState<WorkspaceShellDto['collaborationOverview']>();
+    const [projects, setProjects] = useState<WorkspaceProject[]>(() => loadCachedWorkspaceShell()?.projects ?? []);
+    const [profile, setProfile] = useState<UserProfileData>(() => loadCachedWorkspaceShell()?.profile ?? DEFAULT_USER);
+    const [collaborationOverview, setCollaborationOverview] = useState<WorkspaceShellDto['collaborationOverview']>(() => loadCachedWorkspaceShell()?.collaborationOverview);
     const [profileReturnState, setProfileReturnState] = useState<WorkspaceReturnState>({
         view: 'dashboard',
         activeProjectId: null,
@@ -201,13 +225,24 @@ export function RemoteWorkspaceShell() {
 
     useEffect(() => {
         const bootstrapAuth = async () => {
-            const { data, error } = await supabase.auth.getUser();
+            const { data, error } = await supabase.auth.getSession();
+            const session = data.session ?? null;
 
             if (error && error.message !== 'Auth session missing!') {
                 setAuthError(error.message);
                 setSessionUser(null);
             } else {
-                setSessionUser(data.user ?? null);
+                setSessionUser(session?.user ?? null);
+
+                if (session?.user) {
+                    const cachedWorkspace = loadCachedWorkspaceShell();
+
+                    if (cachedWorkspace && (!cachedWorkspace.profile.id || cachedWorkspace.profile.id === session.user.id)) {
+                        setProjects(cachedWorkspace.projects);
+                        setProfile(cachedWorkspace.profile);
+                        setCollaborationOverview(cachedWorkspace.collaborationOverview);
+                    }
+                }
             }
 
             setAuthLoading(false);
@@ -244,6 +279,17 @@ export function RemoteWorkspaceShell() {
 
         document.title = getWorkspaceDocumentTitle(activeProjectId, projects);
     }, [activeProjectId, projects]);
+
+    useEffect(() => {
+        if (!sessionUser || profile.id !== sessionUser.id) {
+            return;
+        }
+
+        saveWorkspaceShell({
+            projects,
+            profile
+        });
+    }, [profile, projects, sessionUser]);
 
     useEffect(() => {
         if (!isNavigationHydrated || authLoading) {
@@ -551,6 +597,27 @@ export function RemoteWorkspaceShell() {
                 body: JSON.stringify({})
             });
             setProjects((current) => [data.project, ...current]);
+
+            saveProjectDocument({
+                id: data.project.id,
+                context: {
+                    name: data.project.name,
+                    background: '',
+                    objectives: '',
+                    assumptions: '',
+                    aiHandoffPrompt: ''
+                },
+                currentStage: data.project.currentStage || 'overview',
+                toolRuns: []
+            });
+            saveProjectHub(data.project.id, createEmptyProjectHubData({
+                projectId: data.project.id,
+                updatedBy: profile.id || data.project.ownerId || 'user',
+                context: {
+                    name: data.project.name
+                }
+            }));
+
             return data.project;
         } catch (error) {
             setAuthError(error instanceof Error ? error.message : 'Unable to create project.');

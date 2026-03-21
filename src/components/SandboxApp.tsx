@@ -96,10 +96,11 @@ export function SandboxApp({
     onGuideStepChange,
     onDismissGuide
 }: SandboxAppProps) {
-    const { project, updateProject, isLoaded } = useProjectData(projectSummary.id, projectSummary.name);
+    const { project, updateProject, isLoaded, hasCachedProject } = useProjectData(projectSummary.id, projectSummary.name);
     const {
         hub,
         isLoading: isHubLoading,
+        hasCachedHub,
         error: hubError,
         updateBrief,
         createRecord,
@@ -158,7 +159,7 @@ export function SandboxApp({
         setProjectFacilitatorHistory([]);
     }, [projectSummary.id]);
 
-    if (!isLoaded) {
+    if (!isLoaded && !hasCachedProject) {
         return (
             <BrandedLoadingScreen
                 fullscreen
@@ -262,6 +263,7 @@ export function SandboxApp({
                         hub={hub}
                         currentSurface={currentSurface}
                         isLoading={isHubLoading}
+                        hasCachedData={hasCachedHub}
                         error={hubError}
                         onUpdateBrief={updateBrief}
                         onCreateRecord={handleCreateHubRecord}

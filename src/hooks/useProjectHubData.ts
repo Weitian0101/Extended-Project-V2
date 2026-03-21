@@ -4,12 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
     appendActivityEvent,
-    createEmptyProjectHubData,
     normalizeProjectHubData,
     updatePresenceEntry
 } from '@/lib/collaboration';
 import { isRemoteBackendEnabled } from '@/lib/config/backend';
-import { loadProjectHub, saveProjectHub } from '@/lib/services/mvpWorkspace';
+import { hasProjectHubCache, loadProjectHub, saveProjectHub } from '@/lib/services/mvpWorkspace';
 import {
     ActivityEvent,
     CollaborationEntityType,
@@ -46,8 +45,7 @@ function replaceRecord<T extends { id: string }>(items: T[], next: T) {
 export function useProjectHubData({
     projectId,
     projectName,
-    profile,
-    context
+    profile
 }: {
     projectId: string;
     projectName: string;
@@ -55,12 +53,9 @@ export function useProjectHubData({
     context: ProjectContext;
 }) {
     const remoteMode = useMemo(() => isRemoteBackendEnabled(), []);
-    const [hub, setHub] = useState<ProjectHubData>(() => createEmptyProjectHubData({
-        projectId,
-        updatedBy: profile.id || 'user',
-        context
-    }));
+    const [hub, setHub] = useState<ProjectHubData>(() => loadProjectHub(projectId, projectName, profile.id || 'user'));
     const [isLoading, setIsLoading] = useState(true);
+    const [hasCachedHub, setHasCachedHub] = useState(() => hasProjectHubCache(projectId));
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -69,6 +64,8 @@ export function useProjectHubData({
         const loadHub = async () => {
             setIsLoading(true);
             setError(null);
+            setHub(loadProjectHub(projectId, projectName, profile.id || 'user'));
+            setHasCachedHub(hasProjectHubCache(projectId));
 
             try {
                 if (remoteMode) {
@@ -78,9 +75,13 @@ export function useProjectHubData({
 
                     if (isMounted) {
                         setHub(result.hub);
+                        saveProjectHub(projectId, result.hub);
+                        setHasCachedHub(true);
                     }
                 } else if (isMounted) {
-                    setHub(loadProjectHub(projectId, projectName, profile.id || 'user'));
+                    const nextHub = loadProjectHub(projectId, projectName, profile.id || 'user');
+                    setHub(nextHub);
+                    setHasCachedHub(hasProjectHubCache(projectId));
                 }
             } catch (loadError) {
                 if (isMounted) {
@@ -114,10 +115,16 @@ export function useProjectHubData({
             });
 
             setError(null);
-            setHub((current) => ({
-                ...current,
-                brief: result.brief
-            }));
+            setHub((current) => {
+                const nextHub = {
+                    ...current,
+                    brief: result.brief
+                };
+
+                saveProjectHub(projectId, nextHub);
+                return nextHub;
+            });
+            setHasCachedHub(true);
             return result.brief;
         }
 
@@ -138,6 +145,7 @@ export function useProjectHubData({
             };
 
             saveProjectHub(projectId, nextHub);
+            setHasCachedHub(true);
             return nextHub;
         });
 
@@ -155,10 +163,16 @@ export function useProjectHubData({
             });
 
             setError(null);
-            setHub((current) => ({
-                ...current,
-                [resource]: [result.item, ...(current[resource] as HubRecordMap[TResource][])]
-            }));
+            setHub((current) => {
+                const nextHub = {
+                    ...current,
+                    [resource]: [result.item, ...(current[resource] as HubRecordMap[TResource][])]
+                } as ProjectHubData;
+
+                saveProjectHub(projectId, nextHub);
+                return nextHub;
+            });
+            setHasCachedHub(true);
             return result.item;
         }
 
@@ -218,6 +232,7 @@ export function useProjectHubData({
             } as ProjectHubData;
 
             saveProjectHub(projectId, nextHub);
+            setHasCachedHub(true);
             return nextHub;
         });
 
@@ -235,10 +250,16 @@ export function useProjectHubData({
             });
 
             setError(null);
-            setHub((current) => ({
-                ...current,
-                [resource]: replaceRecord(current[resource] as HubRecordMap[TResource][], result.item)
-            }));
+            setHub((current) => {
+                const nextHub = {
+                    ...current,
+                    [resource]: replaceRecord(current[resource] as HubRecordMap[TResource][], result.item)
+                } as ProjectHubData;
+
+                saveProjectHub(projectId, nextHub);
+                return nextHub;
+            });
+            setHasCachedHub(true);
             return result.item;
         }
 
@@ -265,6 +286,7 @@ export function useProjectHubData({
             } as ProjectHubData;
 
             saveProjectHub(projectId, nextHub);
+            setHasCachedHub(true);
             return nextHub;
         });
 
@@ -287,6 +309,7 @@ export function useProjectHubData({
             } as ProjectHubData;
 
             saveProjectHub(projectId, nextHub);
+            setHasCachedHub(true);
             return nextHub;
         });
     }, [projectId, remoteMode]);
@@ -294,6 +317,7 @@ export function useProjectHubData({
     return {
         hub,
         isLoading,
+        hasCachedHub,
         error,
         setHub,
         updateBrief,

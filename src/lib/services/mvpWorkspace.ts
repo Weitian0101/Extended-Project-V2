@@ -125,6 +125,14 @@ export function saveWorkspaceShell(shell: Pick<WorkspaceShellDto, 'projects' | '
     writeJson(STORAGE_KEYS.profile, shell.profile);
 }
 
+function hasJsonValue(key: string) {
+    if (!isBrowser()) {
+        return false;
+    }
+
+    return window.localStorage.getItem(key) !== null;
+}
+
 function readSessionValue(key: string) {
     if (!isBrowser()) {
         return null;
@@ -209,6 +217,11 @@ export function loadProjectDocument(projectId?: string, projectName?: string): P
     return normalizeProjectData(activeProjectId, projectName, raw);
 }
 
+export function hasProjectDocumentCache(projectId?: string) {
+    const activeProjectId = projectId || loadWorkspaceSession().activeProjectId || 'default';
+    return hasJsonValue(getProjectStorageKey(activeProjectId));
+}
+
 export function loadProjectHub(projectId: string, projectName?: string, updatedBy = 'user'): ProjectHubData {
     const projectDocument = loadProjectDocument(projectId, projectName);
     const raw = isBrowser() ? readJson<unknown>(getProjectHubStorageKey(projectId), null) : null;
@@ -226,6 +239,10 @@ export function loadProjectHub(projectId: string, projectName?: string, updatedB
     });
 
     return normalizeProjectHubData(raw, fallback);
+}
+
+export function hasProjectHubCache(projectId: string) {
+    return hasJsonValue(getProjectHubStorageKey(projectId));
 }
 
 export function saveProjectDocument(project: ProjectData) {

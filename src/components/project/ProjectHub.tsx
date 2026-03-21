@@ -90,6 +90,7 @@ interface ProjectHubProps {
     hub: ProjectHubData;
     currentSurface: ProjectSurface;
     isLoading: boolean;
+    hasCachedData?: boolean;
     error: string | null;
     onUpdateBrief: (updates: Partial<ProjectBrief>) => Promise<ProjectBrief>;
     onCreateRecord: <TResource extends ProjectHubResource>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
@@ -127,6 +128,7 @@ export function ProjectHub({
     hub,
     currentSurface,
     isLoading,
+    hasCachedData = false,
     error,
     onUpdateBrief,
     onCreateRecord,
@@ -716,7 +718,7 @@ export function ProjectHub({
         setComposerMode(null);
     };
 
-    if (isLoading) {
+    if (isLoading && !hasCachedData) {
         return (
             <BrandedLoadingScreen
                 compact

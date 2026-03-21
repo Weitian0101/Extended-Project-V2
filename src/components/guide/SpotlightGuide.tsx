@@ -10,6 +10,7 @@ type GuidePlacement = 'top' | 'right' | 'bottom' | 'left';
 interface GuideAction {
     label: string;
     onClick: () => void;
+    disabled?: boolean;
 }
 
 interface SpotlightGuideProps {
@@ -400,7 +401,7 @@ export function SpotlightGuide({
                         )}
                     </div>
                     {primaryAction && (
-                        <Button size="sm" onClick={primaryAction.onClick}>
+                        <Button size="sm" onClick={primaryAction.onClick} disabled={primaryAction.disabled}>
                             {primaryAction.label}
                         </Button>
                     )}

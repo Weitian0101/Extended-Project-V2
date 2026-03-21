@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { isRemoteBackendEnabled } from '@/lib/config/backend';
 import { ProjectData } from '@/types';
-import { loadProjectDocument, saveProjectDocument } from '@/lib/services/mvpWorkspace';
+import { hasProjectDocumentCache, loadProjectDocument, saveProjectDocument } from '@/lib/services/mvpWorkspace';
 import { fetchApiJson, fetchApiResponse } from '@/lib/services/remoteApi';
 
 export function useProjectData(projectId?: string, projectName?: string) {
@@ -10,6 +10,7 @@ export function useProjectData(projectId?: string, projectName?: string) {
     const [resolvedProjectId, setResolvedProjectId] = useState(projectId || 'default');
     const [project, setProjectState] = useState<ProjectData>(loadProjectDocument(projectId, projectName));
     const [isLoaded, setIsLoaded] = useState(false);
+    const [hasCachedProject, setHasCachedProject] = useState(() => hasProjectDocumentCache(projectId));
     const [error, setError] = useState<string | null>(null);
     const [canPersistRemote, setCanPersistRemote] = useState(!remoteBackendEnabled);
     const lastPersistedSnapshotRef = useRef<string>('');
@@ -19,6 +20,7 @@ export function useProjectData(projectId?: string, projectName?: string) {
         const loadProject = async () => {
             try {
                 setError(null);
+                setHasCachedProject(hasProjectDocumentCache(projectId));
 
                 if (remoteBackendEnabled && projectId) {
                     setCanPersistRemote(false);
@@ -28,7 +30,9 @@ export function useProjectData(projectId?: string, projectName?: string) {
 
                     setResolvedProjectId(body.document.id);
                     setProjectState(body.document);
+                    saveProjectDocument(body.document);
                     lastPersistedSnapshotRef.current = JSON.stringify(body.document);
+                    setHasCachedProject(true);
                     setCanPersistRemote(true);
                     return;
                 }
@@ -36,7 +40,9 @@ export function useProjectData(projectId?: string, projectName?: string) {
                 const nextProject = loadProjectDocument(projectId, projectName);
                 setResolvedProjectId(nextProject.id);
                 setProjectState(nextProject);
+                saveProjectDocument(nextProject);
                 lastPersistedSnapshotRef.current = JSON.stringify(nextProject);
+                setHasCachedProject(true);
                 setCanPersistRemote(false);
             } catch (error) {
                 setCanPersistRemote(false);
@@ -79,16 +85,17 @@ export function useProjectData(projectId?: string, projectName?: string) {
 
         const timer = window.setTimeout(async () => {
             try {
+                const nextProject = {
+                    ...project,
+                    id: resolvedProjectId
+                };
                 const response = await fetchApiResponse(`/api/projects/${resolvedProjectId}/document`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        document: {
-                            ...project,
-                            id: resolvedProjectId
-                        }
+                        document: nextProject
                     })
                 });
 
@@ -97,7 +104,9 @@ export function useProjectData(projectId?: string, projectName?: string) {
                     throw new Error(body.error || 'Failed to save project.');
                 }
 
+                saveProjectDocument(nextProject);
                 lastPersistedSnapshotRef.current = snapshot;
+                setHasCachedProject(true);
             } catch (error) {
                 setError(error instanceof Error ? error.message : 'Unable to save project.');
             }
@@ -112,5 +121,5 @@ export function useProjectData(projectId?: string, projectName?: string) {
         setProjectState((prev) => ({ ...prev, ...updates }));
     };
 
-    return { project, setProject: setProjectState, updateProject, isLoaded, error };
+    return { project, setProject: setProjectState, updateProject, isLoaded, hasCachedProject, error };
 }
