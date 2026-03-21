@@ -157,7 +157,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                     </div>
                     <div className="flex items-center gap-2 lg:gap-3">
                         <ThemeToggle compact />
-                        <Button onClick={() => onNavigate('auth')}>
+                        <Button variant="brand" onClick={() => onNavigate('auth')}>
                             Get Started <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     </div>
@@ -207,7 +207,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                             )}
                             style={showHeroSupport ? { animationDelay: '240ms' } : undefined}
                         >
-                            <Button size="lg" onClick={() => onNavigate('auth')}>
+                            <Button variant="brand" size="lg" onClick={() => onNavigate('auth')}>
                                 Enter Sandbox <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
                             <a

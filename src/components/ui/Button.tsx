@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 
 export interface ButtonProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'brand' | 'brand-outline';
     size?: 'sm' | 'md' | 'lg';
 }
 
@@ -19,6 +19,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                         'border-[var(--panel-border)] bg-transparent text-[var(--foreground-soft)] hover:-translate-y-0.5 hover:border-slate-300/70 hover:bg-[var(--panel)] hover:text-[var(--foreground)] dark:border-slate-700/70 dark:hover:border-sky-400/26 dark:hover:bg-slate-900/72 dark:hover:text-slate-50': variant === 'outline',
                         'border-transparent bg-transparent text-[var(--foreground-muted)] hover:-translate-y-0.5 hover:bg-[var(--panel)] hover:text-[var(--foreground)] dark:text-slate-300 dark:hover:bg-slate-900/72 dark:hover:text-slate-50': variant === 'ghost',
                         'border-rose-500/25 bg-[linear-gradient(135deg,#e11d48,#f43f5e)] text-white shadow-[0_14px_34px_rgba(244,63,94,0.22)] hover:-translate-y-0.5 hover:shadow-[0_20px_42px_rgba(225,29,72,0.24)] dark:border-rose-400/28 dark:shadow-[0_18px_40px_rgba(190,24,93,0.3)]': variant === 'danger',
+                        'border-[#EE8D01]/18 bg-[linear-gradient(135deg,#F2AB45,#E59618)] text-white shadow-[0_12px_26px_rgba(238,141,1,0.18)] hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(238,141,1,0.22)] focus-visible:ring-[#EE8D01]/30 dark:border-amber-300/26 dark:bg-[linear-gradient(135deg,#E8A131,#C97B12)] dark:shadow-[0_16px_34px_rgba(238,141,1,0.18)]': variant === 'brand',
+                        'border-[#EE8D01]/18 bg-[#EE8D01]/8 text-[#B86B08] shadow-[0_10px_22px_rgba(238,141,1,0.08)] hover:-translate-y-0.5 hover:border-[#EE8D01]/28 hover:bg-[#EE8D01]/12 hover:text-[#9C5D08] focus-visible:ring-[#EE8D01]/30 dark:border-amber-300/24 dark:bg-amber-400/8 dark:text-amber-200 dark:hover:border-amber-300/32 dark:hover:bg-amber-400/12 dark:hover:text-amber-50': variant === 'brand-outline',
                         'h-9 px-4 text-sm': size === 'sm',
                         'h-11 px-5 py-2 text-sm': size === 'md',
                         'h-12 px-6 text-base': size === 'lg',

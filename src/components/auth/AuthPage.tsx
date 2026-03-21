@@ -1,9 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState } from 'react';
 import { ArrowLeft, Github } from 'lucide-react';
 
-import { BrandLockup } from '@/components/ui/BrandLockup';
 import { Button } from '@/components/ui/Button';
 import { ParticleField } from '@/components/ui/ParticleField';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -193,11 +193,11 @@ export function AuthPage({
 
     const statusMessageClassName = statusTone === 'warning'
         ? 'mt-4 rounded-[20px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800'
-        : 'mt-4 rounded-[20px] border border-sky-100 bg-sky-50 px-4 py-3 text-sm leading-relaxed text-sky-800';
+        : 'mt-4 rounded-[20px] border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900';
 
     return (
         <div className="relative min-h-screen overflow-hidden px-4 py-6 lg:px-8">
-            <ParticleField className="opacity-75" />
+            <ParticleField className="opacity-65" />
             <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col gap-6 lg:gap-8">
                 <div className="flex items-center justify-between">
                     <button
@@ -213,10 +213,10 @@ export function AuthPage({
 
                 <div className="grid flex-1 gap-6 lg:grid-cols-[0.85fr_1.15fr]">
                     <div className="surface-panel relative overflow-hidden rounded-[34px] p-6 lg:p-8">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.12),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.1),transparent_34%)]" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(238,141,1,0.14),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(250,204,21,0.12),transparent_34%)]" />
                         <div className="relative flex h-full flex-col justify-between">
                             <div>
-                                <div className="text-[10px] uppercase tracking-[0.26em] text-[var(--foreground-muted)]">Workspace Access</div>
+                                <div className="text-[10px] uppercase tracking-[0.26em] text-[#C76F00]">Workspace Access</div>
                                 <h1 className="mt-4 text-3xl font-display font-semibold text-[var(--foreground)] lg:text-4xl">
                                     Sign in and continue your work.
                                 </h1>
@@ -228,8 +228,20 @@ export function AuthPage({
                     </div>
 
                     <div className="surface-panel-strong flex items-center justify-center rounded-[34px] p-4 lg:p-8">
-                        <div className="w-full max-w-md">
-                            <BrandLockup compact className="mb-8" />
+                        <div className="w-full max-w-lg">
+                            <div className="mb-8">
+                                <div className="mx-auto relative h-28 w-full max-w-[28rem] sm:h-32">
+                                    <Image
+                                        src="/images/logo.png"
+                                        alt="Academy of Design Thinking"
+                                        fill
+                                        priority
+                                        sizes="(min-width: 1024px) 448px, 320px"
+                                        style={{ objectFit: 'contain', objectPosition: 'center' }}
+                                        className="mix-blend-multiply dark:mix-blend-normal"
+                                    />
+                                </div>
+                            </div>
 
                             <div className="mb-8">
                                 <h2 className="text-3xl font-display font-semibold text-[var(--foreground)]">
@@ -243,7 +255,7 @@ export function AuthPage({
                                         : 'Create an account to start a new workspace and invite your team.'}
                                 </p>
                                 {infoMessage && (
-                                    <div className="mt-4 rounded-[20px] border border-sky-100 bg-sky-50 px-4 py-3 text-sm leading-relaxed text-sky-800">
+                                    <div className="mt-4 rounded-[20px] border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
                                         {infoMessage}
                                     </div>
                                 )}
@@ -255,10 +267,10 @@ export function AuthPage({
                                 {actionHint === 'resend-confirmation' && onResendConfirmationRequest && (
                                     <div className="mt-3">
                                         <button
-                                            type="button"
+                                        type="button"
                                             onClick={() => void handleResendConfirmation()}
                                             disabled={isLoading}
-                                            className="text-sm font-medium text-sky-700 transition-colors hover:text-sky-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="text-sm font-medium text-[#C76F00] transition-colors hover:text-[#A95F00] disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             Resend confirmation email
                                         </button>
@@ -276,7 +288,7 @@ export function AuthPage({
                                             setStatusTone('info');
                                             setActionHint(null);
                                         }}
-                                        className={`rounded-full px-4 py-3 text-sm font-semibold transition-all ${mode === 'signin' ? 'border border-sky-500/20 bg-[linear-gradient(135deg,#0ea5e9,#2563eb)] text-white shadow-[0_16px_24px_rgba(37,99,235,0.18)]' : 'text-[var(--foreground-soft)]'}`}
+                                        className={`rounded-full px-4 py-3 text-sm font-semibold transition-all ${mode === 'signin' ? 'border border-[#EE8D01]/18 bg-[linear-gradient(135deg,#F2AB45,#E59618)] text-white shadow-[0_12px_22px_rgba(238,141,1,0.18)]' : 'text-[var(--foreground-soft)]'}`}
                                     >
                                         Sign In
                                     </button>
@@ -288,7 +300,7 @@ export function AuthPage({
                                             setStatusTone('info');
                                             setActionHint(null);
                                         }}
-                                        className={`rounded-full px-4 py-3 text-sm font-semibold transition-all ${mode === 'register' ? 'border border-sky-500/20 bg-[linear-gradient(135deg,#0ea5e9,#2563eb)] text-white shadow-[0_16px_24px_rgba(37,99,235,0.18)]' : 'text-[var(--foreground-soft)]'}`}
+                                        className={`rounded-full px-4 py-3 text-sm font-semibold transition-all ${mode === 'register' ? 'border border-[#EE8D01]/18 bg-[linear-gradient(135deg,#F2AB45,#E59618)] text-white shadow-[0_12px_22px_rgba(238,141,1,0.18)]' : 'text-[var(--foreground-soft)]'}`}
                                     >
                                         Register
                                     </button>
@@ -304,7 +316,7 @@ export function AuthPage({
                                         type="email"
                                         required
                                         autoComplete="email"
-                                        className="w-full rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none transition-all placeholder:text-[var(--foreground-muted)] focus:border-sky-400 focus:bg-[var(--panel-strong)] focus:ring-4 focus:ring-sky-400/10"
+                                        className="w-full rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none transition-all placeholder:text-[var(--foreground-muted)] focus:border-[#EE8D01] focus:bg-[var(--panel-strong)] focus:ring-4 focus:ring-[#EE8D01]/10"
                                         placeholder="innovator@example.com"
                                         value={email}
                                         onChange={(event) => setEmail(event.target.value)}
@@ -318,7 +330,7 @@ export function AuthPage({
                                         type="password"
                                         required
                                         autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                                        className="w-full rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none transition-all placeholder:text-[var(--foreground-muted)] focus:border-sky-400 focus:bg-[var(--panel-strong)] focus:ring-4 focus:ring-sky-400/10"
+                                        className="w-full rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none transition-all placeholder:text-[var(--foreground-muted)] focus:border-[#EE8D01] focus:bg-[var(--panel-strong)] focus:ring-4 focus:ring-[#EE8D01]/10"
                                         placeholder="Password"
                                         value={password}
                                         onChange={(event) => setPassword(event.target.value)}
@@ -327,7 +339,7 @@ export function AuthPage({
                                         <button
                                             type="button"
                                             onClick={() => void handlePasswordReset()}
-                                            className="mt-2 text-sm font-medium text-sky-700 transition-colors hover:text-sky-800"
+                                            className="mt-2 text-sm font-medium text-[#C76F00] transition-colors hover:text-[#A95F00]"
                                         >
                                             Forgot password?
                                         </button>
@@ -342,7 +354,7 @@ export function AuthPage({
                                             type="password"
                                             required
                                             autoComplete="new-password"
-                                            className="w-full rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none transition-all placeholder:text-[var(--foreground-muted)] focus:border-sky-400 focus:bg-[var(--panel-strong)] focus:ring-4 focus:ring-sky-400/10"
+                                            className="w-full rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none transition-all placeholder:text-[var(--foreground-muted)] focus:border-[#EE8D01] focus:bg-[var(--panel-strong)] focus:ring-4 focus:ring-[#EE8D01]/10"
                                             placeholder="Confirm password"
                                             value={confirmPassword}
                                             onChange={(event) => setConfirmPassword(event.target.value)}
@@ -350,7 +362,7 @@ export function AuthPage({
                                     </div>
                                 )}
 
-                                <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+                                <Button type="submit" variant="brand" size="lg" className="w-full" disabled={isLoading}>
                                     {isLoading ? 'Processing...' : mode === 'signin' ? 'Enter Workspace' : 'Create Account'}
                                 </Button>
                             </form>
@@ -359,7 +371,7 @@ export function AuthPage({
                                 <div className="mt-4">
                                     <Button
                                         type="button"
-                                        variant="secondary"
+                                        variant="brand-outline"
                                         size="lg"
                                         className="w-full"
                                         disabled={isLoading}
