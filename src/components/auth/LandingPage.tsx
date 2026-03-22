@@ -22,7 +22,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { cn } from '@/lib/utils';
 
 interface LandingPageProps {
-    onNavigate: (view: 'auth' | 'sandbox') => void;
+    onNavigate: (view: 'auth' | 'sandbox', options?: { authMode?: 'signin' | 'register' }) => void;
 }
 
 const STAGE_CARDS = [
@@ -143,21 +143,29 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 <div className="surface-panel-strong mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-full px-4 py-3 lg:px-5">
                     <BrandLockup compact framed={false} className="min-w-0" />
                     <div className="hidden items-center gap-6 lg:flex">
-                        <a href="#sandbox-demo" className="text-sm font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]">Sandbox Demo</a>
-                        <a href="#beyond-post-its" className="text-sm font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]">Beyond Post-its</a>
-                        <a href="#workflow" className="text-sm font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]">Workflow</a>
+                        <a href="#sandbox-demo" className="text-[15px] font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]">Sandbox Demo</a>
+                        <a href="#beyond-post-its" className="text-[15px] font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]">Beyond Post-its</a>
+                        <a href="#workflow" className="text-[15px] font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]">Workflow</a>
                         <a
                             href="https://www.academyofdesignthinking.com/"
                             target="_blank"
                             rel="noreferrer"
-                            className="text-sm font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]"
+                            className="text-[15px] font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]"
                         >
                             ADT Homepage
                         </a>
                     </div>
                     <div className="flex items-center gap-2 lg:gap-3">
                         <ThemeToggle compact />
-                        <Button variant="brand" onClick={() => onNavigate('auth')}>
+                        <span className="h-5 w-px bg-[var(--panel-border)]" aria-hidden="true" />
+                        <button
+                            type="button"
+                            onClick={() => onNavigate('auth', { authMode: 'signin' })}
+                            className="text-[15px] font-medium text-[var(--foreground)] underline decoration-[var(--foreground-muted)] underline-offset-4 transition-colors hover:text-[#C76F00] hover:decoration-[#C76F00] dark:hover:text-sky-300 dark:hover:decoration-sky-300 lg:text-base"
+                        >
+                            Log in
+                        </button>
+                        <Button variant="brand" className="text-[15px]" onClick={() => onNavigate('auth', { authMode: 'register' })}>
                             Get Started <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     </div>
@@ -207,7 +215,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                             )}
                             style={showHeroSupport ? { animationDelay: '240ms' } : undefined}
                         >
-                            <Button variant="brand" size="lg" onClick={() => onNavigate('auth')}>
+                            <Button variant="brand" size="lg" onClick={() => onNavigate('auth', { authMode: 'signin' })}>
                                 Enter Sandbox <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
                             <a

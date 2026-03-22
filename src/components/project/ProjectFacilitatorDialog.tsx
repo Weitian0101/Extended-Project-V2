@@ -63,7 +63,7 @@ export function ProjectFacilitatorDialog({
     }
 
     return (
-        <div className="fixed inset-0 z-[120]">
+        <div className="modal-backdrop-enter fixed inset-0 z-[120]">
             <button
                 type="button"
                 className="absolute inset-0 bg-slate-950/28 backdrop-blur-[2px]"
@@ -71,7 +71,7 @@ export function ProjectFacilitatorDialog({
                 aria-label="Close AI facilitator"
             />
 
-            <div className="absolute bottom-4 left-4 right-4 max-h-[min(88vh,54rem)] rounded-[30px] border border-[var(--panel-border)] bg-[var(--panel-strong)] shadow-[0_28px_68px_rgba(15,23,42,0.24)] backdrop-blur-2xl lg:bottom-6 lg:left-6 lg:right-auto lg:w-[29rem]">
+            <div className="modal-sheet-enter absolute bottom-4 left-4 right-4 max-h-[min(88vh,54rem)] rounded-[30px] border border-[var(--panel-border)] bg-[var(--panel-strong)] shadow-[0_28px_68px_rgba(15,23,42,0.24)] backdrop-blur-2xl lg:bottom-6 lg:left-6 lg:right-auto lg:w-[29rem]">
                 <div className="flex items-start justify-between gap-4 border-b border-[var(--panel-border)] px-5 py-5">
                     <div className="min-w-0">
                         <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">

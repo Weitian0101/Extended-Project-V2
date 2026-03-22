@@ -35,7 +35,7 @@ export function BrandedLoadingScreen({
                 <div className="relative flex h-40 w-40 items-center justify-center">
                     <div className="loading-logo-breathe absolute inset-0 rounded-full bg-sky-400/16 blur-[44px] dark:bg-sky-400/14" />
                     <div className="loading-logo-breathe absolute inset-[14%] rounded-full bg-amber-300/10 blur-[28px]" style={{ animationDelay: '-1.2s' }} />
-                    <div className="loading-logo-breathe relative h-24 w-24 sm:h-28 sm:w-28">
+                    <div className="relative h-24 w-24 sm:h-28 sm:w-28">
                         <Image
                             src={logoSrc}
                             alt="Academy of Design Thinking"
@@ -47,7 +47,7 @@ export function BrandedLoadingScreen({
                             decoding="sync"
                             draggable={false}
                             sizes="112px"
-                            className="h-full w-full object-contain object-center"
+                            className="loading-logo-mark h-full w-full object-contain object-center"
                             onError={() => {
                                 if (logoSrc !== '/images/logo.png') {
                                     setLogoSrc('/images/logo.png');

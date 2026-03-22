@@ -1137,7 +1137,7 @@ export function MethodSplitView({
             </div>
 
             {isReferencePreviewOpen && (
-                <div className="absolute inset-0 z-[70] flex items-center justify-center bg-slate-950/62 p-4 backdrop-blur-sm dark:bg-slate-950/78">
+                <div className="modal-backdrop-enter absolute inset-0 z-[70] flex items-center justify-center bg-slate-950/62 p-4 backdrop-blur-sm dark:bg-slate-950/78">
                     <button
                         type="button"
                         aria-label="Close enlarged reference"
@@ -1145,7 +1145,7 @@ export function MethodSplitView({
                         onClick={() => setIsReferencePreviewOpen(false)}
                     />
 
-                    <div className="surface-panel-strong relative z-10 flex h-full max-h-[min(92vh,72rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[30px] shadow-[0_30px_80px_rgba(2,6,23,0.28)]">
+                    <div className="modal-panel-enter surface-panel-strong relative z-10 flex h-full max-h-[min(92vh,72rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[30px] shadow-[0_30px_80px_rgba(2,6,23,0.28)]">
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.22),transparent_48%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_48%)]" />
                         <div className="relative flex items-center justify-between gap-4 border-b border-[var(--panel-border)] px-5 py-4 text-[var(--foreground)] lg:px-6">
                             <div>

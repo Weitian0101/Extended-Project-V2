@@ -61,6 +61,7 @@ function HomeShell() {
   };
 
   const [view, setView] = useState<AppViewState>('landing');
+  const [authViewMode, setAuthViewMode] = useState<'signin' | 'register'>('signin');
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [activeSurface, setActiveSurface] = useState<ProjectSurface>('hub');
   const [projects, setProjects] = useState<WorkspaceProject[]>(DEFAULT_PROJECTS);
@@ -407,10 +408,19 @@ function HomeShell() {
 
   switch (view) {
     case 'landing':
-      return <LandingPage onNavigate={(target) => setView(target)} />;
+      return (
+        <LandingPage
+          onNavigate={(target, options) => {
+            if (target === 'auth') {
+              setAuthViewMode(options?.authMode ?? 'signin');
+            }
+            setView(target);
+          }}
+        />
+      );
 
     case 'auth':
-      return <AuthPage onBack={() => setView('landing')} onComplete={handleAuthComplete} />;
+      return <AuthPage initialMode={authViewMode} onBack={() => setView('landing')} onComplete={handleAuthComplete} />;
 
     case 'dashboard':
       return (
@@ -508,6 +518,15 @@ function HomeShell() {
       return <SignOutPage onComplete={() => setView('landing')} />;
 
     default:
-      return <LandingPage onNavigate={(target) => setView(target)} />;
+      return (
+        <LandingPage
+          onNavigate={(target, options) => {
+            if (target === 'auth') {
+              setAuthViewMode(options?.authMode ?? 'signin');
+            }
+            setView(target);
+          }}
+        />
+      );
   }
 }

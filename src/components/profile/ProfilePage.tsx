@@ -288,6 +288,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                     </div>
                 )}
 
+                <div key={view} className="profile-content-enter">
                 {view === 'overview' && (
                     <>
                         <section className="surface-panel-strong rounded-[36px] p-6 lg:p-10">
@@ -697,6 +698,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                         onSelectPlan={handleSelectPlan}
                     />
                 )}
+                </div>
             </main>
 
             <PlanCheckoutDialog

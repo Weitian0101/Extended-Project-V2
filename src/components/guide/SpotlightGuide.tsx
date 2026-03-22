@@ -347,7 +347,7 @@ export function SpotlightGuide({
     }
 
     const guideOverlay = (
-        <div className="pointer-events-none fixed inset-0 z-[160]">
+        <div className="modal-backdrop-enter pointer-events-none fixed inset-0 z-[160]">
             <div className="absolute inset-0 bg-slate-950/7" />
 
             {highlightStyle && (
@@ -359,7 +359,7 @@ export function SpotlightGuide({
 
             <div
                 ref={guideCardRef}
-                className="pointer-events-auto absolute rounded-[28px] border border-[var(--panel-border)] bg-[color:var(--panel-strong)]/97 p-4 shadow-[0_20px_44px_rgba(15,23,42,0.18)] backdrop-blur-md transition-all duration-200"
+                className="modal-panel-enter pointer-events-auto absolute rounded-[28px] border border-[var(--panel-border)] bg-[color:var(--panel-strong)]/97 p-4 shadow-[0_20px_44px_rgba(15,23,42,0.18)] backdrop-blur-md transition-all duration-200"
                 style={{
                     ...cardStyle,
                     overflowY: 'auto'

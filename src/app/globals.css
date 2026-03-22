@@ -191,6 +191,10 @@ html.dark .surface-panel-muted {
   transform: translateY(0) scale(0.985);
 }
 
+:where(button, [role="button"], a[href], summary, label[for], [class*="cursor-pointer"]):not(:disabled) {
+  cursor: pointer;
+}
+
 html.theme-switching,
 html.theme-switching body,
 html.theme-switching body::before,
@@ -239,6 +243,11 @@ html.theme-switching span {
 .loading-logo-breathe {
   animation: loadingLogoBreathe 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   will-change: transform, opacity, box-shadow;
+}
+
+.loading-logo-mark {
+  animation: loadingLogoMarkBreathe 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  will-change: transform, opacity;
 }
 
 .loading-progress-bar {
@@ -439,6 +448,17 @@ html.theme-switching span {
   }
 }
 
+@keyframes loadingLogoMarkBreathe {
+  0%, 100% {
+    transform: scale(0.965);
+    opacity: 0.82;
+  }
+  50% {
+    transform: scale(1.015);
+    opacity: 1;
+  }
+}
+
 @keyframes loadingProgressSlide {
   0% {
     transform: translateX(-40%) scaleX(0.82);
@@ -619,6 +639,36 @@ html.theme-switching span {
   animation: authStepEnter 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.profile-content-enter {
+  animation: profileContentEnter 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dialog-backdrop-enter {
+  animation: dialogBackdropEnter 220ms ease-out;
+}
+
+.dialog-panel-enter {
+  animation: dialogPanelEnter 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal-backdrop-enter {
+  animation: dialogBackdropEnter 220ms ease-out;
+}
+
+.modal-panel-enter {
+  animation: dialogPanelEnter 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.modal-sheet-enter {
+  animation: modalSheetEnter 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.project-surface-enter {
+  height: 100%;
+  min-height: 0;
+  animation: projectSurfaceEnter 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @keyframes softRevealUp {
   0% {
     opacity: 0;
@@ -665,6 +715,67 @@ html.theme-switching span {
   }
 }
 
+@keyframes profileContentEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.992);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes dialogBackdropEnter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes dialogPanelEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.985);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes modalSheetEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0) scale(0.988);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes projectSurfaceEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.992);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -679,6 +790,7 @@ html.theme-switching span {
   .book-shell .book-flip-sheet,
   .book-shell .book-badge,
   .loading-logo-breathe,
+  .loading-logo-mark,
   .loading-progress-bar,
   .animate-hero-rise,
   .animate-hero-aurora,
@@ -687,6 +799,13 @@ html.theme-switching span {
   .animate-reference-page-in,
   .auth-panel-enter,
   .auth-step-enter,
+  .profile-content-enter,
+  .dialog-backdrop-enter,
+  .dialog-panel-enter,
+  .modal-backdrop-enter,
+  .modal-panel-enter,
+  .modal-sheet-enter,
+  .project-surface-enter,
   .hero-typing-caret,
   .loading-orbit,
   .loading-dot {

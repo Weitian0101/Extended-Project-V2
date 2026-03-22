@@ -22,12 +22,12 @@ interface AuthPageProps {
     onBack: () => void;
     onComplete?: () => void;
     authMode?: 'local' | 'supabase';
+    initialMode?: 'signin' | 'register';
     showRegister?: boolean;
     infoMessage?: string | null;
     errorMessage?: string | null;
     onCredentialsSubmit?: (mode: 'signin' | 'register', email: string, password: string) => Promise<AuthResult>;
     onIdentityCheck?: (mode: 'signin' | 'register', email: string) => Promise<AuthResult>;
-    onAdminAccess?: () => Promise<void>;
     onPasswordResetRequest?: (email: string) => Promise<AuthResult>;
     onResendConfirmationRequest?: (email: string) => Promise<AuthResult>;
 }
@@ -36,6 +36,7 @@ interface FloatingFieldProps {
     id?: string;
     label: string;
     type?: string;
+    name?: string;
     autoComplete?: string;
     inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
     value: string;
@@ -49,6 +50,7 @@ function FloatingField({
     id,
     label,
     type = 'text',
+    name,
     autoComplete,
     inputMode,
     value,
@@ -91,8 +93,11 @@ function FloatingField({
                     id={fieldId}
                     ref={inputRef}
                     type={type}
+                    name={name}
                     autoComplete={autoComplete}
                     inputMode={inputMode}
+                    autoCapitalize={type === 'email' || type === 'password' ? 'none' : undefined}
+                    spellCheck={type === 'email' ? false : undefined}
                     required={required}
                     disabled={disabled}
                     value={value}
@@ -135,16 +140,16 @@ export function AuthPage(props: AuthPageProps) {
         onBack,
         onComplete,
         authMode = 'local',
+        initialMode = 'signin',
         showRegister = true,
         infoMessage,
         errorMessage,
         onCredentialsSubmit,
         onIdentityCheck,
-        onAdminAccess,
         onPasswordResetRequest,
         onResendConfirmationRequest
     } = props;
-    const [mode, setMode] = useState<'signin' | 'register'>('signin');
+    const [mode, setMode] = useState<'signin' | 'register'>(showRegister ? initialMode : 'signin');
     const [signInStep, setSignInStep] = useState<'email' | 'password'>('email');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -155,7 +160,9 @@ export function AuthPage(props: AuthPageProps) {
     const [actionHint, setActionHint] = useState<AuthActionHint | null>(null);
     const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
     const [oauthNotice, setOauthNotice] = useState<string | null>(null);
+    const emailInputRef = useRef<HTMLInputElement>(null);
     const passwordInputRef = useRef<HTMLInputElement>(null);
+    const confirmPasswordInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (typeof document === 'undefined') {
@@ -169,8 +176,24 @@ export function AuthPage(props: AuthPageProps) {
         };
     }, []);
 
+    useEffect(() => {
+        const nextMode = showRegister ? initialMode : 'signin';
+        setMode(nextMode);
+        setSignInStep(nextMode === 'signin' ? 'email' : 'password');
+        setPassword('');
+        setConfirmPassword('');
+        setVerifiedEmail(null);
+        setStatusMessage(null);
+        setStatusTone('info');
+        setActionHint(null);
+        setOauthNotice(null);
+    }, [initialMode, showRegister]);
+
     const isSignInEmailStep = mode === 'signin' && signInStep === 'email';
     const normalizeEmail = (value: string) => value.trim().toLowerCase();
+    const readFieldValue = (ref: React.RefObject<HTMLInputElement | null>, fallback: string) => {
+        return ref.current?.value ?? fallback;
+    };
 
     const resetStatus = () => {
         setStatusMessage(null);
@@ -185,13 +208,17 @@ export function AuthPage(props: AuthPageProps) {
         setSignInStep('password');
 
         window.requestAnimationFrame(() => {
+            const autofilledPassword = passwordInputRef.current?.value || '';
+            if (autofilledPassword) {
+                setPassword(autofilledPassword);
+            }
             passwordInputRef.current?.focus();
         });
     };
 
     const handleContinueWithEmail = async () => {
         resetStatus();
-        const normalizedEmail = normalizeEmail(email);
+        const normalizedEmail = normalizeEmail(readFieldValue(emailInputRef, email));
 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
             setStatusMessage('Enter a valid email address.');
@@ -240,6 +267,13 @@ export function AuthPage(props: AuthPageProps) {
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
         resetStatus();
+        const nextEmail = normalizeEmail(readFieldValue(emailInputRef, email));
+        const nextPassword = readFieldValue(passwordInputRef, password);
+        const nextConfirmPassword = readFieldValue(confirmPasswordInputRef, confirmPassword);
+
+        setEmail(nextEmail);
+        setPassword(nextPassword);
+        setConfirmPassword(nextConfirmPassword);
 
         if (isSignInEmailStep) {
             await handleContinueWithEmail();
@@ -247,20 +281,20 @@ export function AuthPage(props: AuthPageProps) {
         }
 
         if (mode === 'register') {
-            if (password.length < 8) {
+            if (nextPassword.length < 8) {
                 setStatusMessage('Use a password with at least 8 characters.');
                 setStatusTone('warning');
                 return;
             }
 
-            if (password !== confirmPassword) {
+            if (nextPassword !== nextConfirmPassword) {
                 setStatusMessage('Passwords do not match.');
                 setStatusTone('warning');
                 return;
             }
         }
 
-        if (mode === 'signin' && password.length === 0) {
+        if (mode === 'signin' && nextPassword.length === 0) {
             setStatusMessage('Enter your password to continue.');
             setStatusTone('warning');
             return;
@@ -270,7 +304,7 @@ export function AuthPage(props: AuthPageProps) {
 
         try {
             if (authMode === 'supabase' && onCredentialsSubmit) {
-                const result = await onCredentialsSubmit(mode, email, password);
+                const result = await onCredentialsSubmit(mode, nextEmail, nextPassword);
 
                 if (!result.ok) {
                     setStatusMessage(result.message || 'Authentication failed.');
@@ -310,7 +344,8 @@ export function AuthPage(props: AuthPageProps) {
     };
 
     const handlePasswordReset = async () => {
-        if (!onPasswordResetRequest || !email.trim()) {
+        const currentEmail = normalizeEmail(readFieldValue(emailInputRef, email));
+        if (!onPasswordResetRequest || !currentEmail.trim()) {
             setStatusMessage('Enter your email first, then request a reset link.');
             setStatusTone('warning');
             return;
@@ -320,7 +355,8 @@ export function AuthPage(props: AuthPageProps) {
         resetStatus();
 
         try {
-            const result = await onPasswordResetRequest(email);
+            setEmail(currentEmail);
+            const result = await onPasswordResetRequest(currentEmail);
             setStatusMessage(result.message || (result.ok ? 'Password reset email sent.' : 'Unable to send reset email.'));
             setStatusTone(result.ok ? 'info' : 'warning');
             setActionHint(result.action || null);
@@ -330,7 +366,8 @@ export function AuthPage(props: AuthPageProps) {
     };
 
     const handleResendConfirmation = async () => {
-        if (!onResendConfirmationRequest || !email.trim()) {
+        const currentEmail = normalizeEmail(readFieldValue(emailInputRef, email));
+        if (!onResendConfirmationRequest || !currentEmail.trim()) {
             setStatusMessage('Enter your email first, then request a new confirmation link.');
             setStatusTone('warning');
             return;
@@ -340,27 +377,11 @@ export function AuthPage(props: AuthPageProps) {
         resetStatus();
 
         try {
-            const result = await onResendConfirmationRequest(email);
+            setEmail(currentEmail);
+            const result = await onResendConfirmationRequest(currentEmail);
             setStatusMessage(result.message || (result.ok ? 'A new confirmation email is on its way.' : 'Unable to resend confirmation email.'));
             setStatusTone(result.ok ? 'info' : 'warning');
         } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleAdminAccess = async () => {
-        if (!onAdminAccess) {
-            return;
-        }
-
-        setIsLoading(true);
-        resetStatus();
-
-        try {
-            await onAdminAccess();
-        } catch (error) {
-            setStatusMessage(error instanceof Error ? error.message : 'Unable to open admin access.');
-            setStatusTone('warning');
             setIsLoading(false);
         }
     };
@@ -378,8 +399,8 @@ export function AuthPage(props: AuthPageProps) {
         : isSignInEmailStep
             ? 'Continue with email'
             : mode === 'signin'
-                ? 'Enter Workspace'
-                : 'Create Account';
+                ? 'Log in'
+                : 'Sign up';
 
     return (
         <div className="relative isolate min-h-screen overflow-hidden px-4 py-5 lg:px-8">
@@ -421,13 +442,33 @@ export function AuthPage(props: AuthPageProps) {
                             <div className="mx-auto w-full max-w-[21.75rem] px-1 sm:max-w-[22.5rem]">
                                 <div key={`auth-copy-${mode}-${signInStep}`} className="auth-panel-enter mb-7 pt-1 text-center sm:pt-2">
                                     <h2 className="text-[1.7rem] font-display font-semibold text-[var(--foreground)] sm:text-[1.95rem]">
-                                        {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+                                        {mode === 'signin' ? 'Log in' : 'Sign up'}
                                     </h2>
-                                    {((mode === 'signin' && signInStep === 'password') || mode === 'register') && (
+                                    {showRegister && (
                                         <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-soft)]">
-                                            {mode === 'signin'
-                                                ? 'Enter your password to continue.'
-                                                : 'Create an account to start a new workspace and invite your team.'}
+                                            {mode === 'signin' ? (
+                                                <>
+                                                    Don&apos;t have an account?{' '}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleModeChange('register')}
+                                                        className="font-semibold text-[#C76F00] transition-colors hover:text-[#A95F00] dark:text-sky-300 dark:hover:text-sky-200"
+                                                    >
+                                                        Sign Up
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Already have an account?{' '}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleModeChange('signin')}
+                                                        className="font-semibold text-[#C76F00] transition-colors hover:text-[#A95F00] dark:text-sky-300 dark:hover:text-sky-200"
+                                                    >
+                                                        Log in
+                                                    </button>
+                                                </>
+                                            )}
                                         </p>
                                     )}
                                     {infoMessage && (
@@ -454,56 +495,66 @@ export function AuthPage(props: AuthPageProps) {
                                     )}
                                 </div>
 
-                                {showRegister && (
-                                    <div data-auth-mode-switch="true" className="relative mb-6 grid grid-cols-2 gap-2 rounded-[15px] border border-[var(--panel-border)] bg-[var(--panel)] p-1.5">
-                                        <div
-                                            data-auth-mode-indicator={mode}
-                                            className={cn(
-                                                'pointer-events-none absolute inset-y-1.5 left-1.5 w-[calc(50%-0.5rem)] rounded-[12px] border border-[#EE8D01]/18 bg-[linear-gradient(135deg,#F2AB45,#E59618)] shadow-[0_12px_22px_rgba(238,141,1,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-sky-400/28 dark:bg-[linear-gradient(135deg,#38bdf8,#2563eb)] dark:shadow-[0_14px_28px_rgba(37,99,235,0.24)]',
-                                                mode === 'register' && 'translate-x-[calc(100%+0.5rem)]'
-                                            )}
+                                <form key={`auth-form-${mode}-${signInStep}`} onSubmit={handleSubmit} autoComplete="on" className="auth-panel-enter space-y-4">
+                                    {mode === 'signin' && signInStep === 'password' ? (
+                                        <div className="auth-step-enter space-y-3">
+                                            <div className="rounded-[16px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3.5">
+                                                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
+                                                    Email
+                                                </div>
+                                                <div className="mt-1.5 text-sm font-medium text-[var(--foreground)]">
+                                                    {verifiedEmail || email}
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="email"
+                                                name="username"
+                                                autoComplete="username"
+                                                value={verifiedEmail || email}
+                                                readOnly
+                                                tabIndex={-1}
+                                                aria-hidden="true"
+                                                className="sr-only"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <FloatingField
+                                            label="Email"
+                                            type="email"
+                                            name={mode === 'signin' ? 'username' : 'email'}
+                                            autoComplete={mode === 'signin' ? 'username' : 'email'}
+                                            inputMode="email"
+                                            value={email}
+                                            onChange={(nextValue) => {
+                                                setEmail(nextValue);
+
+                                                if (mode === 'signin' && signInStep === 'password' && normalizeEmail(nextValue) !== verifiedEmail) {
+                                                    setSignInStep('email');
+                                                    setVerifiedEmail(null);
+                                                    setPassword('');
+                                                }
+                                            }}
+                                            inputRef={emailInputRef}
+                                            required
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleModeChange('signin')}
-                                            className={`relative z-10 rounded-[11px] px-4 py-2 text-sm font-semibold transition-colors duration-200 ${mode === 'signin' ? 'text-white' : 'text-[var(--foreground-soft)]'}`}
-                                        >
-                                            Sign In
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleModeChange('register')}
-                                            className={`relative z-10 rounded-[11px] px-4 py-2 text-sm font-semibold transition-colors duration-200 ${mode === 'register' ? 'text-white' : 'text-[var(--foreground-soft)]'}`}
-                                        >
-                                            Register
-                                        </button>
-                                    </div>
-                                )}
-
-                                <form key={`auth-form-${mode}`} onSubmit={handleSubmit} className="auth-panel-enter space-y-3">
-                                    <FloatingField
-                                        label="Email"
-                                        type="email"
-                                        autoComplete="email"
-                                        inputMode="email"
-                                        value={email}
-                                        onChange={(nextValue) => {
-                                            setEmail(nextValue);
-
-                                            if (mode === 'signin' && signInStep === 'password' && normalizeEmail(nextValue) !== verifiedEmail) {
-                                                setSignInStep('email');
-                                                setVerifiedEmail(null);
-                                                setPassword('');
-                                            }
-                                        }}
-                                        required
-                                    />
+                                    )}
+                                    {mode === 'signin' && signInStep === 'email' && (
+                                        <input
+                                            type="password"
+                                            name="current-password"
+                                            autoComplete="current-password"
+                                            tabIndex={-1}
+                                            aria-hidden="true"
+                                            className="sr-only"
+                                        />
+                                    )}
 
                                     {mode === 'signin' && signInStep === 'password' && (
-                                        <div className="auth-step-enter space-y-2.5">
+                                        <div className="auth-step-enter space-y-3">
                                             <FloatingField
                                                 label="Password"
                                                 type="password"
+                                                name="password"
                                                 autoComplete="current-password"
                                                 value={password}
                                                 onChange={setPassword}
@@ -526,6 +577,9 @@ export function AuthPage(props: AuthPageProps) {
                                                         setSignInStep('email');
                                                         setVerifiedEmail(null);
                                                         setPassword('');
+                                                        window.requestAnimationFrame(() => {
+                                                            emailInputRef.current?.focus();
+                                                        });
                                                     }}
                                                     className="text-sm font-medium text-[var(--foreground-muted)] transition-colors hover:text-[var(--foreground)]"
                                                 >
@@ -540,41 +594,30 @@ export function AuthPage(props: AuthPageProps) {
                                             <FloatingField
                                                 label="Password"
                                                 type="password"
+                                                name="new-password"
                                                 autoComplete="new-password"
                                                 value={password}
                                                 onChange={setPassword}
+                                                inputRef={passwordInputRef}
                                                 required
                                             />
                                             <FloatingField
                                                 label="Confirm password"
                                                 type="password"
+                                                name="confirm-password"
                                                 autoComplete="new-password"
                                                 value={confirmPassword}
                                                 onChange={setConfirmPassword}
+                                                inputRef={confirmPasswordInputRef}
                                                 required
                                             />
                                         </div>
                                     )}
 
-                                    <Button type="submit" variant="brand" size="lg" className="mt-2 h-[42px] w-full rounded-[14px] text-[0.94rem]" disabled={isLoading}>
+                                    <Button type="submit" variant="brand" size="lg" className="mt-5 h-[42px] w-full rounded-[14px] text-[0.94rem]" disabled={isLoading}>
                                         {primaryButtonLabel}
                                     </Button>
                                 </form>
-
-                                {mode === 'signin' && onAdminAccess && (
-                                    <div className="mt-3">
-                                        <Button
-                                            type="button"
-                                            variant="brand-outline"
-                                            size="lg"
-                                            className="h-[42px] w-full rounded-[14px] text-[0.94rem]"
-                                            disabled={isLoading}
-                                            onClick={() => void handleAdminAccess()}
-                                        >
-                                            {isLoading ? 'Opening...' : 'Open Test Workspace'}
-                                        </Button>
-                                    </div>
-                                )}
 
                                 {mode === 'signin' && showRegister && (
                                     <div className="mt-5 border-t border-[var(--panel-border)] pt-4">
@@ -611,14 +654,29 @@ export function AuthPage(props: AuthPageProps) {
                             </div>
 
                             <div className="mt-7 border-t border-[var(--panel-border)] pt-5 text-center">
-                                <div className="flex items-center justify-center gap-5 text-sm text-[var(--foreground-soft)]">
-                                    <Link href="/terms-of-use" className="transition-colors hover:text-[var(--foreground)]">
-                                        Terms of Use
-                                    </Link>
-                                    <Link href="/privacy-policy" className="transition-colors hover:text-[var(--foreground)]">
-                                        Privacy Policy
-                                    </Link>
-                                </div>
+                                {mode === 'register' && (
+                                    <p className="mx-auto max-w-[18rem] text-xs leading-relaxed text-[var(--foreground-soft)]">
+                                        By signing up, you agree to our{' '}
+                                        <Link href="/terms-of-use" className="font-medium text-[var(--foreground)] transition-colors hover:text-[#C76F00] dark:hover:text-sky-300">
+                                            Terms of Use
+                                        </Link>{' '}
+                                        and{' '}
+                                        <Link href="/privacy-policy" className="font-medium text-[var(--foreground)] transition-colors hover:text-[#C76F00] dark:hover:text-sky-300">
+                                            Privacy Policy
+                                        </Link>
+                                        .
+                                    </p>
+                                )}
+                                {mode === 'signin' && (
+                                    <div className="flex items-center justify-center gap-5 text-sm text-[var(--foreground-soft)]">
+                                        <Link href="/terms-of-use" className="transition-colors hover:text-[var(--foreground)]">
+                                            Terms of Use
+                                        </Link>
+                                        <Link href="/privacy-policy" className="transition-colors hover:text-[var(--foreground)]">
+                                            Privacy Policy
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

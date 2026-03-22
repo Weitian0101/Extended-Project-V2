@@ -279,13 +279,13 @@ function PlanCheckoutDialogInner({
     if (step === 'success') {
         return (
             <div
-                className="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-950/50 backdrop-blur-sm"
+                className="modal-backdrop-enter fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-950/50 backdrop-blur-sm"
                 style={{ WebkitOverflowScrolling: 'touch' }}
             >
                 <div className="absolute inset-0" onClick={completionAction} />
 
                 <div className="relative z-10 flex min-h-full items-center justify-center px-4 py-6">
-                    <div className="relative w-full max-w-3xl overflow-hidden rounded-[38px] border border-white/70 bg-white p-6 shadow-[0_36px_100px_rgba(15,23,42,0.24)] lg:p-10">
+                    <div className="modal-panel-enter relative w-full max-w-3xl overflow-hidden rounded-[38px] border border-white/70 bg-white p-6 shadow-[0_36px_100px_rgba(15,23,42,0.24)] lg:p-10">
                         <div className="pointer-events-none absolute inset-0 overflow-hidden">
                             {[
                                 { left: '7%', top: '10%', color: 'bg-sky-400', delay: '0ms', rotate: '-12deg' },
@@ -354,13 +354,13 @@ function PlanCheckoutDialogInner({
 
     return (
         <div
-            className="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-950/40 backdrop-blur-sm touch-pan-y"
+            className="modal-backdrop-enter fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-950/40 backdrop-blur-sm touch-pan-y"
             style={{ WebkitOverflowScrolling: 'touch' }}
         >
             <div className="absolute inset-0" onClick={isSubmitting ? undefined : onClose} />
 
             <div className="relative z-10 flex min-h-full items-start justify-center px-4 py-4 2xl:items-center 2xl:py-6">
-                <div className="grid w-full max-w-6xl gap-6 rounded-[34px] border border-white/70 bg-white p-4 shadow-[0_32px_90px_rgba(15,23,42,0.2)] lg:h-[calc(100vh-2rem)] lg:max-h-[calc(100vh-2rem)] lg:grid-cols-[1.05fr_0.95fr] lg:overflow-hidden lg:p-6 2xl:h-auto 2xl:max-h-[calc(100vh-3rem)]">
+                <div className="modal-panel-enter grid w-full max-w-6xl gap-6 rounded-[34px] border border-white/70 bg-white p-4 shadow-[0_32px_90px_rgba(15,23,42,0.2)] lg:h-[calc(100vh-2rem)] lg:max-h-[calc(100vh-2rem)] lg:grid-cols-[1.05fr_0.95fr] lg:overflow-hidden lg:p-6 2xl:h-auto 2xl:max-h-[calc(100vh-3rem)]">
                     <div className="flex flex-col rounded-[28px] border border-slate-200 bg-slate-50/90 p-5 lg:min-h-0 lg:p-6">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <button

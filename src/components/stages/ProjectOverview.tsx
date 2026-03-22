@@ -724,12 +724,12 @@ function PromptModal({
 }) {
     return (
         <div
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+            className="modal-backdrop-enter fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
             onClick={onClose}
             role="presentation"
         >
             <div
-                className="surface-panel-strong relative z-10 max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[34px] p-6 lg:p-8"
+                className="modal-panel-enter surface-panel-strong relative z-10 max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[34px] p-6 lg:p-8"
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="flex items-center justify-between gap-3">

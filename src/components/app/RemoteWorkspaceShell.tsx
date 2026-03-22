@@ -124,6 +124,7 @@ export function RemoteWorkspaceShell() {
 
     const supabase = useMemo(() => createSupabaseBrowserClient(), []);
     const [view, setView] = useState<AppViewState>('landing');
+    const [authViewMode, setAuthViewMode] = useState<'signin' | 'register'>('signin');
     const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
     const [activeSurface, setActiveSurface] = useState<ProjectSurface>('hub');
     const [projects, setProjects] = useState<WorkspaceProject[]>(() => loadCachedWorkspaceShell()?.projects ?? []);
@@ -596,16 +597,6 @@ export function RemoteWorkspaceShell() {
         return buildAuthResponse(true, 'A new confirmation email is on its way.');
     };
 
-    const handleAdminAccess = async () => {
-        setAuthError(null);
-        setWorkspaceStatus(null);
-
-        await fetchApiJson<Record<string, never>>('/api/auth/demo-admin', {
-            method: 'POST'
-        });
-        window.location.assign('/');
-    };
-
     const handleCreateProject = async () => {
         setWorkspaceStatus(null);
         setAuthError(null);
@@ -876,7 +867,21 @@ export function RemoteWorkspaceShell() {
         case 'landing':
             return (
                 <LandingPage
-                    onNavigate={(target) => setView(target === 'sandbox' && !sessionUser ? 'auth' : target)}
+                    onNavigate={(target, options) => {
+                        if (target === 'auth') {
+                            setAuthViewMode(options?.authMode ?? 'signin');
+                            setView('auth');
+                            return;
+                        }
+
+                        if (target === 'sandbox' && !sessionUser) {
+                            setAuthViewMode('signin');
+                            setView('auth');
+                            return;
+                        }
+
+                        setView(target);
+                    }}
                 />
             );
 
@@ -884,13 +889,13 @@ export function RemoteWorkspaceShell() {
             return (
                 <AuthPage
                     authMode="supabase"
+                    initialMode={authViewMode}
                     errorMessage={authError === 'Unauthenticated' ? null : authError}
                     onBack={() => setView('landing')}
                     onIdentityCheck={handleIdentityCheck}
                     onCredentialsSubmit={handleCredentialAuth}
                     onPasswordResetRequest={handlePasswordResetRequest}
                     onResendConfirmationRequest={handleResendConfirmationRequest}
-                    onAdminAccess={handleAdminAccess}
                 />
             );
 
@@ -1021,6 +1026,18 @@ export function RemoteWorkspaceShell() {
             return <SignOutPage onComplete={() => setView('landing')} />;
 
         default:
-            return <LandingPage onNavigate={() => setView(sessionUser ? 'dashboard' : 'auth')} />;
+            return (
+                <LandingPage
+                    onNavigate={(target, options) => {
+                        if (target === 'auth' || (!sessionUser && target === 'sandbox')) {
+                            setAuthViewMode(options?.authMode ?? 'signin');
+                            setView('auth');
+                            return;
+                        }
+
+                        setView(sessionUser ? 'dashboard' : target);
+                    }}
+                />
+            );
     }
 }

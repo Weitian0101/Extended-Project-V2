@@ -732,8 +732,10 @@ export function ProjectHub({
         <div className="scrollbar-none h-full overflow-y-auto px-4 py-5 lg:px-8 lg:py-8">
             <div className="mx-auto max-w-7xl space-y-6">
                 <section className="surface-panel-strong relative z-20 overflow-visible rounded-[34px] p-6 lg:p-8">
-                    <div className={cn('absolute inset-0 bg-gradient-to-br opacity-15', projectSummary.accent)} />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_72%)]" />
+                    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+                        <div className={cn('absolute inset-0 bg-gradient-to-br opacity-15', projectSummary.accent)} />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_72%)]" />
+                    </div>
                     <div className="relative grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
@@ -1792,7 +1794,7 @@ function EmptyPanelCopy({ text }: { text: string }) {
 }
 
 function ModalShell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
-    return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"><button type="button" className="absolute inset-0" onClick={onClose} aria-label="Close modal" /><div className="surface-panel-strong relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[30px] p-6"><div className="flex items-center justify-between gap-3"><h3 className="text-2xl font-display font-semibold text-[var(--foreground)]">{title}</h3><Button variant="ghost" size="sm" onClick={onClose}>Close</Button></div><div className="mt-6 space-y-4">{children}</div></div></div>;
+    return <div className="modal-backdrop-enter fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"><button type="button" className="absolute inset-0" onClick={onClose} aria-label="Close modal" /><div className="modal-panel-enter surface-panel-strong relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[30px] p-6"><div className="flex items-center justify-between gap-3"><h3 className="text-2xl font-display font-semibold text-[var(--foreground)]">{title}</h3><Button variant="ghost" size="sm" onClick={onClose}>Close</Button></div><div className="mt-6 space-y-4">{children}</div></div></div>;
 }
 
 function ModalInput({ label, value, onChange, multiline = false, inputType = 'text' }: { label: string; value: string; onChange: (value: string) => void; multiline?: boolean; inputType?: 'text' | 'date' }) {

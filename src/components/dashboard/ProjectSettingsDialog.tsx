@@ -275,9 +275,9 @@ export function ProjectSettingsDialog({
     };
 
     return (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" onClick={onClose}>
+        <div className="dialog-backdrop-enter fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="surface-panel-strong w-full max-w-[96rem] rounded-[36px] p-6 lg:p-8"
+                className="dialog-panel-enter surface-panel-strong w-full max-w-[96rem] rounded-[36px] p-6 lg:p-8"
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="flex items-start justify-between gap-4">
@@ -367,8 +367,8 @@ export function ProjectSettingsDialog({
                         </section>
                     </div>
 
-                    <div className="space-y-6">
-                        <section className="surface-panel rounded-[30px] p-6">
+                    <div className="space-y-6 xl:relative xl:z-20">
+                        <section className="surface-panel relative z-30 overflow-visible rounded-[30px] p-6">
                             <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
                                 <ShieldCheck className="h-4 w-4 text-violet-500" />
                                 Team access
@@ -398,6 +398,7 @@ export function ProjectSettingsDialog({
                                                     onChange={(value) => void handlePermissionChange(member.id, value as PermissionLevel)}
                                                     options={PERMISSION_OPTIONS}
                                                     buttonClassName="bg-[var(--panel-strong)]"
+                                                    panelClassName="z-[140]"
                                                 />
                                                 <div className="flex justify-end">
                                                     {!lockedOwner && canManageMembers && (
@@ -424,7 +425,7 @@ export function ProjectSettingsDialog({
                             )}
                         </section>
 
-                        <section className="surface-panel rounded-[30px] p-6">
+                        <section className="surface-panel relative z-10 rounded-[30px] p-6">
                             <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
                                 <Mail className="h-4 w-4 text-sky-500" />
                                 Pending invites

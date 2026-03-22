@@ -52,12 +52,12 @@ export function ConfirmDialog({
 
     return (
         <div
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
+            className="modal-backdrop-enter fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm"
             onClick={onClose}
             role="presentation"
         >
             <div
-                className="surface-panel-strong relative w-full max-w-lg rounded-[32px] p-6 lg:p-7"
+                className="modal-panel-enter surface-panel-strong relative w-full max-w-lg rounded-[32px] p-6 lg:p-7"
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="flex items-start gap-4">

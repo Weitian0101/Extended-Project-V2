@@ -65,7 +65,7 @@ export function RoundedSelect({
     }, [open]);
 
     return (
-        <div ref={rootRef} className={cn('relative', open && 'z-[95]', className)}>
+        <div ref={rootRef} className={cn('relative', open && 'z-[130]', className)}>
             <button
                 type="button"
                 disabled={disabled}
@@ -85,7 +85,7 @@ export function RoundedSelect({
             {open && (
                 <div
                     className={cn(
-                        'absolute left-0 right-0 top-[calc(100%+0.55rem)] z-[85] rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-2 shadow-[0_24px_48px_rgba(15,23,42,0.24)] backdrop-blur',
+                        'absolute left-0 right-0 top-[calc(100%+0.55rem)] z-[140] rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-2 shadow-[0_24px_48px_rgba(15,23,42,0.24)] backdrop-blur',
                         panelClassName
                     )}
                 >

@@ -549,11 +549,11 @@ export function StageMethodView({
 
             {showGuide && (
                 <div
-                    className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/78 p-4 backdrop-blur-md lg:p-8"
+                    className="modal-backdrop-enter absolute inset-0 z-50 flex items-center justify-center bg-slate-950/78 p-4 backdrop-blur-md lg:p-8"
                     onClick={() => setShowGuide(false)}
                 >
                     <div
-                        className={cn('surface-panel-strong relative w-full max-w-7xl rounded-[32px] p-4 lg:p-6', theme.border)}
+                        className={cn('modal-panel-enter surface-panel-strong relative w-full max-w-7xl rounded-[32px] p-4 lg:p-6', theme.border)}
                         onClick={event => event.stopPropagation()}
                     >
                         <Button

@@ -397,7 +397,9 @@ export function SandboxApp({
 
                 <div className="relative flex-1 overflow-hidden lg:p-3">
                     <main className="relative flex h-full flex-col overflow-hidden rounded-none bg-[var(--panel-strong)] lg:rounded-[30px] lg:border lg:border-[var(--panel-border)]">
-                        {renderStage()}
+                        <div key={`${projectSummary.id}-${currentSurface}`} className="project-surface-enter flex h-full min-h-0 flex-col">
+                            {renderStage()}
+                        </div>
                     </main>
                 </div>
             </div>
