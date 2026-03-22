@@ -292,7 +292,7 @@ export function ProjectSettingsDialog({
 
                 <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-6">
-                        <section className="surface-panel rounded-[30px] p-6">
+                        <section className="surface-panel relative z-20 rounded-[30px] p-6">
                             <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
                                 <Settings2 className="h-4 w-4 text-sky-500" />
                                 Project basics
@@ -317,7 +317,7 @@ export function ProjectSettingsDialog({
                             </div>
                         </section>
 
-                        <section className="surface-panel rounded-[30px] p-6">
+                        <section className="surface-panel relative z-10 rounded-[30px] p-6">
                             <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
                                 <UserPlus className="h-4 w-4 text-emerald-500" />
                                 Invite by email

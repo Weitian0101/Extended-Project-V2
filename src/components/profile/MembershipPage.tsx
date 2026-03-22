@@ -137,6 +137,9 @@ export function MembershipPage({
                         const isCurrent = plan.id === currentTier;
                         const displayedPrice = getMembershipPrice(plan.id, billingCycle);
                         const yearlySavings = getMembershipYearlySavings(plan.id);
+                        const yearlyBanner = plan.id === 'free'
+                            ? 'No annual charge'
+                            : `Save US$${yearlySavings} each year`;
 
                         return (
                             <div
@@ -164,11 +167,20 @@ export function MembershipPage({
                                     <span className="text-5xl font-display font-semibold">{displayedPrice}</span>
                                     <span className="pb-1 text-xl text-slate-400">/{billingCycle === 'yearly' ? 'year' : 'month'}</span>
                                 </div>
-                                {billingCycle === 'yearly' && displayedPrice > 0 && (
-                                    <div className="mt-3 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
-                                        Save US${yearlySavings} each year
-                                    </div>
-                                )}
+                                <div className="mt-3 min-h-[2.6rem]">
+                                    {billingCycle === 'yearly' && (
+                                        <div
+                                            className={[
+                                                'inline-flex whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em]',
+                                                plan.id === 'free'
+                                                    ? 'border border-slate-200 bg-slate-50 text-slate-500'
+                                                    : 'border border-emerald-100 bg-emerald-50 text-emerald-700'
+                                            ].join(' ')}
+                                        >
+                                            {yearlyBanner}
+                                        </div>
+                                    )}
+                                </div>
 
                                 <Button
                                     type="button"

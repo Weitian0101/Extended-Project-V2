@@ -158,7 +158,7 @@ const EXPLORE_METHOD_DEFINITIONS: MethodDefinition[] = [
         stage: 'explore',
         id: 'conduct-user-interviews',
         title: 'Conduct User Interviews',
-        purpose: `Design richer interviews with AI-generated questions.`,
+        purpose: `Design richer interviews with tailored questions.`,
         prompts: [
             `Based on this challenge [insert], generate 10 open-ended interview questions.`,
             `Suggest counterintuitive questions to surface hidden needs.`,
