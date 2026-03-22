@@ -141,7 +141,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
         <div className="min-h-screen bg-transparent text-[var(--foreground)]">
             <nav className="sticky top-0 z-50 px-4 py-4 lg:px-8">
                 <div className="surface-panel-strong mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-full px-4 py-3 lg:px-5">
-                    <BrandLockup compact className="min-w-0" />
+                    <BrandLockup compact framed={false} className="min-w-0" />
                     <div className="hidden items-center gap-6 lg:flex">
                         <a href="#sandbox-demo" className="text-sm font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]">Sandbox Demo</a>
                         <a href="#beyond-post-its" className="text-sm font-medium text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]">Beyond Post-its</a>

@@ -390,7 +390,7 @@ export function Dashboard({
 
             <header className="fixed inset-x-0 top-0 z-40 border-b border-[var(--panel-border)] bg-[color:var(--panel-strong)]/90 backdrop-blur-xl">
                 <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 lg:px-8">
-                    <BrandLockup compact />
+                    <BrandLockup compact framed={false} />
                     <div className="flex items-center gap-2 lg:gap-3">
                         <ThemeToggle compact />
                         <UserMenu

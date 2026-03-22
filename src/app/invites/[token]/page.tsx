@@ -21,6 +21,11 @@ interface InvitePayload {
     };
 }
 
+interface EmailRegistrationStatus {
+    exists: boolean;
+    confirmed: boolean;
+}
+
 function getAuthRedirectUrl(token: string) {
     if (typeof window !== 'undefined') {
         return `${window.location.origin}/auth/callback?next=${encodeURIComponent(`/invites/${token}`)}`;
@@ -53,6 +58,29 @@ export default function InvitePage() {
     const [acceptError, setAcceptError] = useState<string | null>(null);
     const [acceptSuccess, setAcceptSuccess] = useState(false);
     const [isAccepting, setIsAccepting] = useState(false);
+
+    const getEmailRegistrationStatus = async (candidateEmail: string): Promise<EmailRegistrationStatus> => {
+        const { data, error } = await supabase.rpc('get_email_registration_status', {
+            candidate_email: candidateEmail.trim().toLowerCase()
+        });
+
+        if (error) {
+            throw error;
+        }
+
+        if (typeof data !== 'object' || data === null) {
+            return {
+                exists: false,
+                confirmed: false
+            };
+        }
+
+        const record = data as Record<string, unknown>;
+        return {
+            exists: record.exists === true,
+            confirmed: record.confirmed === true
+        };
+    };
 
     useEffect(() => {
         const bootstrapAuth = async () => {
@@ -157,19 +185,43 @@ export default function InvitePage() {
         };
     };
 
-    const handleOAuthAuth = async (provider: 'google' | 'github') => {
-        setAuthError(null);
-
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider,
-            options: {
-                redirectTo: getAuthRedirectUrl(token)
-            }
-        });
-
-        if (error) {
-            throw error;
+    const handleIdentityCheck = async (_mode: 'signin' | 'register', email: string) => {
+        if (!invite) {
+            return {
+                ok: false,
+                message: 'Invitation details are not available yet.'
+            };
         }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        if (normalizedEmail !== invite.email.toLowerCase()) {
+            return {
+                ok: false,
+                message: `Use ${invite.email} to accept this invitation.`
+            };
+        }
+
+        const registrationStatus = await getEmailRegistrationStatus(normalizedEmail);
+
+        if (!registrationStatus.exists) {
+            return {
+                ok: false,
+                message: 'No account was found for this email. Create the invited account first.'
+            };
+        }
+
+        if (!registrationStatus.confirmed) {
+            return {
+                ok: false,
+                message: 'Confirm your email before signing in.',
+                action: 'resend-confirmation' as const
+            };
+        }
+
+        return {
+            ok: true
+        };
     };
 
     const handlePasswordReset = async (email: string) => {
@@ -241,8 +293,8 @@ export default function InvitePage() {
                 infoMessage={`Invitation for ${invite.email} to join "${invite.projectName}". Sign in with this email to accept access.`}
                 errorMessage={authError}
                 onBack={() => router.push('/')}
+                onIdentityCheck={handleIdentityCheck}
                 onCredentialsSubmit={handleCredentialAuth}
-                onOAuthSubmit={handleOAuthAuth}
                 onPasswordResetRequest={handlePasswordReset}
             />
         );

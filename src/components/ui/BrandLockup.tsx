@@ -12,6 +12,7 @@ interface BrandLockupProps {
     accent?: string;
     title?: string;
     subtitle?: string;
+    framed?: boolean;
     onClick?: () => void;
 }
 
@@ -21,10 +22,15 @@ export function BrandLockup({
     accent = 'Powered by Academy of Design Thinking',
     title = 'Innovation Sandbox',
     subtitle = 'Beyond Post-its operating layer',
+    framed = true,
     onClick
 }: BrandLockupProps) {
     const { theme } = useAppTheme();
     const Container = onClick ? 'button' : 'div';
+    const useDarkFrame = !framed && theme === 'dark';
+    const useRaisedFrame = framed || useDarkFrame;
+    const frameSizeClass = compact ? 'h-[3.75rem] w-40' : 'h-[4.2rem] w-48';
+    const framePaddingClass = useRaisedFrame ? (compact ? 'px-3' : 'px-4') : compact ? 'px-3' : 'px-4';
 
     return (
         <Container
@@ -36,13 +42,27 @@ export function BrandLockup({
             )}
         >
             <div
+                data-brand-frame={useDarkFrame ? 'dark-framed' : framed ? 'framed' : 'plain'}
                 className={cn(
-                    'relative shrink-0 overflow-hidden rounded-[22px] border bg-white shadow-[0_20px_45px_rgba(15,23,42,0.08)]',
-                    compact ? 'h-[3.75rem] w-40 px-3' : 'h-[4.2rem] w-48 px-4',
-                    theme === 'dark' ? 'border-white/12 shadow-[0_20px_45px_rgba(2,6,23,0.28)]' : 'border-slate-200/80'
+                    'relative shrink-0 overflow-hidden',
+                    frameSizeClass,
+                    framePaddingClass,
+                    useRaisedFrame
+                        ? [
+                            'rounded-[22px] border bg-white shadow-[0_20px_45px_rgba(15,23,42,0.08)]',
+                            theme === 'dark' ? 'border-white/12 shadow-[0_20px_45px_rgba(2,6,23,0.28)]' : 'border-slate-200/80'
+                        ]
+                        : 'rounded-[18px] border-transparent bg-transparent shadow-none'
                 )}
             >
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(255,255,255,0.72))]" />
+                {useRaisedFrame && (
+                    <div
+                        className={cn(
+                            'absolute inset-0',
+                            'bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(255,255,255,0.72))]'
+                        )}
+                    />
+                )}
                 <div className="relative h-full w-full">
                     <Image
                         src="/images/logo.png"

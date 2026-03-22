@@ -440,6 +440,28 @@ export function RemoteWorkspaceShell() {
         action
     });
 
+    const handleIdentityCheck = async (mode: CredentialMode, email: string) => {
+        setAuthError(null);
+        setWorkspaceStatus(null);
+        const normalizedEmail = email.trim().toLowerCase();
+
+        if (mode === 'register') {
+            return buildAuthResponse(true);
+        }
+
+        const registrationStatus = await getEmailRegistrationStatus(normalizedEmail);
+
+        if (!registrationStatus.exists) {
+            return buildAuthResponse(false, 'No account was found for this email. Register instead.');
+        }
+
+        if (!registrationStatus.confirmed) {
+            return buildAuthResponse(false, 'Confirm your email before signing in.', 'resend-confirmation');
+        }
+
+        return buildAuthResponse(true);
+    };
+
     const handleCredentialAuth = async (mode: CredentialMode, email: string, password: string) => {
         setAuthError(null);
         setWorkspaceStatus(null);
@@ -864,6 +886,7 @@ export function RemoteWorkspaceShell() {
                     authMode="supabase"
                     errorMessage={authError === 'Unauthenticated' ? null : authError}
                     onBack={() => setView('landing')}
+                    onIdentityCheck={handleIdentityCheck}
                     onCredentialsSubmit={handleCredentialAuth}
                     onPasswordResetRequest={handlePasswordResetRequest}
                     onResendConfirmationRequest={handleResendConfirmationRequest}

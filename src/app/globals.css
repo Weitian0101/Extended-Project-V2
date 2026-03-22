@@ -91,6 +91,10 @@ body.landing-no-grid::before {
   opacity: 0;
 }
 
+body.auth-no-grid::before {
+  opacity: 0 !important;
+}
+
 .font-handwriting {
   font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
 }
@@ -607,6 +611,14 @@ html.theme-switching span {
   will-change: transform, opacity, filter;
 }
 
+.auth-panel-enter {
+  animation: authPanelEnter 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.auth-step-enter {
+  animation: authStepEnter 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @keyframes softRevealUp {
   0% {
     opacity: 0;
@@ -631,6 +643,28 @@ html.theme-switching span {
   }
 }
 
+@keyframes authPanelEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes authStepEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -651,6 +685,8 @@ html.theme-switching span {
   .animate-soft-reveal-up,
   .animate-soft-float,
   .animate-reference-page-in,
+  .auth-panel-enter,
+  .auth-step-enter,
   .hero-typing-caret,
   .loading-orbit,
   .loading-dot {
