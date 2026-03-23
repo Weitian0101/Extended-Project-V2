@@ -303,12 +303,14 @@ function mapProfile(profile: ProfileRow): UserProfileData {
         ? {
             onboardingSeenAt: normalizeNullableString(profile.guide_preferences.onboardingSeenAt),
             lastLearningCenterVisitAt: normalizeNullableString(profile.guide_preferences.lastLearningCenterVisitAt),
-            methodCardLayout: profile.guide_preferences.methodCardLayout === 'immersive' ? 'immersive' : 'classic'
+            methodCardLayout: profile.guide_preferences.methodCardLayout === 'immersive' ? 'immersive' : 'classic',
+            helpTooltipsEnabled: profile.guide_preferences.helpTooltipsEnabled !== false
         }
         : {
             onboardingSeenAt: null,
             lastLearningCenterVisitAt: null,
-            methodCardLayout: 'classic'
+            methodCardLayout: 'classic',
+            helpTooltipsEnabled: true
         };
 
     return {

@@ -78,11 +78,36 @@ function mergeProfileUpdate(
 }
 
 function getAuthBaseUrl() {
+    const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (configuredAppUrl) {
+        return configuredAppUrl.replace(/\/+$/, '');
+    }
+
     if (typeof window !== 'undefined') {
         return window.location.origin;
     }
 
-    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return 'http://localhost:3000';
+}
+
+function getPasswordResetRedirectUrl() {
+    return `${getAuthBaseUrl()}/auth/update-password`;
+}
+
+function getPasswordResetErrorMessage(error: { message: string; code?: string | null } | null, email: string) {
+    if (!error) {
+        return 'Unable to send reset email.';
+    }
+
+    if (error.message.includes('rate limit')) {
+        return 'Too many reset emails were requested recently. Wait a while, then try again.';
+    }
+
+    if (error.code === 'email_address_invalid' || error.message.includes('Email address')) {
+        return `Password reset emails are not available for test or example domains like "${email}". Use a real email address on the account, or sign in with the current password.`;
+    }
+
+    return error.message;
 }
 
 function parseEmailRegistrationStatus(value: unknown): EmailRegistrationStatus {
@@ -546,15 +571,13 @@ export function RemoteWorkspaceShell() {
         }
 
         const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-            redirectTo: getAuthBaseUrl()
+            redirectTo: getPasswordResetRedirectUrl()
         });
 
         if (error) {
             return buildAuthResponse(
                 false,
-                error.message.includes('rate limit')
-                    ? 'Too many reset emails were requested recently. Wait a while, then try again.'
-                    : error.message
+                getPasswordResetErrorMessage(error, normalizedEmail)
             );
         }
 
@@ -1013,12 +1036,14 @@ export function RemoteWorkspaceShell() {
             return (
                 <LearningCenterPage
                     profile={profile}
+                    isSaving={profileSaving}
                     onBack={() => {
                         setActiveProjectId(learningCenterReturnState.activeProjectId);
                         setActiveSurface(learningCenterReturnState.activeSurface);
                         setView(learningCenterReturnState.view);
                     }}
                     onReplayOnboarding={handleReplayOnboarding}
+                    onUpdateProfile={handleUpdateProfile}
                 />
             );
 

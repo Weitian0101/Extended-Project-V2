@@ -280,6 +280,7 @@ export interface GuidePreferences {
     onboardingSeenAt?: string | null;
     lastLearningCenterVisitAt?: string | null;
     methodCardLayout?: MethodCardLayout | null;
+    helpTooltipsEnabled?: boolean | null;
 }
 
 export interface BillingInvoice {

@@ -18,7 +18,8 @@ export const DEFAULT_USER: UserProfileData = {
     guidePreferences: {
         onboardingSeenAt: null,
         lastLearningCenterVisitAt: null,
-        methodCardLayout: 'classic'
+        methodCardLayout: 'classic',
+        helpTooltipsEnabled: true
     }
 };
 

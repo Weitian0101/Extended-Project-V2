@@ -9,7 +9,8 @@ interface ExploreViewProps {
     hub: ProjectHubData;
     isHubLoading?: boolean;
     onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
-    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    onDeleteHubRecord: (resource: 'cards' | 'artifacts' | 'decisions' | 'threads' | 'tasks', id: string) => Promise<unknown>;
     methodCardLayout?: MethodCardLayout;
     guideStep?: OnboardingStepId | null;
     guideVariant?: GuideFlowVariant | null;
@@ -24,6 +25,7 @@ export function ExploreView({
     isHubLoading = false,
     onCreateHubRecord,
     onUpdateHubRecord,
+    onDeleteHubRecord,
     methodCardLayout = 'classic',
     guideStep,
     guideVariant,
@@ -38,6 +40,7 @@ export function ExploreView({
             isHubLoading={isHubLoading}
             onCreateHubRecord={onCreateHubRecord}
             onUpdateHubRecord={onUpdateHubRecord}
+            onDeleteHubRecord={onDeleteHubRecord}
             methodCardLayout={methodCardLayout}
             stage="explore"
             stageTitle="Explore Stage"

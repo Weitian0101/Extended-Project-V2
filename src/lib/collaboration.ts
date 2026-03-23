@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
+import { isDecisionPendingForUser } from '@/lib/projectHubMeta';
 import {
     ActivityEvent,
     CollaborationEntityType,
@@ -284,7 +285,10 @@ export function buildWorkspaceCollaborationOverview(
             });
 
         hub.decisions
-            .filter((decision) => decision.status === 'proposed')
+            .filter((decision) => (
+                decision.status === 'proposed'
+                && (!currentUserId || isDecisionPendingForUser(decision, currentUserId))
+            ))
             .forEach((decision) => {
                 needsReview.push({
                     id: decision.id,

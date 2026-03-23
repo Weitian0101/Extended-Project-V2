@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ArrowRight, BookOpen, Play, ScanSearch, ScrollText, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Play, ScanSearch, ScrollText, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { SpotlightGuide } from '@/components/guide/SpotlightGuide';
@@ -22,7 +22,8 @@ interface StageMethodViewProps {
     hub: ProjectHubData;
     isHubLoading?: boolean;
     onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
-    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    onDeleteHubRecord: (resource: 'cards' | 'artifacts' | 'decisions' | 'threads' | 'tasks', id: string) => Promise<unknown>;
     methodCardLayout?: MethodCardLayout;
     stage: BrowsableStage;
     stageTitle: string;
@@ -145,6 +146,7 @@ export function StageMethodView({
     isHubLoading = false,
     onCreateHubRecord,
     onUpdateHubRecord,
+    onDeleteHubRecord,
     methodCardLayout = 'classic',
     stage,
     stageTitle,
@@ -248,6 +250,13 @@ export function StageMethodView({
         setViewState('tools');
     };
 
+    const handleReturnToStageHome = () => {
+        setActiveMethod(null);
+        setActiveRunId(null);
+        setActiveCategory('all');
+        setViewState('entry');
+    };
+
     const handleStartTool = (method: MethodCard) => {
         const existingRun = [...project.toolRuns]
             .filter((run) => run.methodCardId === method.id && run.stage === stage)
@@ -290,6 +299,7 @@ export function StageMethodView({
                 isHubLoading={isHubLoading}
                 onCreateHubRecord={onCreateHubRecord}
                 onUpdateHubRecord={onUpdateHubRecord}
+                onDeleteHubRecord={onDeleteHubRecord}
                 onSave={handleSaveRun}
                 onBack={handleReturnToAtlas}
                 layout={methodCardLayout}
@@ -317,11 +327,19 @@ export function StageMethodView({
                         <h2 className="text-lg font-display font-semibold text-[var(--foreground)] lg:text-2xl">{stageTitle}</h2>
                     </div>
                 </div>
-                {effectiveViewState === 'entry' && (
-                    <Button size="sm" onClick={() => handleEnterAtlas()}>
-                        Open Atlas <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                )}
+                <div className="flex items-center gap-3">
+                    {effectiveViewState === 'tools' && (
+                        <Button size="sm" variant="secondary" onClick={handleReturnToStageHome}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to {stageName}
+                        </Button>
+                    )}
+                    {effectiveViewState === 'entry' && (
+                        <Button size="sm" onClick={() => handleEnterAtlas()}>
+                            Open Atlas <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="scrollbar-none relative z-10 flex-1 overflow-y-auto px-4 py-5 lg:px-8 lg:py-8">

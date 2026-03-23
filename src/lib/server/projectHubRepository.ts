@@ -1207,7 +1207,7 @@ export async function updateProjectHubCollectionRecord(projectId: string, resour
 export async function deleteProjectHubCollectionRecord(projectId: string, resource: Exclude<HubCollectionResource, 'activity' | 'presence'>, recordId: string) {
     const actor = resource === 'tasks'
         ? await getTaskActorForExistingTask(projectId, recordId)
-        : await getAuthenticatedActor(projectId, resource === 'threads' ? 'member' : resource === 'decisions' ? 'owner' : 'edit');
+        : await getAuthenticatedActor(projectId, resource === 'threads' ? 'member' : 'edit');
     const supabase = await createSupabaseServerClient();
 
     const { error } = await supabase

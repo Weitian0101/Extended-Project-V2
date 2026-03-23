@@ -9,11 +9,12 @@ interface ImagineViewProps {
     hub: ProjectHubData;
     isHubLoading?: boolean;
     onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
-    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    onDeleteHubRecord: (resource: 'cards' | 'artifacts' | 'decisions' | 'threads' | 'tasks', id: string) => Promise<unknown>;
     methodCardLayout?: MethodCardLayout;
 }
 
-export function ImagineView({ projectId, projectName, hub, isHubLoading = false, onCreateHubRecord, onUpdateHubRecord, methodCardLayout = 'classic' }: ImagineViewProps) {
+export function ImagineView({ projectId, projectName, hub, isHubLoading = false, onCreateHubRecord, onUpdateHubRecord, onDeleteHubRecord, methodCardLayout = 'classic' }: ImagineViewProps) {
     return (
         <StageMethodView
             projectId={projectId}
@@ -22,6 +23,7 @@ export function ImagineView({ projectId, projectName, hub, isHubLoading = false,
             isHubLoading={isHubLoading}
             onCreateHubRecord={onCreateHubRecord}
             onUpdateHubRecord={onUpdateHubRecord}
+            onDeleteHubRecord={onDeleteHubRecord}
             methodCardLayout={methodCardLayout}
             stage="imagine"
             stageTitle="Imagine Stage"

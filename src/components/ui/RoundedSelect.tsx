@@ -33,6 +33,7 @@ export function RoundedSelect({
     panelClassName
 }: RoundedSelectProps) {
     const [open, setOpen] = useState(false);
+    const [openDirection, setOpenDirection] = useState<'top' | 'bottom'>('bottom');
     const rootRef = useRef<HTMLDivElement | null>(null);
     const selectedOption = useMemo(
         () => options.find((option) => option.value === value),
@@ -43,6 +44,21 @@ export function RoundedSelect({
         if (!open) {
             return;
         }
+
+        const scrollBoundary = findSelectBoundary(rootRef.current);
+        const updateDirection = () => {
+            const rootRect = rootRef.current?.getBoundingClientRect();
+            if (!rootRect) {
+                return;
+            }
+
+            const estimatedPanelHeight = Math.min(options.length * 76, 320);
+            const boundaryRect = scrollBoundary?.getBoundingClientRect();
+            const roomBelow = boundaryRect ? boundaryRect.bottom - rootRect.bottom : window.innerHeight - rootRect.bottom;
+            const roomAbove = boundaryRect ? rootRect.top - boundaryRect.top : rootRect.top;
+
+            setOpenDirection(roomBelow < estimatedPanelHeight + 20 && roomAbove > roomBelow ? 'top' : 'bottom');
+        };
 
         const handlePointerDown = (event: PointerEvent) => {
             if (!rootRef.current?.contains(event.target as Node)) {
@@ -56,13 +72,18 @@ export function RoundedSelect({
             }
         };
 
+        updateDirection();
+        window.addEventListener('resize', updateDirection);
+        scrollBoundary?.addEventListener('scroll', updateDirection, { passive: true });
         window.addEventListener('pointerdown', handlePointerDown);
         window.addEventListener('keydown', handleEscape);
         return () => {
+            window.removeEventListener('resize', updateDirection);
+            scrollBoundary?.removeEventListener('scroll', updateDirection);
             window.removeEventListener('pointerdown', handlePointerDown);
             window.removeEventListener('keydown', handleEscape);
         };
-    }, [open]);
+    }, [open, options.length]);
 
     return (
         <div ref={rootRef} className={cn('relative', open && 'z-[130]', className)}>
@@ -85,7 +106,8 @@ export function RoundedSelect({
             {open && (
                 <div
                     className={cn(
-                        'absolute left-0 right-0 top-[calc(100%+0.55rem)] z-[140] rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-2 shadow-[0_24px_48px_rgba(15,23,42,0.24)] backdrop-blur',
+                        'absolute left-0 right-0 z-[140] max-h-[min(20rem,calc(100vh-6rem))] overflow-y-auto rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-2 shadow-[0_24px_48px_rgba(15,23,42,0.24)] backdrop-blur',
+                        openDirection === 'top' ? 'bottom-[calc(100%+0.55rem)]' : 'top-[calc(100%+0.55rem)]',
                         panelClassName
                     )}
                 >
@@ -131,4 +153,21 @@ export function RoundedSelect({
             )}
         </div>
     );
+}
+
+function findSelectBoundary(element: HTMLDivElement | null) {
+    let current = element?.parentElement || null;
+
+    while (current) {
+        const styles = window.getComputedStyle(current);
+        const overflowValue = `${styles.overflow} ${styles.overflowY}`;
+
+        if (/(auto|scroll|overlay)/.test(overflowValue)) {
+            return current;
+        }
+
+        current = current.parentElement;
+    }
+
+    return null;
 }

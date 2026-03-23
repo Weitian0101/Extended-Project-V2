@@ -125,7 +125,6 @@ export function SandboxApp({
     const overviewGuideProgress = guideVariant ? getGuideProgress(guideVariant, 'overview') : null;
     const stagePreferenceMode = getStagePreferenceMode(hub.brief.metadata);
     const manualStagePreference = getManualStagePreference(hub.brief.metadata);
-
     const handleCreateHubRecord = async <
         TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'
     >(resource: TResource, payload: Record<string, unknown>) => createRecord(resource, payload as never);
@@ -287,6 +286,7 @@ export function SandboxApp({
                         isHubLoading={isHubLoading}
                         onCreateHubRecord={handleCreateHubRecord}
                         onUpdateHubRecord={handleUpdateHubRecord}
+                        onDeleteHubRecord={deleteRecord}
                         methodCardLayout={profile.guidePreferences?.methodCardLayout ?? 'classic'}
                         guideStep={guideStep}
                         guideVariant={guideVariant}
@@ -303,6 +303,7 @@ export function SandboxApp({
                         isHubLoading={isHubLoading}
                         onCreateHubRecord={handleCreateHubRecord}
                         onUpdateHubRecord={handleUpdateHubRecord}
+                        onDeleteHubRecord={deleteRecord}
                         methodCardLayout={profile.guidePreferences?.methodCardLayout ?? 'classic'}
                     />
                 );
@@ -315,6 +316,7 @@ export function SandboxApp({
                         isHubLoading={isHubLoading}
                         onCreateHubRecord={handleCreateHubRecord}
                         onUpdateHubRecord={handleUpdateHubRecord}
+                        onDeleteHubRecord={deleteRecord}
                         methodCardLayout={profile.guidePreferences?.methodCardLayout ?? 'classic'}
                     />
                 );
@@ -327,6 +329,7 @@ export function SandboxApp({
                         isHubLoading={isHubLoading}
                         onCreateHubRecord={handleCreateHubRecord}
                         onUpdateHubRecord={handleUpdateHubRecord}
+                        onDeleteHubRecord={deleteRecord}
                         methodCardLayout={profile.guidePreferences?.methodCardLayout ?? 'classic'}
                     />
                 );

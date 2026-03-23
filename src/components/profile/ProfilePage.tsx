@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, BadgeCheck, Building2, CreditCard, Mail, MapPin, PanelsTopLeft, PencilLine, ReceiptText, Smartphone } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Building2, CircleHelp, CreditCard, Mail, MapPin, PanelsTopLeft, PencilLine, ReceiptText, Smartphone } from 'lucide-react';
 
 import { MembershipPage } from '@/components/profile/MembershipPage';
 import { PlanCheckoutDialog } from '@/components/profile/PlanCheckoutDialog';
@@ -160,6 +160,8 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
     const [checkoutTier, setCheckoutTier] = useState<MembershipTier | null>(null);
     const [checkoutReturnView, setCheckoutReturnView] = useState<ProfileView>('billing');
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [layoutPreference, setLayoutPreference] = useState<'classic' | 'immersive'>(profile.guidePreferences?.methodCardLayout === 'immersive' ? 'immersive' : 'classic');
+    const [helpMarkersEnabled, setHelpMarkersEnabled] = useState(profile.guidePreferences?.helpTooltipsEnabled !== false);
     const [draft, setDraft] = useState({
         name: profile.name,
         title: profile.title,
@@ -181,10 +183,13 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
             billingEmail: profile.billingEmail
         });
         setMembershipCycle(profile.billingCycle);
+        setLayoutPreference(profile.guidePreferences?.methodCardLayout === 'immersive' ? 'immersive' : 'classic');
+        setHelpMarkersEnabled(profile.guidePreferences?.helpTooltipsEnabled !== false);
     }, [
         profile.billingCycle,
         profile.billingEmail,
         profile.company,
+        profile.guidePreferences,
         profile.location,
         profile.name,
         profile.phone,
@@ -249,21 +254,39 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
     const MembershipIcon = membershipMeta.Icon;
     const statusLabel = formatSubscriptionStatus(profile.subscriptionStatus);
     const isActiveSubscription = profile.subscriptionStatus === 'active';
-    const methodCardLayout = profile.guidePreferences?.methodCardLayout === 'immersive' ? 'immersive' : 'classic';
+    const methodCardLayout = layoutPreference;
+    const helpTooltipsEnabled = helpMarkersEnabled;
 
     const handleMethodCardLayoutChange = async (nextLayout: 'classic' | 'immersive') => {
-        if (methodCardLayout === nextLayout || isSaving) {
+        if (methodCardLayout === nextLayout) {
             return;
         }
 
         setStatusMessage(null);
-        await onUpdateProfile({
+        setLayoutPreference(nextLayout);
+        void Promise.resolve(onUpdateProfile({
             guidePreferences: {
                 ...profile.guidePreferences,
                 methodCardLayout: nextLayout
             }
-        });
+        }));
         setStatusMessage(`Method card layout switched to ${nextLayout === 'classic' ? 'Classic' : 'Immersive'}.`);
+    };
+
+    const handleHelpTooltipToggle = async (nextValue: boolean) => {
+        if (helpTooltipsEnabled === nextValue) {
+            return;
+        }
+
+        setStatusMessage(null);
+        setHelpMarkersEnabled(nextValue);
+        void Promise.resolve(onUpdateProfile({
+            guidePreferences: {
+                ...profile.guidePreferences,
+                helpTooltipsEnabled: nextValue
+            }
+        }));
+        setStatusMessage(`Question-mark help turned ${nextValue ? 'on' : 'off'}.`);
     };
 
     return (
@@ -283,7 +306,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
 
             <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8 lg:py-10">
                 {statusMessage && (
-                    <div className="mb-6 rounded-[22px] border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+                    <div className="mb-6 rounded-[22px] border border-emerald-200/70 bg-emerald-50/75 px-5 py-4 text-sm text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
                         {statusMessage}
                     </div>
                 )}
@@ -420,7 +443,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                         className={cn(
                                             'rounded-full px-4 py-2 text-sm font-semibold transition-all',
                                             methodCardLayout === 'classic'
-                                                ? 'bg-[var(--foreground)] text-white shadow-[0_12px_26px_rgba(15,23,42,0.14)]'
+                                                ? 'bg-violet-500/90 text-white shadow-[0_12px_26px_rgba(139,92,246,0.16)]'
                                                 : 'text-[var(--foreground-soft)] hover:text-[var(--foreground)]',
                                             isSaving ? 'cursor-wait opacity-70' : ''
                                         )}
@@ -434,7 +457,7 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                         className={cn(
                                             'rounded-full px-4 py-2 text-sm font-semibold transition-all',
                                             methodCardLayout === 'immersive'
-                                                ? 'bg-[var(--foreground)] text-white shadow-[0_12px_26px_rgba(15,23,42,0.14)]'
+                                                ? 'bg-emerald-500/90 text-white shadow-[0_12px_26px_rgba(16,185,129,0.16)]'
                                                 : 'text-[var(--foreground-soft)] hover:text-[var(--foreground)]',
                                             isSaving ? 'cursor-wait opacity-70' : ''
                                         )}
@@ -452,13 +475,13 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                     className={cn(
                                         'rounded-[24px] border px-5 py-5 text-left transition-all',
                                         methodCardLayout === 'classic'
-                                            ? 'border-slate-900 bg-slate-900 text-white shadow-[0_22px_48px_rgba(15,23,42,0.18)] dark:border-white dark:bg-white dark:text-slate-900'
+                                            ? 'border-violet-300/45 bg-[linear-gradient(180deg,rgba(139,92,246,0.16),rgba(139,92,246,0.08))] text-[var(--foreground)] shadow-[0_22px_48px_rgba(139,92,246,0.12)]'
                                             : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground)] hover:-translate-y-0.5'
                                     )}
                                 >
                                     <div className="text-[11px] font-semibold uppercase tracking-[0.22em] opacity-70">Classic layout</div>
                                     <div className="mt-3 text-xl font-display font-semibold">Classic</div>
-                                    <div className={cn('mt-2 text-sm leading-relaxed', methodCardLayout === 'classic' ? 'text-white/82 dark:text-slate-600' : 'text-[var(--foreground-soft)]')}>
+                                    <div className={cn('mt-2 text-sm leading-relaxed', methodCardLayout === 'classic' ? 'text-[var(--foreground-soft)]' : 'text-[var(--foreground-soft)]')}>
                                         Keeps the denser split view with the darker reference deck and full grid across the left pane.
                                     </div>
                                 </button>
@@ -470,14 +493,80 @@ export function ProfilePage({ profile, onUpdateProfile, onBack, isSaving = false
                                     className={cn(
                                         'rounded-[24px] border px-5 py-5 text-left transition-all',
                                         methodCardLayout === 'immersive'
-                                            ? 'border-emerald-500/40 bg-emerald-500 text-white shadow-[0_22px_48px_rgba(16,185,129,0.22)]'
+                                            ? 'border-emerald-300/45 bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] text-[var(--foreground)] shadow-[0_22px_48px_rgba(16,185,129,0.14)]'
                                             : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground)] hover:-translate-y-0.5'
                                     )}
                                 >
                                     <div className="text-[11px] font-semibold uppercase tracking-[0.22em] opacity-75">Immersive layout</div>
                                     <div className="mt-3 text-xl font-display font-semibold">Immersive</div>
-                                    <div className={cn('mt-2 text-sm leading-relaxed', methodCardLayout === 'immersive' ? 'text-white/86' : 'text-[var(--foreground-soft)]')}>
+                                    <div className={cn('mt-2 text-sm leading-relaxed', methodCardLayout === 'immersive' ? 'text-[var(--foreground-soft)]' : 'text-[var(--foreground-soft)]')}>
                                         Uses the newer airy header, aligned tool panel, and cleaner control placement for users who prefer a lighter visual rhythm.
+                                    </div>
+                                </button>
+                            </div>
+                        </section>
+
+                        <section className="mt-8 surface-panel rounded-[30px] p-6 lg:p-8">
+                            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="max-w-2xl">
+                                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300">
+                                        <CircleHelp className="h-5 w-5" />
+                                    </div>
+                                    <h2 className="mt-5 text-2xl font-display font-semibold text-[var(--foreground)]">Question-mark help</h2>
+                                    <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                        Show or hide the small question-mark popovers across Hub, method cards, profile, and the learning center.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => void handleHelpTooltipToggle(!helpTooltipsEnabled)}
+                                    className={cn(
+                                        'inline-flex h-11 w-20 items-center rounded-full p-1 transition-colors',
+                                        helpTooltipsEnabled ? 'bg-amber-500/70 dark:bg-amber-300/30' : 'bg-[var(--panel)]'
+                                    )}
+                                    aria-pressed={helpTooltipsEnabled}
+                                >
+                                    <span
+                                        className={cn(
+                                            'h-9 w-9 rounded-full bg-[var(--panel-strong)] shadow-[0_12px_24px_rgba(15,23,42,0.18)] transition-transform',
+                                            helpTooltipsEnabled ? 'translate-x-9' : 'translate-x-0'
+                                        )}
+                                    />
+                                </button>
+                            </div>
+
+                            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                                <button
+                                    type="button"
+                                    onClick={() => void handleHelpTooltipToggle(true)}
+                                    className={cn(
+                                        'rounded-[24px] border px-5 py-5 text-left transition-all',
+                                        helpTooltipsEnabled
+                                            ? 'border-amber-300/45 bg-[linear-gradient(180deg,rgba(245,158,11,0.16),rgba(245,158,11,0.08))] text-[var(--foreground)] shadow-[0_22px_48px_rgba(245,158,11,0.14)]'
+                                            : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground)] hover:-translate-y-0.5'
+                                    )}
+                                >
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] opacity-75">Enabled</div>
+                                    <div className="mt-3 text-xl font-display font-semibold">Show help markers</div>
+                                    <div className={cn('mt-2 text-sm leading-relaxed', helpTooltipsEnabled ? 'text-[var(--foreground-soft)]' : 'text-[var(--foreground-soft)]')}>
+                                        Best when people are still learning what cards, decisions, linked items, and team roles mean.
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => void handleHelpTooltipToggle(false)}
+                                    className={cn(
+                                        'rounded-[24px] border px-5 py-5 text-left transition-all',
+                                        !helpTooltipsEnabled
+                                            ? 'border-slate-300/70 bg-[linear-gradient(180deg,rgba(148,163,184,0.16),rgba(148,163,184,0.08))] text-[var(--foreground)] shadow-[0_22px_48px_rgba(15,23,42,0.08)]'
+                                            : 'border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground)] hover:-translate-y-0.5'
+                                    )}
+                                >
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] opacity-75">Disabled</div>
+                                    <div className="mt-3 text-xl font-display font-semibold">Hide help markers</div>
+                                    <div className={cn('mt-2 text-sm leading-relaxed', !helpTooltipsEnabled ? 'text-[var(--foreground-soft)]' : 'text-[var(--foreground-soft)]')}>
+                                        Better for returning users who already know the language and want a quieter interface.
                                     </div>
                                 </button>
                             </div>

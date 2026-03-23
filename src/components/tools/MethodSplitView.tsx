@@ -1,13 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ArrowDownCircle, Bot, ChevronDown, ChevronLeft, ChevronUp, CircleHelp, Expand, Send, Sparkles, Workflow, X, Zap } from 'lucide-react';
+import { ArrowDownCircle, Bot, ChevronDown, ChevronLeft, ChevronUp, CircleHelp, Expand, FileStack, Gavel, LayoutGrid, ListTodo, MessageSquareMore, MoreHorizontal, PencilLine, Plus, Send, Sparkles, Trash2, Workflow, X, Zap } from 'lucide-react';
 
 import { SpotlightGuide } from '@/components/guide/SpotlightGuide';
 import { Button } from '@/components/ui/Button';
 import { RoundedSelect } from '@/components/ui/RoundedSelect';
 import { cn } from '@/lib/utils';
 import { getGuideProgress } from '@/data/onboarding';
-import { GuideFlowVariant, MethodCard, MethodCardLayout, OnboardingStepId, ProjectContext, ProjectHubData, ToolRun } from '@/types';
+import { CollaborationCard, CommentThread, DecisionLogEntry, GuideFlowVariant, MethodCard, MethodCardLayout, OnboardingStepId, ProjectArtifact, ProjectContext, ProjectHubData, TaskItem, ToolRun } from '@/types';
 import { aiGateway } from '@/lib/services/aiGateway';
 
 interface MethodSplitViewProps {
@@ -17,7 +17,8 @@ interface MethodSplitViewProps {
     hub: ProjectHubData;
     isHubLoading?: boolean;
     onCreateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, payload: Record<string, unknown>) => Promise<unknown>;
-    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    onUpdateHubRecord: <TResource extends 'cards' | 'artifacts' | 'decisions' | 'threads' | 'tasks'>(resource: TResource, id: string, payload: Record<string, unknown>) => Promise<unknown>;
+    onDeleteHubRecord: (resource: 'cards' | 'artifacts' | 'decisions' | 'threads' | 'tasks', id: string) => Promise<unknown>;
     onSave: (run: Partial<ToolRun>) => void;
     onBack: () => void;
     layout?: MethodCardLayout;
@@ -72,6 +73,44 @@ const STAGE_THEMES = {
     }
 } as const;
 
+type StageTheme = (typeof STAGE_THEMES)[keyof typeof STAGE_THEMES];
+type TeamQuickAddMode = 'thread' | 'card' | 'artifact' | 'decision' | 'task' | null;
+type TeamCollectionMode = Exclude<TeamQuickAddMode, null>;
+type TeamEditableResource = 'threads' | 'cards' | 'artifacts' | 'decisions' | 'tasks';
+type TeamEditableRecord = CommentThread | CollaborationCard | ProjectArtifact | DecisionLogEntry | TaskItem;
+type TeamEditorState = {
+    resource: TeamEditableResource;
+    record: TeamEditableRecord;
+    draft: Record<string, string | undefined>;
+};
+type TeamDeleteState = {
+    resource: TeamEditableResource;
+    recordId: string;
+    title: string;
+};
+type FacilitatorDockEdge = 'left' | 'right' | 'top' | 'bottom';
+type FacilitatorDockAnchor = {
+    edge: FacilitatorDockEdge;
+    offset: number;
+};
+type FacilitatorDockBounds = {
+    width: number;
+    height: number;
+};
+type FacilitatorDockSize = {
+    width: number;
+    height: number;
+};
+
+const FACILITATOR_DOCK_STORAGE_KEY = 'method-ai-facilitator-dock-v1';
+const FACILITATOR_EDGE_PADDING = 24;
+const FACILITATOR_DOCK_GAP = 14;
+const FACILITATOR_DRAG_THRESHOLD = 8;
+const FACILITATOR_PANEL_WIDTH = 320;
+const FACILITATOR_PANEL_HEIGHT = 430;
+const DEFAULT_FACILITATOR_DOCK: FacilitatorDockAnchor = { edge: 'right', offset: 96 };
+const DEFAULT_FACILITATOR_DOCK_SIZE: FacilitatorDockSize = { width: 184, height: 64 };
+
 export function MethodSplitView({
     card,
     context,
@@ -80,6 +119,7 @@ export function MethodSplitView({
     isHubLoading = false,
     onCreateHubRecord,
     onUpdateHubRecord,
+    onDeleteHubRecord,
     onSave,
     onBack,
     layout = 'classic',
@@ -91,6 +131,10 @@ export function MethodSplitView({
     const [responses, setResponses] = useState(existingRun?.aiResponses || []);
     const [isLoading, setIsLoading] = useState(false);
     const [isFacilitatorOpen, setIsFacilitatorOpen] = useState(false);
+    const [facilitatorDockAnchor, setFacilitatorDockAnchor] = useState<FacilitatorDockAnchor>(() => readStoredFacilitatorDock());
+    const [facilitatorDockBounds, setFacilitatorDockBounds] = useState<FacilitatorDockBounds>({ width: 0, height: 0 });
+    const [facilitatorDockSize, setFacilitatorDockSize] = useState<FacilitatorDockSize>(DEFAULT_FACILITATOR_DOCK_SIZE);
+    const [isFacilitatorDragging, setIsFacilitatorDragging] = useState(false);
     const [chatInput, setChatInput] = useState('');
     const [isMobileAiPanelOpen, setIsMobileAiPanelOpen] = useState(false);
     const [isReferencePreviewOpen, setIsReferencePreviewOpen] = useState(false);
@@ -104,6 +148,15 @@ export function MethodSplitView({
     );
     const [threadDraft, setThreadDraft] = useState({ title: '', body: '', nextStep: '' });
     const [captureDraft, setCaptureDraft] = useState({ type: 'artifact', title: '', summary: '', status: 'draft' });
+    const [teamQuickAddMode, setTeamQuickAddMode] = useState<TeamQuickAddMode>(null);
+    const [activeTeamCollection, setActiveTeamCollection] = useState<TeamCollectionMode | null>(null);
+    const [teamItemMenuKey, setTeamItemMenuKey] = useState<string | null>(null);
+    const [teamEditorState, setTeamEditorState] = useState<TeamEditorState | null>(null);
+    const [teamDeleteState, setTeamDeleteState] = useState<TeamDeleteState | null>(null);
+    const shellRef = useRef<HTMLDivElement | null>(null);
+    const facilitatorLauncherRef = useRef<HTMLButtonElement | null>(null);
+    const facilitatorDragStateRef = useRef<{ pointerId: number; startX: number; startY: number; moved: boolean } | null>(null);
+    const suppressFacilitatorToggleRef = useRef(false);
     const hasPersistedResponsesRef = useRef(false);
     const onSaveRef = useRef(onSave);
     const referenceHeaderRef = useRef<HTMLDivElement | null>(null);
@@ -124,6 +177,62 @@ export function MethodSplitView({
     }, [onSave]);
 
     useEffect(() => {
+        const shell = shellRef.current;
+        if (!shell) {
+            return;
+        }
+
+        const updateBounds = () => {
+            setFacilitatorDockBounds({
+                width: shell.clientWidth,
+                height: shell.clientHeight
+            });
+        };
+
+        updateBounds();
+
+        const observer = new ResizeObserver(updateBounds);
+        observer.observe(shell);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        const launcher = facilitatorLauncherRef.current;
+        if (!launcher) {
+            return;
+        }
+
+        const updateSize = () => {
+            setFacilitatorDockSize({
+                width: launcher.offsetWidth,
+                height: launcher.offsetHeight
+            });
+        };
+
+        updateSize();
+
+        const observer = new ResizeObserver(updateSize);
+        observer.observe(launcher);
+        return () => observer.disconnect();
+    }, [isFacilitatorOpen]);
+
+    useEffect(() => {
+        if (!facilitatorDockBounds.width || !facilitatorDockBounds.height) {
+            return;
+        }
+
+        setFacilitatorDockAnchor((current) => clampFacilitatorDockAnchor(current, facilitatorDockBounds, facilitatorDockSize));
+    }, [facilitatorDockBounds, facilitatorDockSize]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        window.localStorage.setItem(FACILITATOR_DOCK_STORAGE_KEY, JSON.stringify(facilitatorDockAnchor));
+    }, [facilitatorDockAnchor]);
+
+    useEffect(() => {
         if (!hasPersistedResponsesRef.current) {
             hasPersistedResponsesRef.current = true;
             return;
@@ -142,6 +251,8 @@ export function MethodSplitView({
     const linkedDecisions = runId ? hub.decisions.filter((item) => String(item.metadata.linkedRunId || '') === runId) : [];
     const cardPagesGuide = guideVariant ? getGuideProgress(guideVariant, 'card-pages') : null;
     const cardAiGuide = guideVariant ? getGuideProgress(guideVariant, 'card-ai') : null;
+    const facilitatorDockStyle = getFacilitatorDockStyle(facilitatorDockAnchor, facilitatorDockBounds, facilitatorDockSize);
+    const facilitatorPanelStyle = getFacilitatorPanelStyle(facilitatorDockAnchor, facilitatorDockBounds, facilitatorDockSize);
     const desktopPanelContent = activePanel === 'ai'
         ? {
             eyebrow: 'Prompt Board',
@@ -232,6 +343,25 @@ export function MethodSplitView({
             }
         }
     }, [guideStep, isImmersiveDesktopViewport]);
+
+    useEffect(() => {
+        if (!teamItemMenuKey) {
+            return;
+        }
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!(event.target instanceof HTMLElement)) {
+                return;
+            }
+
+            if (!event.target.closest('[data-team-item-menu]')) {
+                setTeamItemMenuKey(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        return () => document.removeEventListener('mousedown', handlePointerDown);
+    }, [teamItemMenuKey]);
 
     const referencePreviewShellStyle: React.CSSProperties = {
         background: 'linear-gradient(180deg, var(--panel-strong), var(--panel))'
@@ -329,6 +459,7 @@ export function MethodSplitView({
             status: 'open'
         });
         setThreadDraft({ title: '', body: '', nextStep: '' });
+        setTeamQuickAddMode(null);
     };
 
     const handleCaptureOutcome = async () => {
@@ -367,17 +498,222 @@ export function MethodSplitView({
             await onCreateHubRecord('decisions', {
                 title: captureDraft.title,
                 background: captureDraft.summary,
-                decision: '',
+                decision: captureDraft.summary || captureDraft.title,
                 options: '',
                 rationale: '',
-                status: 'proposed',
+                status: 'decided',
                 metadata: {
-                    linkedRunId: runId
+                    linkedRunId: runId,
+                    requiresApproval: false
                 }
             });
         }
 
         setCaptureDraft({ type: 'artifact', title: '', summary: '', status: 'draft' });
+        setTeamQuickAddMode(null);
+    };
+
+    const openTeamQuickAdd = (mode: Exclude<TeamQuickAddMode, null>) => {
+        setTeamQuickAddMode(mode);
+        setActiveTeamCollection(null);
+        setTeamItemMenuKey(null);
+
+        if (mode === 'thread') {
+            return;
+        }
+
+        setCaptureDraft({
+            type: mode,
+            title: '',
+            summary: '',
+            status: mode === 'artifact' ? 'draft' : 'draft'
+        });
+    };
+
+    const toggleTeamCollection = (mode: TeamCollectionMode) => {
+        setActiveTeamCollection((current) => current === mode ? null : mode);
+        setTeamQuickAddMode(null);
+        setTeamItemMenuKey(null);
+    };
+
+    const handleOpenTeamEditor = (resource: TeamEditableResource, record: TeamEditableRecord) => {
+        setTeamEditorState({
+            resource,
+            record,
+            draft: createTeamEditorDraft(resource, record)
+        });
+        setTeamItemMenuKey(null);
+    };
+
+    const handleSaveTeamEditor = async () => {
+        if (!teamEditorState) {
+            return;
+        }
+
+        const { resource, record, draft } = teamEditorState;
+
+        if (resource === 'threads') {
+            const thread = record as CommentThread;
+            await onUpdateHubRecord('threads', thread.id, {
+                ...thread,
+                title: (draft.title || '').trim() || thread.title,
+                body: draft.body || '',
+                nextStep: draft.nextStep || '',
+                status: draft.status || thread.status,
+                version: thread.version
+            });
+        } else if (resource === 'cards') {
+            const linkedCard = record as CollaborationCard;
+            await onUpdateHubRecord('cards', linkedCard.id, {
+                ...linkedCard,
+                title: (draft.title || '').trim() || linkedCard.title,
+                summary: draft.summary || '',
+                type: draft.type || linkedCard.type,
+                status: draft.status || linkedCard.status,
+                version: linkedCard.version
+            });
+        } else if (resource === 'artifacts') {
+            const artifact = record as ProjectArtifact;
+            await onUpdateHubRecord('artifacts', artifact.id, {
+                ...artifact,
+                title: (draft.title || '').trim() || artifact.title,
+                summary: draft.summary || '',
+                type: draft.type || artifact.type,
+                status: draft.status || artifact.status,
+                version: artifact.version
+            });
+        } else if (resource === 'decisions') {
+            const decision = record as DecisionLogEntry;
+            await onUpdateHubRecord('decisions', decision.id, {
+                ...decision,
+                title: (draft.title || '').trim() || decision.title,
+                background: draft.background || '',
+                options: draft.options || '',
+                decision: draft.decision || '',
+                rationale: draft.rationale || '',
+                version: decision.version
+            });
+        } else {
+            const task = record as TaskItem;
+            await onUpdateHubRecord('tasks', task.id, {
+                ...task,
+                title: (draft.title || '').trim() || task.title,
+                details: draft.details || '',
+                status: draft.status || task.status,
+                version: task.version
+            });
+        }
+
+        setTeamEditorState(null);
+    };
+
+    const handleConfirmTeamDelete = async () => {
+        if (!teamDeleteState) {
+            return;
+        }
+
+        await onDeleteHubRecord(teamDeleteState.resource, teamDeleteState.recordId);
+        setTeamDeleteState(null);
+        setTeamItemMenuKey(null);
+    };
+
+    const activeTeamItems = activeTeamCollection
+        ? buildTeamCollectionItems(activeTeamCollection, {
+            runThreads,
+            linkedCards,
+            linkedArtifacts,
+            linkedDecisions,
+            linkedTasks
+        })
+        : [];
+
+    const handleFacilitatorPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+        if (event.button !== 0) {
+            return;
+        }
+
+        facilitatorDragStateRef.current = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            moved: false
+        };
+
+        event.currentTarget.setPointerCapture(event.pointerId);
+    };
+
+    const handleFacilitatorPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+        const dragState = facilitatorDragStateRef.current;
+        if (!dragState || dragState.pointerId !== event.pointerId) {
+            return;
+        }
+
+        const shellRect = shellRef.current?.getBoundingClientRect();
+        if (!shellRect) {
+            return;
+        }
+
+        const deltaX = event.clientX - dragState.startX;
+        const deltaY = event.clientY - dragState.startY;
+
+        if (!dragState.moved && Math.hypot(deltaX, deltaY) < FACILITATOR_DRAG_THRESHOLD) {
+            return;
+        }
+
+        if (!dragState.moved) {
+            dragState.moved = true;
+            setIsFacilitatorDragging(true);
+        }
+
+        event.preventDefault();
+
+        const distances = [
+            { edge: 'left' as const, distance: Math.abs(event.clientX - shellRect.left) },
+            { edge: 'right' as const, distance: Math.abs(shellRect.right - event.clientX) },
+            { edge: 'top' as const, distance: Math.abs(event.clientY - shellRect.top) },
+            { edge: 'bottom' as const, distance: Math.abs(shellRect.bottom - event.clientY) }
+        ];
+        const nearestEdge = distances.reduce((closest, next) => next.distance < closest.distance ? next : closest);
+        const pointerX = event.clientX - shellRect.left - facilitatorDockSize.width / 2;
+        const pointerY = event.clientY - shellRect.top - facilitatorDockSize.height / 2;
+        const nextAnchor = nearestEdge.edge === 'left' || nearestEdge.edge === 'right'
+            ? { edge: nearestEdge.edge, offset: pointerY }
+            : { edge: nearestEdge.edge, offset: pointerX };
+
+        setFacilitatorDockAnchor(clampFacilitatorDockAnchor(nextAnchor, {
+            width: shellRect.width,
+            height: shellRect.height
+        }, facilitatorDockSize));
+    };
+
+    const handleFacilitatorPointerEnd = (event: React.PointerEvent<HTMLButtonElement>) => {
+        const dragState = facilitatorDragStateRef.current;
+        if (!dragState || dragState.pointerId !== event.pointerId) {
+            return;
+        }
+
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+
+        if (dragState.moved) {
+            suppressFacilitatorToggleRef.current = true;
+            window.setTimeout(() => {
+                suppressFacilitatorToggleRef.current = false;
+            }, 140);
+        }
+
+        facilitatorDragStateRef.current = null;
+        setIsFacilitatorDragging(false);
+    };
+
+    const handleOpenFacilitator = () => {
+        if (suppressFacilitatorToggleRef.current) {
+            suppressFacilitatorToggleRef.current = false;
+            return;
+        }
+
+        setIsFacilitatorOpen(true);
     };
 
     const handleSelectReferencePage = (pageId: string) => {
@@ -435,10 +771,6 @@ export function MethodSplitView({
                             unoptimized
                         />
                     </div>
-                    <span className="pointer-events-none absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/58 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/82 backdrop-blur-sm">
-                        <Expand className="h-3.5 w-3.5" />
-                        Open large view
-                    </span>
                 </button>
             </div>
 
@@ -513,7 +845,7 @@ export function MethodSplitView({
     );
 
     return (
-        <div className={cn('relative flex h-full overflow-hidden', isImmersiveLayout ? 'flex-col xl:flex-row' : 'flex-col lg:flex-row')}>
+        <div ref={shellRef} className={cn('relative flex h-full overflow-hidden', isImmersiveLayout ? 'flex-col xl:flex-row' : 'flex-col lg:flex-row')}>
             <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--body-top),var(--body-bottom))]"></div>
             <div className={cn('absolute inset-0 bg-gradient-to-br opacity-90', theme.accentGradient)}></div>
             {isImmersiveLayout && (
@@ -652,7 +984,7 @@ export function MethodSplitView({
                                         <Expand className="h-4 w-4" />
                                     </button>
                                 </div>
-                            </div>
+                        </div>
                         </div>
                         {isReferenceHelpOpen && (
                             <div className="relative z-30 mx-3 mt-3 rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm leading-relaxed text-[var(--foreground-soft)] xl:hidden">
@@ -926,9 +1258,9 @@ export function MethodSplitView({
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
                                         <div className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', theme.accentText)}>Outcome capture</div>
-                                        <div className="mt-2 text-base font-semibold text-[var(--foreground)]">Turn this method run into shared project work.</div>
+                                        <div className="mt-2 text-base font-semibold text-[var(--foreground)]">Create the next project record without leaving this card.</div>
                                         <div className="mt-2 text-sm leading-relaxed text-[var(--foreground-soft)]">
-                                            Capture artifacts, board cards, decisions, and tasks directly from the method so nothing gets lost after the session.
+                                            Use the metric cards below to see what this run already created and open a focused add form only when you need it.
                                         </div>
                                     </div>
                                     <div className={cn('rounded-full px-3 py-1 text-xs font-semibold', theme.accentSolid, 'text-white')}>
@@ -937,65 +1269,98 @@ export function MethodSplitView({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <TeamMetric title="Threads" value={String(runThreads.length)} />
-                                <TeamMetric title="Linked Cards" value={String(linkedCards.length)} />
-                                <TeamMetric title="Artifacts" value={String(linkedArtifacts.length)} />
-                                <TeamMetric title="Decisions" value={String(linkedDecisions.length)} />
-                                <TeamMetric title="Tasks" value={String(linkedTasks.length)} />
+                            {teamQuickAddMode && (
+                                <TeamQuickAddPanel
+                                    mode={teamQuickAddMode}
+                                    tone={theme}
+                                    threadDraft={threadDraft}
+                                    captureDraft={captureDraft}
+                                    onThreadChange={setThreadDraft}
+                                    onCaptureChange={setCaptureDraft}
+                                    onClose={() => setTeamQuickAddMode(null)}
+                                    onSubmit={() => {
+                                        if (teamQuickAddMode === 'thread') {
+                                            void handleCreateThread();
+                                            return;
+                                        }
+
+                                        void handleCaptureOutcome();
+                                    }}
+                                />
+                            )}
+
+                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                                <TeamMetricActionCard
+                                    title="Threads"
+                                    value={String(runThreads.length)}
+                                    helper="Open questions and follow-up"
+                                    icon={MessageSquareMore}
+                                    tone={theme}
+                                    active={activeTeamCollection === 'thread'}
+                                    onOpen={() => toggleTeamCollection('thread')}
+                                    onAdd={() => openTeamQuickAdd('thread')}
+                                />
+                                <TeamMetricActionCard
+                                    title="Linked cards"
+                                    value={String(linkedCards.length)}
+                                    helper="Board cards captured from this run"
+                                    icon={LayoutGrid}
+                                    tone={theme}
+                                    active={activeTeamCollection === 'card'}
+                                    onOpen={() => toggleTeamCollection('card')}
+                                    onAdd={() => openTeamQuickAdd('card')}
+                                />
+                                <TeamMetricActionCard
+                                    title="Artifacts"
+                                    value={String(linkedArtifacts.length)}
+                                    helper="Reusable outputs and evidence"
+                                    icon={FileStack}
+                                    tone={theme}
+                                    active={activeTeamCollection === 'artifact'}
+                                    onOpen={() => toggleTeamCollection('artifact')}
+                                    onAdd={() => openTeamQuickAdd('artifact')}
+                                />
+                                <TeamMetricActionCard
+                                    title="Decisions"
+                                    value={String(linkedDecisions.length)}
+                                    helper="Captured calls from this card"
+                                    icon={Gavel}
+                                    tone={theme}
+                                    active={activeTeamCollection === 'decision'}
+                                    onOpen={() => toggleTeamCollection('decision')}
+                                    onAdd={() => openTeamQuickAdd('decision')}
+                                />
+                                <TeamMetricActionCard
+                                    title="Tasks"
+                                    value={String(linkedTasks.length)}
+                                    helper="Actions to push the work forward"
+                                    icon={ListTodo}
+                                    tone={theme}
+                                    active={activeTeamCollection === 'task'}
+                                    onOpen={() => toggleTeamCollection('task')}
+                                    onAdd={() => openTeamQuickAdd('task')}
+                                />
                             </div>
 
-                            <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-5">
-                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Capture Outcome</div>
-                                <div className="mt-4 space-y-3">
-                                    <RoundedSelect
-                                        value={captureDraft.type}
-                                        onChange={(value) => setCaptureDraft((current) => ({ ...current, type: value, status: value === 'artifact' ? 'draft' : current.status }))}
-                                        options={[
-                                            { value: 'artifact', label: 'Artifact' },
-                                            { value: 'card', label: 'Board Card' },
-                                            { value: 'decision', label: 'Decision' },
-                                            { value: 'task', label: 'Task' }
-                                        ]}
-                                        buttonClassName="bg-[var(--panel-strong)]"
-                                    />
-                                    <input value={captureDraft.title} onChange={(event) => setCaptureDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Outcome title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
-                                    <textarea value={captureDraft.summary} onChange={(event) => setCaptureDraft((current) => ({ ...current, summary: event.target.value }))} placeholder="What should the team see or act on?" className="h-28 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
-                                    <Button onClick={() => void handleCaptureOutcome()}>Capture Outcome</Button>
-                                </div>
-                            </div>
-
-                            <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-5">
-                                <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Discussion Thread</div>
-                                <div className="mt-4 space-y-3">
-                                    <input value={threadDraft.title} onChange={(event) => setThreadDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Thread title" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
-                                    <textarea value={threadDraft.body} onChange={(event) => setThreadDraft((current) => ({ ...current, body: event.target.value }))} placeholder="What needs feedback, review, or follow-up?" className="h-24 w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
-                                    <input value={threadDraft.nextStep} onChange={(event) => setThreadDraft((current) => ({ ...current, nextStep: event.target.value }))} placeholder="Next step" className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]" />
-                                    <Button variant="secondary" onClick={() => void handleCreateThread()}>Add Thread</Button>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                {runThreads.length === 0 && (
-                                    <div className="rounded-[24px] border border-dashed border-[var(--panel-border)] bg-[var(--panel)] px-4 py-6 text-center text-sm italic text-[var(--foreground-muted)]">
-                                        No team threads are attached to this method yet.
-                                    </div>
-                                )}
-                                {runThreads.map((thread) => (
-                                    <div key={thread.id} className={cn('rounded-[24px] border bg-[var(--panel)] p-5', theme.accentBorder)}>
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div>
-                                                <div className="text-sm font-semibold text-[var(--foreground)]">{thread.title}</div>
-                                                <div className="mt-1 text-xs text-[var(--foreground-muted)]">{thread.status} | next: {thread.nextStep || 'Not set'}</div>
-                                            </div>
-                                            <Button size="sm" variant="secondary" onClick={() => void onUpdateHubRecord('threads', thread.id, { ...thread, status: thread.status === 'open' ? 'resolved' : 'open', version: thread.version })}>
-                                                {thread.status === 'open' ? 'Resolve' : 'Re-open'}
-                                            </Button>
-                                        </div>
-                                        <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground-soft)]">{thread.body}</div>
-                                    </div>
-                                ))}
-                            </div>
+                            {activeTeamCollection && (
+                                <TeamCollectionPanel
+                                    mode={activeTeamCollection}
+                                    tone={theme}
+                                    items={activeTeamItems}
+                                    openMenuKey={teamItemMenuKey}
+                                    onToggleMenu={setTeamItemMenuKey}
+                                    onClose={() => setActiveTeamCollection(null)}
+                                    onEdit={handleOpenTeamEditor}
+                                    onDelete={(resource, record) => {
+                                        setTeamDeleteState({
+                                            resource,
+                                            recordId: record.id,
+                                            title: record.title
+                                        });
+                                        setTeamItemMenuKey(null);
+                                    }}
+                                />
+                            )}
                         </>
                     )}
                 </div>
@@ -1052,9 +1417,21 @@ export function MethodSplitView({
                 </button>
             </div>
 
-            <div className="absolute bottom-6 right-6 lg:bottom-8 lg:right-8 z-50">
+            <div
+                className={cn(
+                    'absolute z-50 transition-[top,left,right,bottom] ease-out',
+                    isFacilitatorDragging ? 'duration-0' : 'duration-200'
+                )}
+                style={facilitatorDockStyle}
+            >
                 {!isFacilitatorOpen && (
-                    <div className="relative">
+                    <div
+                        className="relative"
+                        style={{
+                            width: facilitatorDockSize.width,
+                            height: facilitatorDockSize.height
+                        }}
+                    >
                         <span
                             aria-hidden="true"
                             className={cn(
@@ -1063,10 +1440,17 @@ export function MethodSplitView({
                             )}
                         />
                         <button
-                            onClick={() => setIsFacilitatorOpen(true)}
+                            ref={facilitatorLauncherRef}
+                            onClick={handleOpenFacilitator}
+                            onPointerDown={handleFacilitatorPointerDown}
+                            onPointerMove={handleFacilitatorPointerMove}
+                            onPointerUp={handleFacilitatorPointerEnd}
+                            onPointerCancel={handleFacilitatorPointerEnd}
                             aria-label="Open AI Facilitator"
+                            title="Open AI Facilitator. Drag to move it to any edge."
                             className={cn(
-                                'relative inline-flex items-center gap-2.5 rounded-full px-4 py-3 lg:px-5 lg:py-4 text-sm lg:text-base font-semibold text-white shadow-[0_22px_54px_rgba(15,23,42,0.18)] hover:scale-105 transition-transform border border-white/20 backdrop-blur-xl',
+                                'relative inline-flex h-full w-full touch-none select-none items-center justify-center gap-2.5 rounded-full px-4 py-3 text-sm font-semibold text-white shadow-[0_22px_54px_rgba(15,23,42,0.18)] transition-transform border border-white/20 backdrop-blur-xl lg:px-5 lg:py-4 lg:text-base',
+                                isFacilitatorDragging ? 'scale-[1.03] cursor-grabbing' : 'cursor-grab hover:scale-105',
                                 theme.accentSolid
                             )}
                         >
@@ -1077,7 +1461,10 @@ export function MethodSplitView({
                 )}
 
                 {isFacilitatorOpen && (
-                    <div className="surface-panel-strong rounded-[24px] shadow-[0_24px_60px_rgba(15,23,42,0.18)] w-72 lg:w-80 flex flex-col overflow-hidden absolute bottom-16 right-0 lg:static">
+                    <div
+                        className="surface-panel-strong absolute flex w-72 flex-col overflow-hidden rounded-[24px] shadow-[0_24px_60px_rgba(15,23,42,0.18)] lg:w-80"
+                        style={facilitatorPanelStyle}
+                    >
                         <div className="bg-slate-950 text-white p-4 flex justify-between items-center">
                             <span className="font-semibold flex items-center gap-2 text-sm">
                                 <Bot className={cn('w-4 h-4', theme.accentText.replace('text-', 'text-'))} />
@@ -1200,16 +1587,1041 @@ export function MethodSplitView({
                     </div>
                 </div>
             )}
+
+            {teamEditorState && (
+                <TeamOverlayDialog
+                    title={getTeamEditorMeta(teamEditorState.resource).title}
+                    eyebrow={getTeamEditorMeta(teamEditorState.resource).eyebrow}
+                    description={getTeamEditorMeta(teamEditorState.resource).description}
+                    tone={theme}
+                    icon={getTeamEditorMeta(teamEditorState.resource).icon}
+                    onClose={() => setTeamEditorState(null)}
+                >
+                    {teamEditorState.resource === 'threads' ? (
+                        <>
+                            <TeamInputField
+                                label="Thread title"
+                                value={teamEditorState.draft.title || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, title: value }
+                                } : current)}
+                            />
+                            <TeamTextareaField
+                                label="Thread notes"
+                                value={teamEditorState.draft.body || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, body: value }
+                                } : current)}
+                            />
+                            <TeamInputField
+                                label="Next step"
+                                value={teamEditorState.draft.nextStep || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, nextStep: value }
+                                } : current)}
+                            />
+                            <TeamSelectField
+                                label="Status"
+                                value={teamEditorState.draft.status || 'open'}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, status: value }
+                                } : current)}
+                                options={[
+                                    { value: 'open', label: 'Open' },
+                                    { value: 'resolved', label: 'Resolved' }
+                                ]}
+                            />
+                        </>
+                    ) : teamEditorState.resource === 'cards' ? (
+                        <>
+                            <TeamInputField
+                                label="Card title"
+                                value={teamEditorState.draft.title || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, title: value }
+                                } : current)}
+                            />
+                            <TeamTextareaField
+                                label="Summary"
+                                value={teamEditorState.draft.summary || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, summary: value }
+                                } : current)}
+                            />
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <TeamSelectField
+                                    label="Type"
+                                    value={teamEditorState.draft.type || 'idea'}
+                                    onChange={(value) => setTeamEditorState((current) => current ? {
+                                        ...current,
+                                        draft: { ...current.draft, type: value }
+                                    } : current)}
+                                    options={['idea', 'insight', 'experiment', 'story', 'risk', 'dependency'].map((value) => ({ value, label: formatLinkedCardType(value) }))}
+                                />
+                                <TeamSelectField
+                                    label="Lane"
+                                    value={teamEditorState.draft.status || 'open-questions'}
+                                    onChange={(value) => setTeamEditorState((current) => current ? {
+                                        ...current,
+                                        draft: { ...current.draft, status: value }
+                                    } : current)}
+                                    options={['open-questions', 'in-progress', 'ready-for-review', 'approved', 'parked'].map((value) => ({ value, label: formatLinkedCardStatus(value) }))}
+                                />
+                            </div>
+                        </>
+                    ) : teamEditorState.resource === 'artifacts' ? (
+                        <>
+                            <TeamInputField
+                                label="Output title"
+                                value={teamEditorState.draft.title || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, title: value }
+                                } : current)}
+                            />
+                            <TeamTextareaField
+                                label="Summary"
+                                value={teamEditorState.draft.summary || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, summary: value }
+                                } : current)}
+                            />
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <TeamSelectField
+                                    label="Type"
+                                    value={teamEditorState.draft.type || 'concept'}
+                                    onChange={(value) => setTeamEditorState((current) => current ? {
+                                        ...current,
+                                        draft: { ...current.draft, type: value }
+                                    } : current)}
+                                    options={['concept', 'insight', 'experiment', 'narrative', 'attachment'].map((value) => ({ value, label: formatArtifactType(value) }))}
+                                />
+                                <TeamSelectField
+                                    label="Status"
+                                    value={teamEditorState.draft.status || 'draft'}
+                                    onChange={(value) => setTeamEditorState((current) => current ? {
+                                        ...current,
+                                        draft: { ...current.draft, status: value }
+                                    } : current)}
+                                    options={['draft', 'ready', 'approved'].map((value) => ({ value, label: formatArtifactStatus(value) }))}
+                                />
+                            </div>
+                        </>
+                    ) : teamEditorState.resource === 'decisions' ? (
+                        <>
+                            <TeamInputField
+                                label="Decision title"
+                                value={teamEditorState.draft.title || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, title: value }
+                                } : current)}
+                            />
+                            <TeamTextareaField
+                                label="Decision"
+                                value={teamEditorState.draft.decision || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, decision: value }
+                                } : current)}
+                            />
+                            <TeamTextareaField
+                                label="Rationale"
+                                value={teamEditorState.draft.rationale || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, rationale: value }
+                                } : current)}
+                            />
+                            <TeamTextareaField
+                                label="Background"
+                                value={teamEditorState.draft.background || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, background: value }
+                                } : current)}
+                            />
+                            <TeamTextareaField
+                                label="Options"
+                                value={teamEditorState.draft.options || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, options: value }
+                                } : current)}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <TeamInputField
+                                label="Task title"
+                                value={teamEditorState.draft.title || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, title: value }
+                                } : current)}
+                            />
+                            <TeamTextareaField
+                                label="Details"
+                                value={teamEditorState.draft.details || ''}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, details: value }
+                                } : current)}
+                            />
+                            <TeamSelectField
+                                label="Status"
+                                value={teamEditorState.draft.status || 'open'}
+                                onChange={(value) => setTeamEditorState((current) => current ? {
+                                    ...current,
+                                    draft: { ...current.draft, status: value }
+                                } : current)}
+                                options={['open', 'in-progress', 'blocked', 'done'].map((value) => ({ value, label: formatTaskStatus(value) }))}
+                            />
+                        </>
+                    )}
+
+                    <div className="flex justify-end">
+                        <Button onClick={() => void handleSaveTeamEditor()}>Save changes</Button>
+                    </div>
+                </TeamOverlayDialog>
+            )}
+
+            {teamDeleteState && (
+                <TeamOverlayDialog
+                    title="Delete item"
+                    eyebrow="Delete"
+                    description={`Delete "${teamDeleteState.title}" from this method run? This removes it from Project Hub too.`}
+                    tone={theme}
+                    icon={Trash2}
+                    onClose={() => setTeamDeleteState(null)}
+                >
+                    <div className="flex justify-end gap-3">
+                        <Button variant="secondary" onClick={() => setTeamDeleteState(null)}>Cancel</Button>
+                        <Button onClick={() => void handleConfirmTeamDelete()}>Delete</Button>
+                    </div>
+                </TeamOverlayDialog>
+            )}
         </div>
     );
 }
 
-function TeamMetric({ title, value }: { title: string; value: string }) {
+function TeamMetricActionCard({
+    title,
+    value,
+    helper,
+    icon: Icon,
+    tone,
+    active,
+    onOpen,
+    onAdd
+}: {
+    title: string;
+    value: string;
+    helper: string;
+    icon: React.ComponentType<{ className?: string }>;
+    tone: StageTheme;
+    active: boolean;
+    onOpen: () => void;
+    onAdd: () => void;
+}) {
     return (
-        <div className="rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-4">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">{title}</div>
-            <div className="mt-2 text-2xl font-display font-semibold text-[var(--foreground)]">{value}</div>
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={onOpen}
+            onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onOpen();
+                }
+            }}
+            className={cn(
+                'rounded-[24px] border bg-[var(--panel)] p-4 text-left shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition-all',
+                tone.accentBorder,
+                active && 'border-current shadow-[0_20px_38px_rgba(15,23,42,0.1)]',
+                active ? tone.accentText : 'hover:-translate-y-0.5'
+            )}
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div className={cn('inline-flex h-11 w-11 items-center justify-center rounded-2xl border bg-[var(--panel-strong)]', tone.accentBorder, tone.accentText)}>
+                    <Icon className="h-5 w-5" />
+                </div>
+                <button
+                    type="button"
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onAdd();
+                    }}
+                    className={cn('inline-flex h-10 w-10 items-center justify-center rounded-full border bg-[var(--panel-strong)] transition-colors', tone.accentBorder, tone.accentText)}
+                    aria-label={`Add ${title}`}
+                >
+                    <Plus className="h-4 w-4" />
+                </button>
+            </div>
+            <div className="mt-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">{title}</div>
+            <div className="mt-2 text-3xl font-display font-semibold text-[var(--foreground)]">{value}</div>
+            <div className="mt-2 text-sm leading-relaxed text-[var(--foreground-soft)]">{helper}</div>
         </div>
     );
+}
+
+function TeamCollectionPanel({
+    mode,
+    tone,
+    items,
+    openMenuKey,
+    onToggleMenu,
+    onClose,
+    onEdit,
+    onDelete
+}: {
+    mode: TeamCollectionMode;
+    tone: StageTheme;
+    items: TeamCollectionItem[];
+    openMenuKey: string | null;
+    onToggleMenu: React.Dispatch<React.SetStateAction<string | null>>;
+    onClose: () => void;
+    onEdit: (resource: TeamEditableResource, record: TeamEditableRecord) => void;
+    onDelete: (resource: TeamEditableResource, record: TeamEditableRecord) => void;
+}) {
+    const meta = getTeamCollectionMeta(mode);
+
+    return (
+        <div className={cn('rounded-[26px] border bg-[var(--panel)] p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)]', tone.accentBorder)}>
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <div className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', tone.accentText)}>{meta.eyebrow}</div>
+                    <div className="mt-2 text-xl font-display font-semibold text-[var(--foreground)]">{meta.title}</div>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-soft)]">{meta.description}</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]"
+                    aria-label={`Close ${meta.title}`}
+                >
+                    <X className="h-4 w-4" />
+                </button>
+            </div>
+
+            <div className="mt-5 space-y-3">
+                {items.length === 0 ? (
+                    <div className="rounded-[22px] border border-dashed border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-4 text-sm text-[var(--foreground-soft)]">
+                        {meta.emptyState}
+                    </div>
+                ) : (
+                    items.map((item) => (
+                        <div key={`${item.resource}-${item.record.id}`} className="rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-4">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="text-base font-semibold text-[var(--foreground)]">{item.title}</div>
+                                        <div className={cn('rounded-full px-2.5 py-1 text-[11px] font-semibold', tone.accentSoft, tone.accentText)}>
+                                            {item.statusLabel}
+                                        </div>
+                                    </div>
+                                    <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                        {item.description}
+                                    </div>
+                                    {item.meta && (
+                                        <div className="mt-3 text-xs font-medium tracking-[0.04em] text-[var(--foreground-muted)]">
+                                            {item.meta}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div data-team-item-menu className="relative shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => onToggleMenu((current) => current === item.menuKey ? null : item.menuKey)}
+                                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)] text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]"
+                                        aria-label={`Open actions for ${item.title}`}
+                                    >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </button>
+
+                                    {openMenuKey === item.menuKey && (
+                                        <div className="absolute right-0 top-[calc(100%+0.55rem)] z-20 w-36 rounded-[18px] border border-[var(--panel-border)] bg-[var(--panel)] p-2 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
+                                            <button
+                                                type="button"
+                                                onClick={() => onEdit(item.resource, item.record)}
+                                                className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-[var(--foreground-soft)] transition-colors hover:bg-[var(--panel-strong)] hover:text-[var(--foreground)]"
+                                            >
+                                                <PencilLine className="h-4 w-4" />
+                                                Edit
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => onDelete(item.resource, item.record)}
+                                                className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-rose-500 transition-colors hover:bg-rose-500/10 hover:text-rose-400"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
+
+function TeamQuickAddPanel({
+    mode,
+    tone,
+    threadDraft,
+    captureDraft,
+    onThreadChange,
+    onCaptureChange,
+    onClose,
+    onSubmit
+}: {
+    mode: Exclude<TeamQuickAddMode, null>;
+    tone: StageTheme;
+    threadDraft: { title: string; body: string; nextStep: string };
+    captureDraft: { type: string; title: string; summary: string; status: string };
+    onThreadChange: React.Dispatch<React.SetStateAction<{ title: string; body: string; nextStep: string }>>;
+    onCaptureChange: React.Dispatch<React.SetStateAction<{ type: string; title: string; summary: string; status: string }>>;
+    onClose: () => void;
+    onSubmit: () => void;
+}) {
+    const meta = getTeamQuickAddMeta(mode);
+
+    return (
+        <div className={cn('rounded-[26px] border bg-[var(--panel)] p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)]', tone.accentBorder)}>
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <div className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', tone.accentText)}>Quick add</div>
+                    <div className="mt-2 text-xl font-display font-semibold text-[var(--foreground)]">{meta.title}</div>
+                    <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-soft)]">{meta.description}</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground-soft)] transition-colors hover:text-[var(--foreground)]"
+                    aria-label="Close quick add"
+                >
+                    <X className="h-4 w-4" />
+                </button>
+            </div>
+
+            {mode === 'thread' ? (
+                <div className="mt-5 space-y-3">
+                    <input
+                        value={threadDraft.title}
+                        onChange={(event) => onThreadChange((current) => ({ ...current, title: event.target.value }))}
+                        placeholder="Thread title"
+                        className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]"
+                    />
+                    <AutoGrowField
+                        value={threadDraft.body}
+                        onChange={(event) => onThreadChange((current) => ({ ...current, body: event.target.value }))}
+                        placeholder="What still needs team input?"
+                    />
+                    <input
+                        value={threadDraft.nextStep}
+                        onChange={(event) => onThreadChange((current) => ({ ...current, nextStep: event.target.value }))}
+                        placeholder="Next step"
+                        className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]"
+                    />
+                </div>
+            ) : (
+                <div className="mt-5 space-y-3">
+                    <input
+                        value={captureDraft.title}
+                        onChange={(event) => onCaptureChange((current) => ({ ...current, title: event.target.value }))}
+                        placeholder={meta.titlePlaceholder}
+                        className="w-full rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]"
+                    />
+                    <AutoGrowField
+                        value={captureDraft.summary}
+                        onChange={(event) => onCaptureChange((current) => ({ ...current, summary: event.target.value }))}
+                        placeholder={meta.bodyPlaceholder}
+                    />
+                </div>
+            )}
+
+            <div className="mt-4 flex justify-end">
+                <Button onClick={onSubmit}>{meta.submitLabel}</Button>
+            </div>
+        </div>
+    );
+}
+
+function AutoGrowField({
+    value,
+    onChange,
+    placeholder
+}: {
+    value: string;
+    onChange: React.ChangeEventHandler<HTMLTextAreaElement>;
+    placeholder: string;
+}) {
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) {
+            return;
+        }
+
+        textarea.style.height = '0px';
+        textarea.style.height = `${Math.max(56, textarea.scrollHeight)}px`;
+    }, [value]);
+
+    return (
+        <textarea
+            ref={textareaRef}
+            rows={2}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            className="w-full resize-none overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-strong)] px-4 py-3 text-sm text-[var(--foreground)]"
+        />
+    );
+}
+
+type TeamCollectionItem = {
+    resource: TeamEditableResource;
+    record: TeamEditableRecord;
+    title: string;
+    description: string;
+    meta: string;
+    statusLabel: string;
+    menuKey: string;
+};
+
+function createTeamEditorDraft(resource: TeamEditableResource, record: TeamEditableRecord) {
+    if (resource === 'threads') {
+        const thread = record as CommentThread;
+        return {
+            title: thread.title,
+            body: thread.body,
+            nextStep: thread.nextStep,
+            status: thread.status
+        };
+    }
+
+    if (resource === 'cards') {
+        const linkedCard = record as CollaborationCard;
+        return {
+            title: linkedCard.title,
+            summary: linkedCard.summary,
+            type: linkedCard.type,
+            status: linkedCard.status
+        };
+    }
+
+    if (resource === 'artifacts') {
+        const artifact = record as ProjectArtifact;
+        return {
+            title: artifact.title,
+            summary: artifact.summary,
+            type: artifact.type,
+            status: artifact.status
+        };
+    }
+
+    if (resource === 'decisions') {
+        const decision = record as DecisionLogEntry;
+        return {
+            title: decision.title,
+            decision: decision.decision,
+            rationale: decision.rationale,
+            background: decision.background,
+            options: decision.options
+        };
+    }
+
+    const task = record as TaskItem;
+    return {
+        title: task.title,
+        details: task.details,
+        status: task.status
+    };
+}
+
+function buildTeamCollectionItems(
+    mode: TeamCollectionMode,
+    collections: {
+        runThreads: CommentThread[];
+        linkedCards: CollaborationCard[];
+        linkedArtifacts: ProjectArtifact[];
+        linkedDecisions: DecisionLogEntry[];
+        linkedTasks: TaskItem[];
+    }
+): TeamCollectionItem[] {
+    if (mode === 'thread') {
+        return collections.runThreads.map((thread) => ({
+            resource: 'threads',
+            record: thread,
+            title: thread.title || 'Untitled thread',
+            description: thread.body || 'No thread notes yet.',
+            meta: thread.nextStep ? `Next step: ${thread.nextStep}` : 'Waiting for team review.',
+            statusLabel: thread.status === 'resolved' ? 'Resolved' : 'Open',
+            menuKey: `threads:${thread.id}`
+        }));
+    }
+
+    if (mode === 'card') {
+        return collections.linkedCards.map((linkedCard) => ({
+            resource: 'cards',
+            record: linkedCard,
+            title: linkedCard.title,
+            description: linkedCard.summary || 'No summary added yet.',
+            meta: `${formatLinkedCardType(linkedCard.type)} · ${formatLinkedCardStatus(linkedCard.status)}`,
+            statusLabel: formatLinkedCardStatus(linkedCard.status),
+            menuKey: `cards:${linkedCard.id}`
+        }));
+    }
+
+    if (mode === 'artifact') {
+        return collections.linkedArtifacts.map((artifact) => ({
+            resource: 'artifacts',
+            record: artifact,
+            title: artifact.title,
+            description: artifact.summary || 'No output summary added yet.',
+            meta: `${formatArtifactType(artifact.type)} · ${formatArtifactStatus(artifact.status)}`,
+            statusLabel: formatArtifactStatus(artifact.status),
+            menuKey: `artifacts:${artifact.id}`
+        }));
+    }
+
+    if (mode === 'decision') {
+        return collections.linkedDecisions.map((decision) => ({
+            resource: 'decisions',
+            record: decision,
+            title: decision.title,
+            description: decision.decision || decision.background || 'No decision details added yet.',
+            meta: decision.rationale ? `Why: ${decision.rationale}` : 'Decision captured from this method.',
+            statusLabel: formatDecisionStatus(decision.status),
+            menuKey: `decisions:${decision.id}`
+        }));
+    }
+
+    return collections.linkedTasks.map((task) => ({
+        resource: 'tasks',
+        record: task,
+        title: task.title,
+        description: task.details || 'No task details added yet.',
+        meta: task.dueDate ? `Due: ${task.dueDate}` : 'No due date set.',
+        statusLabel: formatTaskStatus(task.status),
+        menuKey: `tasks:${task.id}`
+    }));
+}
+
+function getTeamCollectionMeta(mode: TeamCollectionMode) {
+    if (mode === 'thread') {
+        return {
+            eyebrow: 'Threads',
+            title: 'Open thread list',
+            description: 'Review unresolved questions and next steps captured from this method run.',
+            emptyState: 'No threads have been captured from this card yet.'
+        };
+    }
+
+    if (mode === 'card') {
+        return {
+            eyebrow: 'Linked cards',
+            title: 'Board cards from this run',
+            description: 'These cards were created directly from the current method so the team can track them in Hub.',
+            emptyState: 'No linked board cards yet.'
+        };
+    }
+
+    if (mode === 'artifact') {
+        return {
+            eyebrow: 'Artifacts',
+            title: 'Captured outputs',
+            description: 'Reusable outputs, evidence, or notes that came out of this card.',
+            emptyState: 'No artifacts have been captured from this card yet.'
+        };
+    }
+
+    if (mode === 'decision') {
+        return {
+            eyebrow: 'Decisions',
+            title: 'Logged decisions',
+            description: 'Calls that were made in this card and sent back into Project Hub.',
+            emptyState: 'No decisions have been logged from this card yet.'
+        };
+    }
+
+    return {
+        eyebrow: 'Tasks',
+        title: 'Action list',
+        description: 'Tasks created from this method so momentum carries into execution.',
+        emptyState: 'No follow-up tasks have been created from this card yet.'
+    };
+}
+
+function getTeamEditorMeta(resource: TeamEditableResource) {
+    if (resource === 'threads') {
+        return {
+            title: 'Edit thread',
+            eyebrow: 'Thread',
+            description: 'Adjust the thread summary, notes, and next step without leaving this card.',
+            icon: MessageSquareMore
+        };
+    }
+
+    if (resource === 'cards') {
+        return {
+            title: 'Edit linked card',
+            eyebrow: 'Board card',
+            description: 'Update the linked board card using the same card-style editor as Project Hub.',
+            icon: LayoutGrid
+        };
+    }
+
+    if (resource === 'artifacts') {
+        return {
+            title: 'Edit artifact',
+            eyebrow: 'Artifact',
+            description: 'Refine the captured output so the team can review or reuse it later.',
+            icon: FileStack
+        };
+    }
+
+    if (resource === 'decisions') {
+        return {
+            title: 'Edit decision',
+            eyebrow: 'Decision',
+            description: 'Update the decision record in place without leaving the method card.',
+            icon: Gavel
+        };
+    }
+
+    return {
+        title: 'Edit task',
+        eyebrow: 'Task',
+        description: 'Adjust the task wording and status before sending the team back to Hub.',
+        icon: ListTodo
+    };
+}
+
+function TeamOverlayDialog({
+    title,
+    eyebrow,
+    description,
+    tone,
+    icon: Icon,
+    children,
+    onClose
+}: {
+    title: string;
+    eyebrow: string;
+    description: string;
+    tone: StageTheme;
+    icon: React.ComponentType<{ className?: string }>;
+    children: React.ReactNode;
+    onClose: () => void;
+}) {
+    return (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/56 p-4 backdrop-blur-md">
+            <button type="button" className="absolute inset-0" onClick={onClose} aria-label="Close dialog" />
+            <div className="surface-panel-strong relative z-10 max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[32px] border border-white/10 p-6 shadow-[0_30px_90px_rgba(2,6,23,0.34)] lg:p-7">
+                <div className={cn('pointer-events-none absolute inset-x-10 top-3 h-1 rounded-full bg-gradient-to-r opacity-75', tone.accentGradient)} />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-white/0 via-white/70 to-white/0 opacity-70 dark:via-white/20" />
+                <div className="relative flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className={cn('inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[0_14px_32px_rgba(15,23,42,0.12)]', tone.accentBorder, tone.accentSoft, tone.accentText)}>
+                                <Icon className="h-5 w-5" />
+                            </div>
+                            <div className={cn('rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.08em]', tone.accentBorder, tone.accentText, tone.accentSoft)}>
+                                {eyebrow}
+                            </div>
+                        </div>
+                        <h3 className="mt-4 text-2xl font-display font-semibold text-[var(--foreground)] lg:text-[2rem]">{title}</h3>
+                        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--foreground-soft)] lg:text-[0.95rem]">{description}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
+                </div>
+                <div className="relative mt-6 space-y-4">{children}</div>
+            </div>
+        </div>
+    );
+}
+
+function readStoredFacilitatorDock(): FacilitatorDockAnchor {
+    if (typeof window === 'undefined') {
+        return DEFAULT_FACILITATOR_DOCK;
+    }
+
+    try {
+        const rawValue = window.localStorage.getItem(FACILITATOR_DOCK_STORAGE_KEY);
+        if (!rawValue) {
+            return DEFAULT_FACILITATOR_DOCK;
+        }
+
+        const parsedValue = JSON.parse(rawValue) as Partial<FacilitatorDockAnchor>;
+        if (
+            parsedValue &&
+            typeof parsedValue.edge === 'string' &&
+            ['left', 'right', 'top', 'bottom'].includes(parsedValue.edge) &&
+            typeof parsedValue.offset === 'number'
+        ) {
+            return {
+                edge: parsedValue.edge as FacilitatorDockEdge,
+                offset: parsedValue.offset
+            };
+        }
+    } catch {
+        return DEFAULT_FACILITATOR_DOCK;
+    }
+
+    return DEFAULT_FACILITATOR_DOCK;
+}
+
+function clampFacilitatorDockAnchor(
+    anchor: FacilitatorDockAnchor,
+    bounds: FacilitatorDockBounds,
+    dockSize: FacilitatorDockSize
+): FacilitatorDockAnchor {
+    if (!bounds.width || !bounds.height) {
+        return anchor;
+    }
+
+    const maxVerticalOffset = Math.max(FACILITATOR_EDGE_PADDING, bounds.height - dockSize.height - FACILITATOR_EDGE_PADDING);
+    const maxHorizontalOffset = Math.max(FACILITATOR_EDGE_PADDING, bounds.width - dockSize.width - FACILITATOR_EDGE_PADDING);
+    const clampedOffset = anchor.edge === 'left' || anchor.edge === 'right'
+        ? clampNumber(anchor.offset, FACILITATOR_EDGE_PADDING, maxVerticalOffset)
+        : clampNumber(anchor.offset, FACILITATOR_EDGE_PADDING, maxHorizontalOffset);
+
+    return {
+        edge: anchor.edge,
+        offset: Math.round(clampedOffset)
+    };
+}
+
+function getFacilitatorDockStyle(
+    anchor: FacilitatorDockAnchor,
+    bounds: FacilitatorDockBounds,
+    dockSize: FacilitatorDockSize
+): React.CSSProperties {
+    const clampedAnchor = clampFacilitatorDockAnchor(anchor, bounds, dockSize);
+
+    switch (clampedAnchor.edge) {
+        case 'left':
+            return {
+                left: FACILITATOR_EDGE_PADDING,
+                top: clampedAnchor.offset
+            };
+        case 'top':
+            return {
+                left: clampedAnchor.offset,
+                top: FACILITATOR_EDGE_PADDING
+            };
+        case 'bottom':
+            return {
+                left: clampedAnchor.offset,
+                bottom: FACILITATOR_EDGE_PADDING
+            };
+        case 'right':
+        default:
+            return {
+                right: FACILITATOR_EDGE_PADDING,
+                top: clampedAnchor.offset
+            };
+    }
+}
+
+function getFacilitatorPanelStyle(
+    anchor: FacilitatorDockAnchor,
+    bounds: FacilitatorDockBounds,
+    dockSize: FacilitatorDockSize
+): React.CSSProperties {
+    if (!bounds.width || !bounds.height) {
+        switch (anchor.edge) {
+            case 'left':
+                return {
+                    left: `calc(100% + ${FACILITATOR_DOCK_GAP}px)`,
+                    top: 0
+                };
+            case 'top':
+                return {
+                    top: `calc(100% + ${FACILITATOR_DOCK_GAP}px)`,
+                    left: 0
+                };
+            case 'bottom':
+                return {
+                    bottom: `calc(100% + ${FACILITATOR_DOCK_GAP}px)`,
+                    left: 0
+                };
+            case 'right':
+            default:
+                return {
+                    right: `calc(100% + ${FACILITATOR_DOCK_GAP}px)`,
+                    top: 0
+                };
+        }
+    }
+
+    const clampedAnchor = clampFacilitatorDockAnchor(anchor, bounds, dockSize);
+
+    if (clampedAnchor.edge === 'left' || clampedAnchor.edge === 'right') {
+        const preferredTop = clampedAnchor.offset - (FACILITATOR_PANEL_HEIGHT - dockSize.height) / 2;
+        const maxTop = Math.max(FACILITATOR_EDGE_PADDING, bounds.height - FACILITATOR_PANEL_HEIGHT - FACILITATOR_EDGE_PADDING);
+        const clampedTop = clampNumber(preferredTop, FACILITATOR_EDGE_PADDING, maxTop);
+
+        return clampedAnchor.edge === 'left'
+            ? {
+                left: `calc(100% + ${FACILITATOR_DOCK_GAP}px)`,
+                top: clampedTop - clampedAnchor.offset
+            }
+            : {
+                right: `calc(100% + ${FACILITATOR_DOCK_GAP}px)`,
+                top: clampedTop - clampedAnchor.offset
+            };
+    }
+
+    const preferredLeft = clampedAnchor.offset - (FACILITATOR_PANEL_WIDTH - dockSize.width) / 2;
+    const maxLeft = Math.max(FACILITATOR_EDGE_PADDING, bounds.width - FACILITATOR_PANEL_WIDTH - FACILITATOR_EDGE_PADDING);
+    const clampedLeft = clampNumber(preferredLeft, FACILITATOR_EDGE_PADDING, maxLeft);
+
+    return clampedAnchor.edge === 'top'
+        ? {
+            top: `calc(100% + ${FACILITATOR_DOCK_GAP}px)`,
+            left: clampedLeft - clampedAnchor.offset
+        }
+        : {
+            bottom: `calc(100% + ${FACILITATOR_DOCK_GAP}px)`,
+            left: clampedLeft - clampedAnchor.offset
+        };
+}
+
+function clampNumber(value: number, min: number, max: number) {
+    return Math.min(Math.max(value, min), max);
+}
+
+function TeamInputField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+    return (
+        <label className="block">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</div>
+            <input
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                className="w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--foreground)]"
+            />
+        </label>
+    );
+}
+
+function TeamTextareaField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+    return (
+        <label className="block">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</div>
+            <AutoGrowField value={value} onChange={(event) => onChange(event.target.value)} placeholder="" />
+        </label>
+    );
+}
+
+function TeamSelectField({
+    label,
+    value,
+    onChange,
+    options
+}: {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    options: { value: string; label: string }[];
+}) {
+    return (
+        <label className="block">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</div>
+            <RoundedSelect value={value} onChange={onChange} options={options} />
+        </label>
+    );
+}
+
+function formatLinkedCardType(type: string) {
+    if (type === 'open-questions') {
+        return 'Open questions';
+    }
+
+    return type.replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatLinkedCardStatus(status: string) {
+    return status.replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatArtifactType(type: string) {
+    return type.replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatArtifactStatus(status: string) {
+    return status.replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatDecisionStatus(status: string) {
+    return status.replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatTaskStatus(status: string) {
+    return status.replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function getTeamQuickAddMeta(mode: Exclude<TeamQuickAddMode, null>) {
+    if (mode === 'thread') {
+        return {
+            title: 'Add thread',
+            description: 'Capture an open question, debate, or follow-up that still needs team review.',
+            titlePlaceholder: 'Thread title',
+            bodyPlaceholder: 'What still needs team input?',
+            submitLabel: 'Add thread'
+        };
+    }
+
+    if (mode === 'card') {
+        return {
+            title: 'Add linked card',
+            description: 'Create a board card from this method run so it shows up in Project Hub.',
+            titlePlaceholder: 'Board card title',
+            bodyPlaceholder: 'Short summary or next move',
+            submitLabel: 'Add board card'
+        };
+    }
+
+    if (mode === 'artifact') {
+        return {
+            title: 'Add artifact',
+            description: 'Capture a reusable output, insight, or concept from this method.',
+            titlePlaceholder: 'Artifact title',
+            bodyPlaceholder: 'What should the team reuse later?',
+            submitLabel: 'Add artifact'
+        };
+    }
+
+    if (mode === 'decision') {
+        return {
+            title: 'Log decision',
+            description: 'Capture the call that was made here. Decisions added from the card save as decided by default.',
+            titlePlaceholder: 'Decision title',
+            bodyPlaceholder: 'What was decided and why?',
+            submitLabel: 'Log decision'
+        };
+    }
+
+    return {
+        title: 'Add task',
+        description: 'Turn the next action into a task before the workshop momentum fades.',
+        titlePlaceholder: 'Task title',
+        bodyPlaceholder: 'What needs to happen next?',
+        submitLabel: 'Add task'
+    };
 }
 

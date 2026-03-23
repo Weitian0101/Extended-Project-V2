@@ -26,12 +26,33 @@ interface EmailRegistrationStatus {
     confirmed: boolean;
 }
 
-function getAuthRedirectUrl(token: string) {
-    if (typeof window !== 'undefined') {
-        return `${window.location.origin}/auth/callback?next=${encodeURIComponent(`/invites/${token}`)}`;
+function getAppBaseUrl() {
+    const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (configuredAppUrl) {
+        return configuredAppUrl.replace(/\/+$/, '');
     }
 
-    return `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?next=${encodeURIComponent(`/invites/${token}`)}`;
+    if (typeof window !== 'undefined') {
+        return window.location.origin;
+    }
+
+    return 'http://localhost:3000';
+}
+
+function getAuthRedirectUrl(token: string) {
+    return `${getAppBaseUrl()}/auth/callback?next=${encodeURIComponent(`/invites/${token}`)}`;
+}
+
+function getInvitePasswordResetErrorMessage(error: { message: string; code?: string | null } | null, email: string) {
+    if (!error) {
+        return 'Unable to send reset email.';
+    }
+
+    if (error.code === 'email_address_invalid' || error.message.includes('Email address')) {
+        return `Password reset emails are not available for test or example domains like "${email}". Use a real email address on the account, or sign in with the current password.`;
+    }
+
+    return error.message;
 }
 
 async function parseApiResponse<T>(response: Response): Promise<T> {
@@ -227,13 +248,13 @@ export default function InvitePage() {
     const handlePasswordReset = async (email: string) => {
         setAuthError(null);
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/auth/update-password`
+            redirectTo: `${getAppBaseUrl()}/auth/update-password`
         });
 
         if (error) {
             return {
                 ok: false,
-                message: error.message
+                message: getInvitePasswordResetErrorMessage(error, email)
             };
         }
 

@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import {
+    Check,
     Copy,
     Mail,
     MailCheck,
+    Palette,
     Settings2,
     ShieldCheck,
     Trash2,
@@ -44,6 +46,14 @@ const PERMISSION_OPTIONS = [
     { value: 'view', label: 'Can View' }
 ] as const;
 
+const PROJECT_ACCENT_OPTIONS = [
+    { value: 'from-emerald-500 to-lime-300', label: 'Emerald' },
+    { value: 'from-sky-500 to-cyan-300', label: 'Sky' },
+    { value: 'from-rose-500 to-orange-300', label: 'Sunset' },
+    { value: 'from-amber-500 to-yellow-300', label: 'Amber' },
+    { value: 'from-fuchsia-500 to-violet-400', label: 'Violet' }
+] as const;
+
 type SettingsConfirmState =
     | { type: 'remove-member'; memberId: string; memberName: string }
     | { type: 'revoke-invite'; invite: ProjectInvite };
@@ -65,6 +75,18 @@ function upsertInvite(invites: ProjectInvite[] | undefined, nextInvite: ProjectI
     }
 
     return current.map((invite) => invite.id === existing.id ? nextInvite : invite);
+}
+
+function getComparableProjectBasics(project: WorkspaceProject | null) {
+    if (!project) {
+        return null;
+    }
+
+    return {
+        name: project.name,
+        summary: project.summary,
+        accent: project.accent
+    };
 }
 
 export function ProjectSettingsDialog({
@@ -93,6 +115,7 @@ export function ProjectSettingsDialog({
     const [copiedValue, setCopiedValue] = useState<string | null>(null);
     const [confirmState, setConfirmState] = useState<SettingsConfirmState | null>(null);
     const [isConfirmLoading, setIsConfirmLoading] = useState(false);
+    const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
 
     useEffect(() => {
         setDraft(project);
@@ -106,6 +129,7 @@ export function ProjectSettingsDialog({
         setCopiedValue(null);
         setConfirmState(null);
         setIsConfirmLoading(false);
+        setShowUnsavedConfirm(false);
     }, [project]);
 
     if (!open || !draft) {
@@ -114,6 +138,16 @@ export function ProjectSettingsDialog({
 
     const canManageMembers = draft.ownerId === currentUserId
         || draft.members.some((member) => member.id === currentUserId && member.permission === 'owner');
+    const hasUnsavedBasics = JSON.stringify(getComparableProjectBasics(project)) !== JSON.stringify(getComparableProjectBasics(draft));
+
+    const requestClose = () => {
+        if (hasUnsavedBasics) {
+            setShowUnsavedConfirm(true);
+            return;
+        }
+
+        onClose();
+    };
 
     const handlePermissionChange = async (memberId: string, permission: PermissionLevel) => {
         if (memberId === currentUserId || memberId === draft.ownerId) {
@@ -275,48 +309,99 @@ export function ProjectSettingsDialog({
     };
 
     return (
-        <div className="dialog-backdrop-enter fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" onClick={onClose}>
+        <div className="dialog-backdrop-enter fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/56 p-4 backdrop-blur-md" onClick={requestClose}>
             <div
-                className="dialog-panel-enter surface-panel-strong w-full max-w-[96rem] rounded-[36px] p-6 lg:p-8"
+                className="dialog-panel-enter surface-panel-strong relative w-full max-w-[96rem] rounded-[36px] p-6 shadow-[0_34px_100px_rgba(2,6,23,0.34)] lg:p-8"
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="flex items-start justify-between gap-4">
-                    <div>
+                    <div className="max-w-3xl">
                         <div className="eyebrow">{isNewProject ? 'New Project Setup' : 'Project Settings'}</div>
                         <h2 className="mt-3 text-3xl font-display font-semibold text-[var(--foreground)] lg:text-4xl">{draft.name}</h2>
+                        <p className="mt-3 text-sm leading-relaxed text-[var(--foreground-soft)]">
+                            Adjust the project basics, choose the accent color, and manage who can join or edit this workspace.
+                        </p>
                     </div>
-                    <Button variant="secondary" onClick={onClose}>
+                    <Button variant="secondary" onClick={requestClose}>
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
 
-                <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-                    <div className="space-y-6">
-                        <section className="surface-panel relative z-20 rounded-[30px] p-6">
+                <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.02fr)_minmax(24rem,0.98fr)]">
+                    <div>
+                        <section className="surface-panel relative rounded-[30px] p-6 lg:p-7">
                             <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
                                 <Settings2 className="h-4 w-4 text-sky-500" />
                                 Project basics
                             </div>
-                            <div className="mt-5 grid gap-4">
-                                <label className="block">
-                                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Project name</div>
-                                    <input
-                                        value={draft.name}
-                                        onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-                                        className="mt-2 w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none focus:border-sky-400"
-                                    />
-                                </label>
-                                <label className="block">
-                                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Summary</div>
-                                    <textarea
-                                        value={draft.summary}
-                                        onChange={(event) => setDraft({ ...draft, summary: event.target.value })}
-                                        className="mt-2 h-32 w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none focus:border-sky-400"
-                                    />
-                                </label>
+                            <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(15rem,0.5fr)]">
+                                <div className="grid gap-4">
+                                    <label className="block">
+                                        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Project name</div>
+                                        <input
+                                            value={draft.name}
+                                            onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+                                            className="mt-2 w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none focus:border-sky-400"
+                                        />
+                                    </label>
+                                    <label className="block">
+                                        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">Summary</div>
+                                        <textarea
+                                            value={draft.summary}
+                                            onChange={(event) => setDraft({ ...draft, summary: event.target.value })}
+                                            className="mt-2 h-44 w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none focus:border-sky-400"
+                                        />
+                                    </label>
+                                </div>
+                                <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
+                                                <Palette className="h-4 w-4 text-amber-500" />
+                                                Project color
+                                            </div>
+                                            <p className="mt-2 text-xs leading-relaxed text-[var(--foreground-soft)]">
+                                                Pick the accent used across project cards and key highlights.
+                                            </p>
+                                        </div>
+                                        <div className={`hidden h-8 w-8 rounded-full bg-gradient-to-r shadow-[0_10px_22px_rgba(15,23,42,0.12)] sm:block ${draft.accent}`} />
+                                    </div>
+                                    <div className="mt-4 flex flex-wrap gap-2.5">
+                                        {PROJECT_ACCENT_OPTIONS.map((option) => {
+                                            const isActive = draft.accent === option.value;
+                                            return (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    onClick={() => setDraft({ ...draft, accent: option.value })}
+                                                    aria-label={`Use ${option.label} accent`}
+                                                    title={option.label}
+                                                    className={cn(
+                                                        'relative inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all',
+                                                        isActive
+                                                            ? 'border-slate-400/40 bg-slate-950/10 shadow-[0_10px_22px_rgba(15,23,42,0.12)] dark:border-white/25 dark:bg-white/10'
+                                                            : 'border-[var(--panel-border)] bg-[var(--panel-strong)] hover:-translate-y-0.5'
+                                                    )}
+                                                >
+                                                    <span className={`h-6 w-6 rounded-full bg-gradient-to-r ${option.value}`} />
+                                                    {isActive && (
+                                                        <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white shadow-[0_8px_18px_rgba(15,23,42,0.16)] dark:bg-white dark:text-slate-900">
+                                                            <Check className="h-3 w-3" />
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="mt-3 text-xs font-medium text-[var(--foreground-soft)]">
+                                        Current: {PROJECT_ACCENT_OPTIONS.find((option) => option.value === draft.accent)?.label || 'Custom'}
+                                    </div>
+                                </div>
                             </div>
                         </section>
+                    </div>
 
+                    <div className="space-y-6 xl:relative xl:z-20">
                         <section className="surface-panel relative z-10 rounded-[30px] p-6">
                             <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
                                 <UserPlus className="h-4 w-4 text-emerald-500" />
@@ -365,9 +450,6 @@ export function ProjectSettingsDialog({
                                 </div>
                             )}
                         </section>
-                    </div>
-
-                    <div className="space-y-6 xl:relative xl:z-20">
                         <section className="surface-panel relative z-30 overflow-visible rounded-[30px] p-6">
                             <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
                                 <ShieldCheck className="h-4 w-4 text-violet-500" />
@@ -490,7 +572,7 @@ export function ProjectSettingsDialog({
                 </div>
 
                 <div className="mt-6 flex justify-end gap-3">
-                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button variant="secondary" onClick={requestClose}>Cancel</Button>
                     <Button onClick={() => onSave(draft)}>{isNewProject ? 'Save and Open Project' : 'Save Changes'}</Button>
                 </div>
             </div>
@@ -511,6 +593,19 @@ export function ProjectSettingsDialog({
                     }
                 }}
                 onConfirm={() => void handleConfirmAction()}
+            />
+            <ConfirmDialog
+                open={showUnsavedConfirm}
+                title="Discard unsaved changes?"
+                description="You changed the project name, summary, or color but have not saved yet. Close settings and lose those edits?"
+                confirmLabel="Discard changes"
+                cancelLabel="Keep editing"
+                tone="default"
+                onClose={() => setShowUnsavedConfirm(false)}
+                onConfirm={() => {
+                    setShowUnsavedConfirm(false);
+                    onClose();
+                }}
             />
         </div>
     );

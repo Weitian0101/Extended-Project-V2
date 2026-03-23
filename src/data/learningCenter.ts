@@ -1,112 +1,283 @@
-export interface QuickStartItem {
-    id: string;
-    step: string;
-    title: string;
-    description: string;
-    value: string;
-}
-
-export interface LearningSnapshot {
+export interface LearningTutorialSection {
     id: string;
     title: string;
-    description: string;
-    image: string;
+    body: string;
 }
 
-export const QUICK_START_FLOW: QuickStartItem[] = [
-    {
-        id: 'dashboard-trackers',
-        step: '01',
-        title: 'Start with the four tracker cards',
-        description: 'They show where work is moving right now: what needs attention, what is coming up, what is assigned to you, and what changed most recently.',
-        value: 'Use them to decide where to jump in before opening a project.'
-    },
-    {
-        id: 'dashboard-create',
-        step: '02',
-        title: 'Create a project for one challenge',
-        description: 'Each project becomes the home for one piece of work: the brief, stage views, cards, captured outcomes, and AI support all stay together there.',
-        value: 'If you are new, create a project before exploring the deeper tools.'
-    },
-    {
-        id: 'dashboard-open',
-        step: '03',
-        title: 'Open the project from its dashboard card',
-        description: 'The project card is your way back into active work. It keeps progress, team activity, tasks, and recent status visible from one place.',
-        value: 'Click the card when you want to move from overview into the live project.'
-    },
-    {
-        id: 'hub-context',
-        step: '04',
-        title: 'Use Hub first, then fill in Project Context',
-        description: 'Hub keeps the work coordinated. Project Context captures the challenge background, objectives, and assumptions so the team and AI are working from the same brief.',
-        value: 'These two areas keep the project aligned before you start using methods.'
-    },
-    {
-        id: 'explore-beyond-post-its',
-        step: '05',
-        title: 'Explore is your Beyond Post-its starting point',
-        description: 'Explore is where the Beyond Post-its card deck lives inside the platform. It helps you understand the challenge before you move into ideas, experiments, or storytelling.',
-        value: 'Use Explore when you need to frame the problem, look at people, and build insight.'
-    },
-    {
-        id: 'method-card-open',
-        step: '06',
-        title: 'Open a card to run one method properly',
-        description: 'Each card is one method. Opening it gives you the method sheet, the AI prompt page, and the facilitation support for that specific activity.',
-        value: 'Choose a card when you are ready to run one focused exercise with the team.'
-    },
-    {
-        id: 'method-card-pages',
-        step: '07',
-        title: 'Read the front, then switch to AI Prompt Page',
-        description: 'The front side explains what the method is for and how to run it. The AI Prompt Page turns that method into prompts you can use immediately.',
-        value: 'Front helps you understand the activity. AI helps you facilitate it.'
-    },
-    {
-        id: 'method-card-ai',
-        step: '08',
-        title: 'Use the AI Facilitator to keep the session moving',
-        description: 'The AI on the right can help you prepare questions, reframe a prompt, think through next steps, and turn workshop output into clearer follow-up work.',
-        value: 'It is there to support your facilitation, not replace it.'
-    }
-];
+export interface LearningLesson {
+    id: string;
+    title: string;
+    summary: string;
+    image?: string;
+    videoUrl?: string | null;
+    videoLabel?: string;
+    textSections: LearningTutorialSection[];
+}
 
-export const LEARNING_SNAPSHOTS: LearningSnapshot[] = [
+export interface LearningCategory {
+    id: string;
+    label: string;
+    title: string;
+    summary: string;
+    accentClassName: string;
+    lessons: LearningLesson[];
+}
+
+export const LEARNING_CATEGORIES: LearningCategory[] = [
     {
-        id: 'explore-guide',
-        title: 'Explore and Beyond Post-its',
-        description: 'The entry view for the Beyond Post-its discovery deck and the place to start exploring methods.',
-        image: '/images/explore/Guide1.png'
+        id: 'workspace-basics',
+        label: 'Start here',
+        title: 'Workspace basics',
+        summary: 'Get oriented fast: dashboard first, then open a project and set the brief.',
+        accentClassName: 'from-sky-500/20 via-cyan-400/10 to-transparent',
+        lessons: [
+            {
+                id: 'dashboard-overview',
+                title: 'Read the dashboard in under a minute',
+                summary: 'Use the summary cards to spot what needs review, what is scheduled next, and where your tasks are.',
+                videoLabel: 'Dashboard walkthrough',
+                videoUrl: null,
+                image: '/images/explore/Guide1.png',
+                textSections: [
+                    {
+                        id: 'dashboard-1',
+                        title: 'Check the top summary cards first',
+                        body: 'The four dashboard cards are the fast health check. They show review work, upcoming sessions, assigned tasks, and recent activity so you know where to jump in.'
+                    },
+                    {
+                        id: 'dashboard-2',
+                        title: 'Open one project per challenge',
+                        body: 'Each project should hold one real piece of work. That keeps context, stage work, sessions, decisions, and outputs in the same place.'
+                    },
+                    {
+                        id: 'dashboard-3',
+                        title: 'Use project tiles as your return point',
+                        body: 'The project tile is not just a link. It is the quickest way back to the stage, review count, task load, and recent momentum.'
+                    }
+                ]
+            },
+            {
+                id: 'project-context',
+                title: 'Set the project brief before running methods',
+                summary: 'Project Context gives the team and AI the same background, objectives, and assumptions.',
+                videoLabel: 'Project context setup',
+                videoUrl: null,
+                image: '/images/imagine/guide-1.png',
+                textSections: [
+                    {
+                        id: 'context-1',
+                        title: 'Background explains the challenge',
+                        body: 'Write the situation in plain language. Keep it short enough that a new teammate can understand it quickly.'
+                    },
+                    {
+                        id: 'context-2',
+                        title: 'Objectives define what success looks like',
+                        body: 'Good objectives are concrete. They help the team judge whether a method output is actually useful.'
+                    },
+                    {
+                        id: 'context-3',
+                        title: 'Assumptions show what could be wrong',
+                        body: 'Use assumptions to capture risk, uncertainty, or beliefs that still need testing. This keeps later decisions grounded.'
+                    }
+                ]
+            }
+        ]
     },
     {
-        id: 'explore-reference',
-        title: 'Explore reference pages',
-        description: 'A reminder of how the Explore cards are organised and how to move into a specific method.',
-        image: '/images/explore/Guide2.png'
+        id: 'project-hub',
+        label: 'Hub',
+        title: 'Project Hub',
+        summary: 'Use Hub to coordinate people, tasks, sessions, decisions, and reusable outputs.',
+        accentClassName: 'from-emerald-500/20 via-teal-400/10 to-transparent',
+        lessons: [
+            {
+                id: 'todo-lists',
+                title: 'Use global and private todo lists correctly',
+                summary: 'Global list items are shared with the team. Private list items only belong to you.',
+                videoLabel: 'Todo list tutorial',
+                videoUrl: null,
+                image: '/images/implement/guide-1.png',
+                textSections: [
+                    {
+                        id: 'todo-1',
+                        title: 'Global list = team-visible work',
+                        body: 'Put shared follow-up here. Everyone can see it, and it belongs in the project conversation.'
+                    },
+                    {
+                        id: 'todo-2',
+                        title: 'Private list = your own reminders',
+                        body: 'Use private tasks for notes or reminders that should not clutter the shared board.'
+                    },
+                    {
+                        id: 'todo-3',
+                        title: 'Move important items into the board when needed',
+                        body: 'If a private note becomes real team work, convert it into a shared task or board card so it can be tracked properly.'
+                    }
+                ]
+            },
+            {
+                id: 'sessions-and-rituals',
+                title: 'Plan sessions with the right meeting details',
+                summary: 'Sessions can be online or offline, with team-member participants, a place, or a meeting link.',
+                videoLabel: 'Session planning tutorial',
+                videoUrl: null,
+                image: '/images/tell-story/guide-1.png',
+                textSections: [
+                    {
+                        id: 'sessions-1',
+                        title: 'Pick people from the team first',
+                        body: 'Use the member picker for known participants, then add any outside guests manually if needed.'
+                    },
+                    {
+                        id: 'sessions-2',
+                        title: 'Online and offline sessions carry different details',
+                        body: 'Offline sessions need a location. Online sessions need the meeting link. The session card preview already shows whether it is online or offline.'
+                    },
+                    {
+                        id: 'sessions-3',
+                        title: 'Use sessions for real rituals',
+                        body: 'This area works best for workshops, review calls, and check-ins that the team should be able to find later.'
+                    }
+                ]
+            },
+            {
+                id: 'decisions-and-outputs',
+                title: 'Separate decisions from outputs',
+                summary: 'Decisions capture a call. Outputs capture reusable material like insights, concepts, experiments, and story assets.',
+                videoLabel: 'Decision and output tutorial',
+                videoUrl: null,
+                image: '/images/tell-story/guide-2.png',
+                textSections: [
+                    {
+                        id: 'decision-1',
+                        title: 'Use approval only when it is truly needed',
+                        body: 'If a decision does not need approval, save it as decided right away. If approval is needed, assign the approvers from the team.'
+                    },
+                    {
+                        id: 'decision-2',
+                        title: 'Proposed only means approval is still incomplete',
+                        body: 'A decision should only stay proposed while approval is still pending. Partial approval is shown as progress like 1/2.'
+                    },
+                    {
+                        id: 'decision-3',
+                        title: 'Outputs are reusable project assets',
+                        body: 'Capture outputs when the team creates something people should come back to later, such as a concept, experiment, or narrative draft.'
+                    }
+                ]
+            }
+        ]
     },
     {
-        id: 'imagine-guide',
-        title: 'Imagine walkthrough',
-        description: 'A reminder of where to go when you move from insight into ideas, concepts, and tests.',
-        image: '/images/imagine/guide-1.png'
+        id: 'method-cards',
+        label: 'Cards',
+        title: 'Method cards',
+        summary: 'Run a card with the reference page on one side and live capture on the other.',
+        accentClassName: 'from-rose-500/20 via-orange-400/10 to-transparent',
+        lessons: [
+            {
+                id: 'card-pages',
+                title: 'Front page vs AI prompt page',
+                summary: 'The front explains the method. The AI prompt page helps you run it faster and more clearly.',
+                videoLabel: 'Method card pages',
+                videoUrl: null,
+                image: '/images/explore/Guide2.png',
+                textSections: [
+                    {
+                        id: 'pages-1',
+                        title: 'Read the front before you facilitate',
+                        body: 'The front page explains what the method is for, how to run it, and what kind of output to look for.'
+                    },
+                    {
+                        id: 'pages-2',
+                        title: 'Use the AI prompt page for facilitation support',
+                        body: 'The prompt page helps you reword questions, surface blind spots, and keep the room moving without losing the structure of the method.'
+                    },
+                    {
+                        id: 'pages-3',
+                        title: 'Keep the reference visible while working',
+                        body: 'The split view is designed so you can stay on the card while still capturing outcomes and talking to the AI.'
+                    }
+                ]
+            },
+            {
+                id: 'threads-and-linked-work',
+                title: 'Threads and linked work on a card',
+                summary: 'Threads keep discussions visible. Linked work shows what this method run already created in the Hub.',
+                videoLabel: 'Threads and linked work',
+                videoUrl: null,
+                image: '/images/imagine/guide-1.png',
+                textSections: [
+                    {
+                        id: 'linked-1',
+                        title: 'Use threads for unresolved discussion',
+                        body: 'Threads are for questions, debate, or follow-up that should stay attached to this specific method run.'
+                    },
+                    {
+                        id: 'linked-2',
+                        title: 'Linked work explains why the card matters later',
+                        body: 'Linked cards, tasks, decisions, and outputs show the real project records that came out of this run.'
+                    },
+                    {
+                        id: 'linked-3',
+                        title: 'Capture fast here, refine in Hub later',
+                        body: 'The card page is optimized for quick capture during a live session. Hub is where you refine ownership, approval, and follow-up detail later.'
+                    }
+                ]
+            }
+        ]
     },
     {
-        id: 'implement-guide',
-        title: 'Implement walkthrough',
-        description: 'A reminder of the stage for experiments, delivery planning, and making ideas real.',
-        image: '/images/implement/guide-1.png'
-    },
-    {
-        id: 'tell-story-guide',
-        title: 'Tell Story walkthrough',
-        description: 'A reminder of where to shape the story, the message, and the presentation flow.',
-        image: '/images/tell-story/guide-1.png'
-    },
-    {
-        id: 'tell-story-reference',
-        title: 'Storytelling reference board',
-        description: 'A visual reminder for building the story and preparing what you want to show others.',
-        image: '/images/tell-story/guide-2.png'
+        id: 'stage-atlas',
+        label: 'Stages',
+        title: 'Explore, Imagine, Implement, Tell Story',
+        summary: 'Each stage has a different job, so pick the stage that matches the kind of progress you need.',
+        accentClassName: 'from-violet-500/20 via-fuchsia-400/10 to-transparent',
+        lessons: [
+            {
+                id: 'explore-stage',
+                title: 'Use Explore for discovery',
+                summary: 'Explore is where the Beyond Post-its deck helps you understand the challenge before ideation starts.',
+                videoLabel: 'Explore stage walkthrough',
+                videoUrl: null,
+                image: '/images/explore/Guide1.png',
+                textSections: [
+                    {
+                        id: 'explore-1',
+                        title: 'Start here when the problem is still fuzzy',
+                        body: 'Explore helps the team understand people, context, patterns, and open questions before jumping to solutions.'
+                    },
+                    {
+                        id: 'explore-2',
+                        title: 'Look for signals, not final answers',
+                        body: 'Good Explore work creates insight and sharper framing, not polished solutions.'
+                    }
+                ]
+            },
+            {
+                id: 'later-stages',
+                title: 'Know when to move into later stages',
+                summary: 'Imagine opens options, Implement tests what is viable, and Tell Story prepares the narrative.',
+                videoLabel: 'Stage transitions',
+                videoUrl: null,
+                image: '/images/tell-story/guide-1.png',
+                textSections: [
+                    {
+                        id: 'stages-1',
+                        title: 'Imagine when you need more options',
+                        body: 'Move to Imagine when you understand the challenge well enough to create directions, concepts, and possibilities.'
+                    },
+                    {
+                        id: 'stages-2',
+                        title: 'Implement when ideas need proof',
+                        body: 'Implement is for experiments, delivery thinking, and practical next moves.'
+                    },
+                    {
+                        id: 'stages-3',
+                        title: 'Tell Story when others need to understand',
+                        body: 'Use Tell Story to shape the narrative, supporting evidence, and final communication flow.'
+                    }
+                ]
+            }
+        ]
     }
 ];

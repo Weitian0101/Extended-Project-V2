@@ -505,6 +505,7 @@ function HomeShell() {
       return (
         <LearningCenterPage
           profile={profile}
+          onUpdateProfile={handleUpdateProfile}
           onBack={() => {
             setActiveProjectId(learningCenterReturnState.activeProjectId);
             setActiveSurface(learningCenterReturnState.activeSurface);
