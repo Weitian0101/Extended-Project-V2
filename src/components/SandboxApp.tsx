@@ -75,7 +75,7 @@ interface SandboxAppProps {
 }
 
 export function SandboxApp({
-    project: projectSummary,
+    project: incomingProjectSummary,
     profile,
     currentSurface,
     onSurfaceChange,
@@ -96,6 +96,8 @@ export function SandboxApp({
     onGuideStepChange,
     onDismissGuide
 }: SandboxAppProps) {
+    const [projectSummaryOverride, setProjectSummaryOverride] = useState<WorkspaceProject | null>(null);
+    const projectSummary = projectSummaryOverride ?? incomingProjectSummary;
     const { project, updateProject, isLoaded, hasCachedProject } = useProjectData(projectSummary.id, projectSummary.name);
     const {
         hub,
@@ -132,6 +134,25 @@ export function SandboxApp({
     const handleUpdateHubRecord = async <
         TResource extends 'cards' | 'artifacts' | 'sessions' | 'decisions' | 'threads' | 'tasks' | 'presence'
     >(resource: TResource, id: string, payload: Record<string, unknown>) => updateRecord(resource, id, payload as never);
+
+    useEffect(() => {
+        if (!projectSummaryOverride) {
+            return;
+        }
+
+        if (incomingProjectSummary.id !== projectSummaryOverride.id) {
+            setProjectSummaryOverride(null);
+            return;
+        }
+
+        const incomingMatchesOverride = incomingProjectSummary.name === projectSummaryOverride.name
+            && incomingProjectSummary.summary === projectSummaryOverride.summary
+            && incomingProjectSummary.accent === projectSummaryOverride.accent;
+
+        if (incomingMatchesOverride) {
+            setProjectSummaryOverride(null);
+        }
+    }, [incomingProjectSummary, projectSummaryOverride]);
 
     useEffect(() => {
         void createRecord('presence', {
@@ -192,7 +213,9 @@ export function SandboxApp({
     };
 
     const handleSaveProjectSettings = (nextProject: WorkspaceProject) => {
-        onUpdateProject(projectSummary.id, nextProject);
+        const previousProjectSummary = projectSummary;
+
+        setProjectSummaryOverride(nextProject);
         updateProject({
             context: {
                 ...project.context,
@@ -200,6 +223,16 @@ export function SandboxApp({
             }
         });
         setSettingsOpen(false);
+
+        void Promise.resolve(onUpdateProject(projectSummary.id, nextProject)).catch(() => {
+            setProjectSummaryOverride(previousProjectSummary);
+            updateProject({
+                context: {
+                    ...project.context,
+                    name: previousProjectSummary.name
+                }
+            });
+        });
     };
 
     const handleProjectFacilitatorSubmit = async (prefill?: string) => {

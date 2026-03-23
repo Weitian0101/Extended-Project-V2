@@ -50,6 +50,7 @@ import {
     resolveDecisionStatus,
     SessionDeliveryMode
 } from '@/lib/projectHubMeta';
+import { getProjectAccentTheme } from '@/lib/projectAccent';
 import { saveStageMethodSession } from '@/lib/services/stageMethodSession';
 import { cn } from '@/lib/utils';
 import {
@@ -332,6 +333,7 @@ export function ProjectHub({
         readyArtifactCount > 0 ? `${readyArtifactCount} output${readyArtifactCount === 1 ? '' : 's'}` : null,
         proposedDecisionCount > 0 ? `${proposedDecisionCount} decision${proposedDecisionCount === 1 ? '' : 's'}` : null
     ].filter(Boolean).join(' · ');
+    const accentTheme = useMemo(() => getProjectAccentTheme(projectSummary.accent), [projectSummary.accent]);
 
     useEffect(() => {
         if (!pendingJumpTarget) {
@@ -936,13 +938,13 @@ export function ProjectHub({
             <div className="mx-auto max-w-7xl space-y-6">
                 <section className="surface-panel-strong relative z-20 overflow-visible rounded-[34px] p-6 lg:p-8">
                     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
-                        <div className={cn('absolute inset-0 bg-gradient-to-br opacity-15', projectSummary.accent)} />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_72%)]" />
+                        <div className={cn('absolute inset-0 bg-gradient-to-br opacity-75', accentTheme.heroWash)} />
+                        <div className={cn('absolute inset-0', accentTheme.heroGlow)} />
                     </div>
                     <div className="relative grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
                         <div>
-                            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
-                                <Layers3 className="h-3.5 w-3.5 text-sky-500" />
+                            <div className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]', accentTheme.badge)}>
+                                <Layers3 className={cn('h-3.5 w-3.5', accentTheme.iconText)} />
                                 Project Hub
                             </div>
                             <h1 className="mt-4 text-3xl font-display font-semibold text-[var(--foreground)] lg:text-5xl">{project.context.name}</h1>

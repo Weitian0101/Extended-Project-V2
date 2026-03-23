@@ -32,6 +32,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { UserMenu } from '@/components/ui/UserMenu';
 import { getGuideProgress, shouldShowCreateStep } from '@/data/onboarding';
 import { getMembershipPlan } from '@/lib/membership';
+import { getProjectAccentTheme } from '@/lib/projectAccent';
 import { saveWorkspaceShell } from '@/lib/services/mvpWorkspace';
 import { cn } from '@/lib/utils';
 import { GuideFlowVariant, OnboardingStepId, ProjectInvite, TeamMember, UserProfileData, WorkspaceCollaborationOverview, WorkspaceProject } from '@/types';
@@ -566,6 +567,7 @@ export function Dashboard({
                     <div className="relative z-0 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                         {projects.map((project, index) => {
                             const owner = getOwner(project);
+                            const accentTheme = getProjectAccentTheme(project.accent);
 
                             return (
                                 <div
@@ -573,6 +575,8 @@ export function Dashboard({
                                     ref={index === 0 ? firstProjectCardRef : null}
                                     className="surface-panel group relative overflow-hidden rounded-[30px] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,0.16)]"
                                 >
+                                    <div className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70', accentTheme.cardWash)} />
+                                    <div className={cn('pointer-events-none absolute -left-14 -top-16 h-44 w-44 rounded-full blur-3xl transition-transform duration-300 group-hover:scale-110', accentTheme.cardGlow)} />
                                     <a
                                         href={getProjectHref(project.id)}
                                         target="_blank"
@@ -582,18 +586,26 @@ export function Dashboard({
                                             handleProjectOpen(project.id);
                                         }}
                                         aria-label={`Open ${project.name} in a new tab`}
-                                        className="absolute inset-0 z-10 rounded-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+                                        className={cn(
+                                            'absolute inset-0 z-10 rounded-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]',
+                                            accentTheme.focusRing
+                                        )}
                                     />
-                                    <div className={`absolute inset-x-0 top-0 h-1 rounded-t-[30px] bg-gradient-to-r ${project.accent}`} />
+                                    <div className={`absolute inset-x-0 top-0 h-1.5 rounded-t-[30px] bg-gradient-to-r ${project.accent}`} />
 
-                                <div className="flex items-start justify-between gap-3">
+                                <div className="relative flex items-start justify-between gap-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-[18px] border border-[var(--panel-border)] bg-[var(--panel-strong)] text-[var(--foreground-muted)] transition-colors group-hover:text-sky-500">
+                                        <div className={cn('flex h-14 w-14 items-center justify-center rounded-[18px] border transition-colors duration-200', accentTheme.iconSurface)}>
                                             <Folder className="h-6 w-6" />
                                         </div>
                                         <div>
                                             <div className="text-base font-semibold text-[var(--foreground)]">{project.name}</div>
-                                            <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">{project.updated}</div>
+                                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                <div className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">{project.updated}</div>
+                                                <span className={cn('rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em]', accentTheme.badge)}>
+                                                    {accentTheme.label}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -673,7 +685,7 @@ export function Dashboard({
                                 <p className="mt-6 text-sm leading-relaxed text-[var(--foreground-soft)]">{project.summary}</p>
 
                                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                                    <ProjectMetaTile icon={Layers3} label="Stage" value={formatStageLabel(project.currentStage)} accent="text-sky-600" />
+                                    <ProjectMetaTile icon={Layers3} label="Stage" value={formatStageLabel(project.currentStage)} accent={accentTheme.iconText} />
                                     <ProjectMetaTile icon={CheckCircle2} label="Review" value={`${project.pendingReviewCount || 0}`} accent="text-emerald-600" />
                                     <ProjectMetaTile icon={ClipboardList} label="Tasks" value={`${project.openTasksCount || 0}`} accent="text-amber-600" />
                                     <ProjectMetaTile icon={MessageSquareMore} label="Threads" value={`${project.unresolvedThreadsCount || 0}`} accent="text-violet-600" />

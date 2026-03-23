@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RoundedSelect } from '@/components/ui/RoundedSelect';
+import { PROJECT_ACCENT_OPTIONS } from '@/lib/projectAccent';
 import { cn } from '@/lib/utils';
 import { PermissionLevel, ProjectInvite, WorkspaceProject } from '@/types';
 
@@ -44,14 +45,6 @@ const PERMISSION_OPTIONS = [
     { value: 'owner', label: 'Owner' },
     { value: 'edit', label: 'Can Edit' },
     { value: 'view', label: 'Can View' }
-] as const;
-
-const PROJECT_ACCENT_OPTIONS = [
-    { value: 'from-emerald-500 to-lime-300', label: 'Emerald' },
-    { value: 'from-sky-500 to-cyan-300', label: 'Sky' },
-    { value: 'from-rose-500 to-orange-300', label: 'Sunset' },
-    { value: 'from-amber-500 to-yellow-300', label: 'Amber' },
-    { value: 'from-fuchsia-500 to-violet-400', label: 'Violet' }
 ] as const;
 
 type SettingsConfirmState =
@@ -136,6 +129,9 @@ export function ProjectSettingsDialog({
         return null;
     }
 
+    const canEditProjectBasics = !currentUserId
+        || draft.ownerId === currentUserId
+        || draft.members.some((member) => member.id === currentUserId && (member.permission === 'owner' || member.permission === 'edit'));
     const canManageMembers = draft.ownerId === currentUserId
         || draft.members.some((member) => member.id === currentUserId && member.permission === 'owner');
     const hasUnsavedBasics = JSON.stringify(getComparableProjectBasics(project)) !== JSON.stringify(getComparableProjectBasics(draft));
@@ -341,7 +337,8 @@ export function ProjectSettingsDialog({
                                         <input
                                             value={draft.name}
                                             onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-                                            className="mt-2 w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none focus:border-sky-400"
+                                            disabled={!canEditProjectBasics}
+                                            className="mt-2 w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none focus:border-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
                                         />
                                     </label>
                                     <label className="block">
@@ -349,9 +346,15 @@ export function ProjectSettingsDialog({
                                         <textarea
                                             value={draft.summary}
                                             onChange={(event) => setDraft({ ...draft, summary: event.target.value })}
-                                            className="mt-2 h-44 w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none focus:border-sky-400"
+                                            disabled={!canEditProjectBasics}
+                                            className="mt-2 h-44 w-full rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-[var(--foreground)] outline-none focus:border-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
                                         />
                                     </label>
+                                    {!canEditProjectBasics && (
+                                        <div className="rounded-[18px] border border-amber-300/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                                            You can view these settings, but only owners or editors can change the project name, summary, or color.
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4">
                                     <div className="flex items-start justify-between gap-3">
@@ -374,13 +377,15 @@ export function ProjectSettingsDialog({
                                                     key={option.value}
                                                     type="button"
                                                     onClick={() => setDraft({ ...draft, accent: option.value })}
+                                                    disabled={!canEditProjectBasics}
                                                     aria-label={`Use ${option.label} accent`}
                                                     title={option.label}
                                                     className={cn(
                                                         'relative inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all',
                                                         isActive
                                                             ? 'border-slate-400/40 bg-slate-950/10 shadow-[0_10px_22px_rgba(15,23,42,0.12)] dark:border-white/25 dark:bg-white/10'
-                                                            : 'border-[var(--panel-border)] bg-[var(--panel-strong)] hover:-translate-y-0.5'
+                                                            : 'border-[var(--panel-border)] bg-[var(--panel-strong)] hover:-translate-y-0.5',
+                                                        !canEditProjectBasics && 'cursor-not-allowed opacity-60 hover:translate-y-0'
                                                     )}
                                                 >
                                                     <span className={`h-6 w-6 rounded-full bg-gradient-to-r ${option.value}`} />
@@ -573,7 +578,9 @@ export function ProjectSettingsDialog({
 
                 <div className="mt-6 flex justify-end gap-3">
                     <Button variant="secondary" onClick={requestClose}>Cancel</Button>
-                    <Button onClick={() => onSave(draft)}>{isNewProject ? 'Save and Open Project' : 'Save Changes'}</Button>
+                    <Button onClick={() => onSave(draft)} disabled={!canEditProjectBasics}>
+                        {isNewProject ? 'Save and Open Project' : 'Save Changes'}
+                    </Button>
                 </div>
             </div>
             <ConfirmDialog
