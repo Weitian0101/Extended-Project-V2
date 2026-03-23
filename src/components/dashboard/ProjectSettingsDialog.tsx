@@ -18,7 +18,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { RoundedSelect } from '@/components/ui/RoundedSelect';
-import { PROJECT_ACCENT_OPTIONS } from '@/lib/projectAccent';
 import { cn } from '@/lib/utils';
 import { PermissionLevel, ProjectInvite, WorkspaceProject } from '@/types';
 
@@ -45,6 +44,14 @@ const PERMISSION_OPTIONS = [
     { value: 'owner', label: 'Owner' },
     { value: 'edit', label: 'Can Edit' },
     { value: 'view', label: 'Can View' }
+] as const;
+
+const PROJECT_ACCENT_OPTIONS = [
+    { value: 'from-emerald-500 to-lime-300', label: 'Emerald' },
+    { value: 'from-sky-500 to-cyan-300', label: 'Sky' },
+    { value: 'from-rose-500 to-orange-300', label: 'Sunset' },
+    { value: 'from-amber-500 to-yellow-300', label: 'Amber' },
+    { value: 'from-fuchsia-500 to-violet-400', label: 'Violet' }
 ] as const;
 
 type SettingsConfirmState =
