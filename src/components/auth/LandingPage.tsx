@@ -40,21 +40,27 @@ const SHOWCASE_VIDEOS = [
         label: 'Platform demo',
         title: 'Sandbox workflow recording',
         note: 'Reserved for a guided product screen recording once the walkthrough is ready.',
-        embedUrl: null
+        embedUrl: null,
+        resourceUrl: null,
+        resourceActionLabel: null
     },
     {
         id: 'academy-intro',
         label: 'Academy intro',
         title: 'Design Thinking | Academy of Design Thinking',
         note: 'A short Academy introduction to the mindset behind the work.',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/pwkXYlQYI4o?rel=0'
+        embedUrl: 'https://www.youtube-nocookie.com/embed/pwkXYlQYI4o?rel=0',
+        resourceUrl: null,
+        resourceActionLabel: null
     },
     {
-        id: 'business-show',
-        label: 'Business show',
-        title: 'Julia Goga-Cooke at The Business Show',
-        note: 'A fast overview of the Academy, its positioning, and its offer.',
-        embedUrl: 'https://www.youtube-nocookie.com/embed/OL8OiuybKUc?rel=0'
+        id: 'beyond-post-its-official',
+        label: 'Official resource',
+        title: 'Beyond Post-its | Academy of Design Thinking',
+        note: 'The official ADT page for the card pack and public method library.',
+        embedUrl: null,
+        resourceUrl: 'https://www.academyofdesignthinking.com/beyond-post-its',
+        resourceActionLabel: 'Open official page'
     }
 ] as const;
 
@@ -79,6 +85,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
     const [typedHeroTitle, setTypedHeroTitle] = React.useState('');
     const [showHeroSupport, setShowHeroSupport] = React.useState(false);
     const activeVideo = SHOWCASE_VIDEOS.find((video) => video.id === activeVideoId) || SHOWCASE_VIDEOS[0];
+    const subtleExternalLinkClassName =
+        'group inline-flex items-center gap-2 text-sm font-medium text-[var(--foreground-muted)] transition-colors duration-200 hover:text-[var(--foreground)]';
+    const subtleInverseExternalLinkClassName =
+        'group inline-flex items-center gap-2 text-sm font-medium text-white/72 transition-colors duration-200 hover:text-white';
 
     React.useEffect(() => {
         document.body.classList.add('landing-no-grid');
@@ -294,6 +304,35 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                                         referrerPolicy="strict-origin-when-cross-origin"
                                         allowFullScreen
                                     />
+                                ) : activeVideo.resourceUrl ? (
+                                    <div className="relative flex h-full items-center justify-center overflow-hidden px-6 py-8">
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_34%),linear-gradient(180deg,#030712,#0f172a)]" />
+                                        <div className="relative mx-auto grid max-w-3xl gap-6 text-center text-white lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center lg:text-left">
+                                            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/12 bg-white/10 shadow-[0_22px_60px_rgba(56,189,248,0.12)] lg:mx-0">
+                                                <BookOpenText className="h-9 w-9 text-sky-300" />
+                                            </div>
+                                            <div>
+                                                <div className="inline-flex items-center justify-center rounded-full border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70">
+                                                    Official ADT source
+                                                </div>
+                                                <div className="mt-5 text-2xl font-display font-semibold lg:text-4xl">
+                                                    Explore the public Beyond Post-its page.
+                                                </div>
+                                                <div className="mt-3 max-w-xl text-sm leading-relaxed text-white/68 lg:text-base">
+                                                    Open the official ADT page for the card pack, stage structure, and public method library overview.
+                                                </div>
+                                                <a
+                                                    href={activeVideo.resourceUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className={cn('mt-6', subtleInverseExternalLinkClassName)}
+                                                >
+                                                    {activeVideo.resourceActionLabel}
+                                                    <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <div className="relative flex h-full items-center justify-center overflow-hidden px-6 py-8">
                                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.2),transparent_34%),linear-gradient(180deg,#030712,#0f172a)]" />
@@ -331,9 +370,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                                 href="https://www.academyofdesignthinking.com/beyond-post-its"
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel-strong)] px-5 text-sm font-medium text-[var(--foreground)] shadow-[0_12px_28px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5"
+                                className={subtleExternalLinkClassName}
                             >
-                                Official Source <ArrowUpRight className="ml-2 h-4 w-4" />
+                                Official Source
+                                <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                             </a>
                         </div>
 
@@ -390,11 +430,32 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 </section>
 
                 <section className="mx-auto mt-20 max-w-7xl overflow-hidden rounded-[36px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-10 backdrop-blur-2xl lg:px-8">
-                    <div className="text-center">
-                        <div className="eyebrow">Trusted Context</div>
-                        <h2 className="mt-4 text-3xl font-display font-semibold text-[var(--foreground)]">Used with global innovators and institutional partners</h2>
+                    <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
+                        <div>
+                            <div className="eyebrow">ADT Profile</div>
+                            <h2 className="mt-3 text-[1.9rem] font-display font-semibold text-[var(--foreground)] lg:text-[2.15rem]">About ADT</h2>
+                        </div>
+                        <div className="border-t border-[var(--line)] pt-4 lg:border-t-0 lg:pt-0">
+                            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-[var(--foreground-muted)]">
+                                <span className="inline-flex items-center gap-2">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500/80" />
+                                    Since 2009
+                                </span>
+                                <span className="inline-flex items-center gap-2">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-sky-500/80" />
+                                    13 countries
+                                </span>
+                                <span className="inline-flex items-center gap-2">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/80" />
+                                    100+ companies
+                                </span>
+                            </div>
+                            <p className="mt-4 max-w-[78ch] text-base leading-8 text-[var(--foreground-soft)] lg:text-[1.02rem]">
+                                ADT has delivered programmes since 2009 in UK, The Netherlands, Belgium, Denmark, Sweden, Norway, Spain, Germany, Albania, India, China, Nigeria, Singapore, with thousands of participants from more than 100 global companies, from various industries, helping them create their signatory Design Thinking process, training trainers and scale the capability organisation wide.
+                            </p>
+                        </div>
                     </div>
-                    <div className="relative mt-10 overflow-hidden">
+                    <div className="relative mt-8 overflow-hidden">
                         <div className="absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[var(--panel)] to-transparent" />
                         <div className="absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[var(--panel)] to-transparent" />
                         <div className="marquee-track flex min-w-max items-center gap-5 lg:gap-6">
@@ -425,38 +486,53 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </main>
 
             <footer className="px-4 pb-8 pt-12 lg:px-8">
-                <div className="surface-panel-strong mx-auto flex max-w-7xl flex-col gap-8 rounded-[34px] px-6 py-8 lg:flex-row lg:items-start lg:justify-between lg:px-8">
-                    <div className="max-w-xl">
-                        <BrandLockup compact />
-                        <p className="mt-5 text-sm leading-relaxed text-[var(--foreground-soft)]">
-                            A lighter interface for Beyond Post-its, AI-supported facilitation, and project-based innovation work.
-                        </p>
-                    </div>
-
-                    <div className="min-w-0 lg:max-w-sm">
-                        <div className="eyebrow">Contact Us</div>
-                        <div className="mt-4 space-y-1 text-sm leading-relaxed text-[var(--foreground-soft)]">
-                            <div>Somerset House Exchange, Strand,</div>
-                            <div>London WC2R 1LA</div>
-                            <div>England, United Kingdom</div>
+                <div className="surface-panel-strong mx-auto max-w-7xl overflow-hidden rounded-[34px] px-6 py-8 lg:px-8">
+                    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.72fr)_minmax(0,0.86fr)] lg:items-center lg:gap-10">
+                        <div className="max-w-xl">
+                            <BrandLockup compact />
+                            <p className="mt-5 text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                A lighter interface for Beyond Post-its, AI-supported facilitation, and project-based innovation work.
+                            </p>
                         </div>
-                        <div className="mt-4 text-sm text-[var(--foreground-soft)]">
-                            Email:{' '}
+
+                        <div className="flex items-center justify-center">
+                            <div className="relative aspect-[3.9/1.2] w-full max-w-[17rem]">
+                                <Image
+                                    src="/images/IOee.avif"
+                                    alt="Academy of Design Thinking footer artwork"
+                                    fill
+                                    sizes="(min-width: 1024px) 272px, 70vw"
+                                    className="object-contain object-center"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="min-w-0 lg:justify-self-end lg:max-w-sm">
+                            <div className="eyebrow">Contact Us</div>
+                            <div className="mt-4 space-y-1 text-sm leading-relaxed text-[var(--foreground-soft)]">
+                                <div>Somerset House Exchange, Strand,</div>
+                                <div>London WC2R 1LA</div>
+                                <div>England, United Kingdom</div>
+                            </div>
+                            <div className="mt-4 text-sm text-[var(--foreground-soft)]">
+                                Email:{' '}
+                                <a
+                                    href="mailto:juliana@academyofdesignthinking.com"
+                                    className="font-medium text-[var(--foreground)] underline decoration-sky-400/45 underline-offset-4 transition-colors hover:text-sky-600"
+                                >
+                                    juliana@academyofdesignthinking.com
+                                </a>
+                            </div>
                             <a
-                                href="mailto:juliana@academyofdesignthinking.com"
-                                className="font-medium text-[var(--foreground)] underline decoration-sky-400/45 underline-offset-4 transition-colors hover:text-sky-600"
+                                href="https://www.academyofdesignthinking.com/"
+                                target="_blank"
+                                rel="noreferrer"
+                                className={cn('mt-5', subtleExternalLinkClassName)}
                             >
-                                juliana@academyofdesignthinking.com
+                                Visit ADT homepage
+                                <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                             </a>
                         </div>
-                        <a
-                            href="https://www.academyofdesignthinking.com/"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-5 inline-flex h-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-5 text-sm font-medium text-[var(--foreground)] shadow-[0_12px_28px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5"
-                        >
-                            Visit ADT homepage <ArrowUpRight className="ml-2 h-4 w-4" />
-                        </a>
                     </div>
                 </div>
             </footer>
