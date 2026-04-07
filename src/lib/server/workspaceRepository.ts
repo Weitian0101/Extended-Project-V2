@@ -998,14 +998,20 @@ export async function removeProjectMember(projectId: string, memberId: string) {
         );
     }
 
-    const { error } = await supabase
+    const { data: removedMemberData, error } = await supabase
         .from('project_members')
         .delete()
         .eq('project_id', projectId)
-        .eq('user_id', memberId);
+        .eq('user_id', memberId)
+        .select('user_id')
+        .maybeSingle();
 
     if (error) {
         throw error;
+    }
+
+    if (!removedMemberData) {
+        throw new Error('Unable to remove project member.');
     }
 }
 
