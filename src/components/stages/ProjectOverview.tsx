@@ -20,6 +20,8 @@ interface ContextDraft {
     aiHandoffPrompt: string;
 }
 
+type HandoffViewMode = 'prompt' | 'background';
+
 interface ProjectOverviewProps {
     project: ProjectData;
     onUpdateContext: (context: Partial<ProjectData['context']>) => void;
@@ -145,6 +147,31 @@ function buildAiHandoffMarkdown(projectName: string, draft: ContextDraft) {
     ].join('\n');
 }
 
+function buildAiBackgroundMarkdown(projectName: string, draft: ContextDraft) {
+    const audienceLines = draft.audiences.length > 0
+        ? draft.audiences.map((item) => `- ${item}`).join('\n')
+        : '- No audiences captured yet.';
+    const constraintLines = draft.constraints.length > 0
+        ? draft.constraints.map((item) => `- ${item}`).join('\n')
+        : '- No constraints captured yet.';
+
+    return [
+        `# ${projectName || 'Innovation Sandbox Project'} Context Markdown`,
+        '',
+        '## Challenge',
+        draft.challenge.trim() || 'No challenge captured yet.',
+        '',
+        '## Desired Shift',
+        draft.desiredShift.trim() || 'No desired shift captured yet.',
+        '',
+        '## Priority Audiences',
+        audienceLines,
+        '',
+        '## Constraints',
+        constraintLines
+    ].join('\n');
+}
+
 function getPromptPreview(value: string) {
     return value
         .split('\n')
@@ -156,6 +183,7 @@ function getPromptPreview(value: string) {
 export function ProjectOverview({ project, onUpdateContext }: ProjectOverviewProps) {
     const [draft, setDraft] = useState<ContextDraft>(() => buildDraft(project.context));
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+    const [handoffView, setHandoffView] = useState<HandoffViewMode>('prompt');
     const [advancedPrompt, setAdvancedPrompt] = useState('');
     const [aiCorrectionInput, setAiCorrectionInput] = useState('');
     const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
@@ -177,10 +205,17 @@ export function ProjectOverview({ project, onUpdateContext }: ProjectOverviewPro
         draft.constraints.length > 0 ? 'constraints' : '',
         draft.aiHandoffPrompt.trim()
     ].filter(Boolean).length;
-
+    const generatedPrompt = useMemo(
+        () => draft.aiHandoffPrompt || buildAiHandoffMarkdown(project.context.name, draft),
+        [draft, project.context.name]
+    );
+    const backgroundMarkdown = useMemo(
+        () => buildAiBackgroundMarkdown(project.context.name, draft),
+        [draft, project.context.name]
+    );
     const promptPreview = useMemo(() => (
-        getPromptPreview(draft.aiHandoffPrompt || buildAiHandoffMarkdown(project.context.name, draft))
-    ), [draft, project.context.name]);
+        getPromptPreview(handoffView === 'prompt' ? generatedPrompt : backgroundMarkdown)
+    ), [backgroundMarkdown, generatedPrompt, handoffView]);
 
     const syncContext = (nextDraft: ContextDraft) => {
         setDraft(nextDraft);
@@ -203,6 +238,7 @@ export function ProjectOverview({ project, onUpdateContext }: ProjectOverviewPro
         updateDraft({
             aiHandoffPrompt: buildAiHandoffMarkdown(project.context.name, draft)
         });
+        setHandoffView('prompt');
     };
 
     const handleAdvancedSave = () => {
@@ -331,13 +367,16 @@ export function ProjectOverview({ project, onUpdateContext }: ProjectOverviewPro
 
                     <div className="grid gap-6 xl:grid-cols-[1.42fr_0.58fr]">
                         <div className="surface-panel-strong rounded-[32px] p-5 lg:p-6">
-                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
-                                <FileText className="h-4 w-4 text-violet-500" />
-                                AI handoff
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">
+                                    <FileText className="h-4 w-4 text-violet-500" />
+                                    AI handoff
+                                </div>
+                                <HandoffViewToggle value={handoffView} onChange={setHandoffView} />
                             </div>
                             <div className="mt-4 rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4 lg:p-5">
                                 <pre className="max-h-[12.5rem] overflow-hidden whitespace-pre-wrap font-sans text-sm leading-relaxed text-[var(--foreground-soft)] lg:max-h-none">
-                                    {promptPreview || 'Generate the project system prompt after you frame the challenge, audiences, and constraints.'}
+                                    {promptPreview || 'Generate the project handoff after you frame the challenge, audiences, and constraints.'}
                                 </pre>
                             </div>
                             <div className="mt-4 flex flex-wrap gap-3">
@@ -433,12 +472,15 @@ export function ProjectOverview({ project, onUpdateContext }: ProjectOverviewPro
 
             {isAdvancedOpen && (
                 <PromptModal
+                    view={handoffView}
                     value={advancedPrompt}
+                    backgroundValue={backgroundMarkdown}
                     messages={aiMessages}
                     aiCorrectionInput={aiCorrectionInput}
                     isGeneratingReply={isGeneratingReply}
                     onClose={() => setIsAdvancedOpen(false)}
                     onChange={setAdvancedPrompt}
+                    onViewChange={setHandoffView}
                     onSave={handleAdvancedSave}
                     onRegenerate={() => setAdvancedPrompt(buildAiHandoffMarkdown(project.context.name, draft))}
                     onCorrectionChange={setAiCorrectionInput}
@@ -699,24 +741,67 @@ function ContextMetric({
     );
 }
 
-function PromptModal({
+function HandoffViewToggle({
     value,
+    onChange
+}: {
+    value: HandoffViewMode;
+    onChange: (value: HandoffViewMode) => void;
+}) {
+    return (
+        <div className="inline-flex rounded-full border border-[var(--panel-border)] bg-[var(--panel)] p-1">
+            <button
+                type="button"
+                onClick={() => onChange('prompt')}
+                className={cn(
+                    'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                    value === 'prompt'
+                        ? 'bg-[var(--panel-strong)] text-[var(--foreground)]'
+                        : 'text-[var(--foreground-muted)] hover:text-[var(--foreground)]'
+                )}
+            >
+                System prompt
+            </button>
+            <button
+                type="button"
+                onClick={() => onChange('background')}
+                className={cn(
+                    'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                    value === 'background'
+                        ? 'bg-[var(--panel-strong)] text-[var(--foreground)]'
+                        : 'text-[var(--foreground-muted)] hover:text-[var(--foreground)]'
+                )}
+            >
+                Context markdown
+            </button>
+        </div>
+    );
+}
+
+function PromptModal({
+    view,
+    value,
+    backgroundValue,
     messages,
     aiCorrectionInput,
     isGeneratingReply,
     onClose,
     onChange,
+    onViewChange,
     onSave,
     onRegenerate,
     onCorrectionChange,
     onAskAi
 }: {
+    view: HandoffViewMode;
     value: string;
+    backgroundValue: string;
     messages: ChatMessage[];
     aiCorrectionInput: string;
     isGeneratingReply: boolean;
     onClose: () => void;
     onChange: (value: string) => void;
+    onViewChange: (value: HandoffViewMode) => void;
     onSave: () => void;
     onRegenerate: () => void;
     onCorrectionChange: (value: string) => void;
@@ -735,30 +820,48 @@ function PromptModal({
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--foreground-muted)]">AI handoff</div>
-                        <h3 className="mt-2 text-2xl font-display font-semibold text-[var(--foreground)]">System prompt editor</h3>
+                        <h3 className="mt-2 text-2xl font-display font-semibold text-[var(--foreground)]">
+                            {view === 'prompt' ? 'System prompt editor' : 'Context markdown preview'}
+                        </h3>
                     </div>
-                    <Button variant="secondary" onClick={onClose}>
-                        <X className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <HandoffViewToggle value={view} onChange={onViewChange} />
+                        <Button variant="secondary" onClick={onClose}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="mt-6 grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
                     <div>
-                        <textarea
-                            value={value}
-                            onChange={(event) => onChange(event.target.value)}
-                            className="h-[520px] w-full rounded-[28px] border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-4 font-mono text-sm leading-relaxed text-[var(--foreground)]"
-                        />
-                        <div className="mt-4 flex flex-wrap gap-3">
-                            <Button onClick={onSave}>
-                                <PencilLine className="mr-2 h-4 w-4" />
-                                Save prompt
-                            </Button>
-                            <Button variant="secondary" onClick={onRegenerate}>
-                                <Wand2 className="mr-2 h-4 w-4" />
-                                Regenerate
-                            </Button>
-                        </div>
+                        {view === 'prompt' ? (
+                            <>
+                                <textarea
+                                    value={value}
+                                    onChange={(event) => onChange(event.target.value)}
+                                    className="h-[520px] w-full rounded-[28px] border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-4 font-mono text-sm leading-relaxed text-[var(--foreground)]"
+                                />
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                    <Button onClick={onSave}>
+                                        <PencilLine className="mr-2 h-4 w-4" />
+                                        Save prompt
+                                    </Button>
+                                    <Button variant="secondary" onClick={onRegenerate}>
+                                        <Wand2 className="mr-2 h-4 w-4" />
+                                        Regenerate
+                                    </Button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <pre className="h-[520px] overflow-y-auto whitespace-pre-wrap rounded-[28px] border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-4 font-mono text-sm leading-relaxed text-[var(--foreground)]">
+                                    {backgroundValue}
+                                </pre>
+                                <div className="mt-4 text-sm text-[var(--foreground-muted)]">
+                                    This is the markdown context the AI receives from the project brief.
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <div className="rounded-[28px] border border-[var(--panel-border)] bg-[var(--panel)] p-5">

@@ -155,6 +155,7 @@ export function AuthPage(props: AuthPageProps) {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isAwaitingAuthTransition, setIsAwaitingAuthTransition] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [statusTone, setStatusTone] = useState<'info' | 'warning'>('info');
     const [actionHint, setActionHint] = useState<AuthActionHint | null>(null);
@@ -187,7 +188,14 @@ export function AuthPage(props: AuthPageProps) {
         setStatusTone('info');
         setActionHint(null);
         setOauthNotice(null);
+        setIsAwaitingAuthTransition(false);
     }, [initialMode, showRegister]);
+
+    useEffect(() => {
+        if (errorMessage) {
+            setIsAwaitingAuthTransition(false);
+        }
+    }, [errorMessage]);
 
     const isSignInEmailStep = mode === 'signin' && signInStep === 'email';
     const normalizeEmail = (value: string) => value.trim().toLowerCase();
@@ -254,6 +262,7 @@ export function AuthPage(props: AuthPageProps) {
         resetStatus();
         setPassword('');
         setConfirmPassword('');
+        setIsAwaitingAuthTransition(false);
 
         if (nextMode === 'signin') {
             setSignInStep('email');
@@ -266,6 +275,10 @@ export function AuthPage(props: AuthPageProps) {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        if (isLoading || isAwaitingAuthTransition) {
+            return;
+        }
+
         resetStatus();
         const nextEmail = normalizeEmail(readFieldValue(emailInputRef, email));
         const nextPassword = readFieldValue(passwordInputRef, password);
@@ -301,6 +314,7 @@ export function AuthPage(props: AuthPageProps) {
         }
 
         setIsLoading(true);
+        setIsAwaitingAuthTransition(false);
 
         try {
             if (authMode === 'supabase' && onCredentialsSubmit) {
@@ -326,7 +340,11 @@ export function AuthPage(props: AuthPageProps) {
                         setConfirmPassword('');
                     }
                 } else {
-                    onComplete?.();
+                    if (onComplete) {
+                        onComplete();
+                    } else if (mode === 'signin') {
+                        setIsAwaitingAuthTransition(true);
+                    }
                 }
 
                 return;
@@ -390,7 +408,8 @@ export function AuthPage(props: AuthPageProps) {
         ? 'mt-4 rounded-[16px] border border-amber-100 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800'
         : 'mt-4 rounded-[16px] border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900';
 
-    const primaryButtonLabel = isLoading
+    const isBusy = isLoading || isAwaitingAuthTransition;
+    const primaryButtonLabel = isBusy
         ? isSignInEmailStep
             ? 'Checking email...'
             : mode === 'signin'
@@ -486,7 +505,7 @@ export function AuthPage(props: AuthPageProps) {
                                             <button
                                                 type="button"
                                                 onClick={() => void handleResendConfirmation()}
-                                                disabled={isLoading}
+                                                disabled={isBusy}
                                                 className="text-sm font-medium text-[#C76F00] transition-colors hover:text-[#A95F00] disabled:cursor-not-allowed disabled:opacity-60 dark:text-sky-300 dark:hover:text-sky-200"
                                             >
                                                 Resend confirmation email
@@ -532,8 +551,10 @@ export function AuthPage(props: AuthPageProps) {
                                                     setSignInStep('email');
                                                     setVerifiedEmail(null);
                                                     setPassword('');
+                                                    setIsAwaitingAuthTransition(false);
                                                 }
                                             }}
+                                            disabled={isBusy}
                                             inputRef={emailInputRef}
                                             required
                                         />
@@ -558,6 +579,7 @@ export function AuthPage(props: AuthPageProps) {
                                                 autoComplete="current-password"
                                                 value={password}
                                                 onChange={setPassword}
+                                                disabled={isBusy}
                                                 inputRef={passwordInputRef}
                                                 required
                                             />
@@ -566,6 +588,7 @@ export function AuthPage(props: AuthPageProps) {
                                                     <button
                                                         type="button"
                                                         onClick={() => void handlePasswordReset()}
+                                                        disabled={isBusy}
                                                         className="text-sm font-medium text-[#C76F00] transition-colors hover:text-[#A95F00] dark:text-sky-300 dark:hover:text-sky-200"
                                                     >
                                                         Forgot password?
@@ -574,6 +597,7 @@ export function AuthPage(props: AuthPageProps) {
                                                 <button
                                                     type="button"
                                                     onClick={() => {
+                                                        setIsAwaitingAuthTransition(false);
                                                         setSignInStep('email');
                                                         setVerifiedEmail(null);
                                                         setPassword('');
@@ -581,6 +605,7 @@ export function AuthPage(props: AuthPageProps) {
                                                             emailInputRef.current?.focus();
                                                         });
                                                     }}
+                                                    disabled={isBusy}
                                                     className="text-sm font-medium text-[var(--foreground-muted)] transition-colors hover:text-[var(--foreground)]"
                                                 >
                                                     Use another email
@@ -598,6 +623,7 @@ export function AuthPage(props: AuthPageProps) {
                                                 autoComplete="new-password"
                                                 value={password}
                                                 onChange={setPassword}
+                                                disabled={isBusy}
                                                 inputRef={passwordInputRef}
                                                 required
                                             />
@@ -608,13 +634,14 @@ export function AuthPage(props: AuthPageProps) {
                                                 autoComplete="new-password"
                                                 value={confirmPassword}
                                                 onChange={setConfirmPassword}
+                                                disabled={isBusy}
                                                 inputRef={confirmPasswordInputRef}
                                                 required
                                             />
                                         </div>
                                     )}
 
-                                    <Button type="submit" variant="brand" size="lg" className="mt-5 h-[42px] w-full rounded-[14px] text-[0.94rem]" disabled={isLoading}>
+                                    <Button type="submit" variant="brand" size="lg" className="mt-5 h-[42px] w-full rounded-[14px] text-[0.94rem]" disabled={isBusy}>
                                         {primaryButtonLabel}
                                     </Button>
                                 </form>
@@ -628,7 +655,7 @@ export function AuthPage(props: AuthPageProps) {
                                             <button
                                                 type="button"
                                                 onClick={() => handleOAuthClick('google')}
-                                                disabled={isLoading}
+                                                disabled={isBusy}
                                                 className="inline-flex w-full items-center justify-center gap-3.5 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-2.5 text-[0.94rem] font-medium text-[var(--foreground)] transition-[transform,background-color,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-slate-300/70 hover:bg-[var(--panel-strong)] hover:shadow-[0_14px_30px_rgba(15,23,42,0.08)] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:border-sky-400/22 dark:hover:bg-slate-900/84"
                                             >
                                                 <GoogleMark />
@@ -637,7 +664,7 @@ export function AuthPage(props: AuthPageProps) {
                                             <button
                                                 type="button"
                                                 onClick={() => handleOAuthClick('github')}
-                                                disabled={isLoading}
+                                                disabled={isBusy}
                                                 className="inline-flex w-full items-center justify-center gap-3.5 rounded-[14px] border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-2.5 text-[0.94rem] font-medium text-[var(--foreground)] transition-[transform,background-color,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-slate-300/70 hover:bg-[var(--panel-strong)] hover:shadow-[0_14px_30px_rgba(15,23,42,0.08)] disabled:cursor-not-allowed disabled:opacity-60 dark:hover:border-sky-400/22 dark:hover:bg-slate-900/84"
                                             >
                                                 <Github className="h-5 w-5" />

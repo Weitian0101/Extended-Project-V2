@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 
 import { AuthPage } from '@/components/auth/AuthPage';
@@ -155,6 +155,7 @@ export function RemoteWorkspaceShell() {
     const [projects, setProjects] = useState<WorkspaceProject[]>(() => loadCachedWorkspaceShell()?.projects ?? []);
     const [profile, setProfile] = useState<UserProfileData>(() => loadCachedWorkspaceShell()?.profile ?? DEFAULT_USER);
     const [collaborationOverview, setCollaborationOverview] = useState<WorkspaceShellDto['collaborationOverview']>(() => loadCachedWorkspaceShell()?.collaborationOverview);
+    const [notifications, setNotifications] = useState<WorkspaceShellDto['notifications']>(() => loadCachedWorkspaceShell()?.notifications ?? []);
     const [profileReturnState, setProfileReturnState] = useState<WorkspaceReturnState>({
         view: 'dashboard',
         activeProjectId: null,
@@ -171,6 +172,7 @@ export function RemoteWorkspaceShell() {
     const [authError, setAuthError] = useState<string | null>(null);
     const [workspaceStatus, setWorkspaceStatus] = useState<string | null>(null);
     const [profileSaving, setProfileSaving] = useState(false);
+    const [isSigningOut, setIsSigningOut] = useState(false);
     const [isNavigationHydrated, setIsNavigationHydrated] = useState(false);
     const [guideStep, setGuideStep] = useState<OnboardingStepId | null>(null);
     const [guideVariant, setGuideVariant] = useState<GuideFlowVariant | null>(null);
@@ -194,6 +196,17 @@ export function RemoteWorkspaceShell() {
             });
         }
     };
+
+    const clearWorkspaceViewState = useCallback(() => {
+        clearWorkspaceSession();
+        clearOnboardingGuideSession();
+        setProjects([]);
+        setProfile(DEFAULT_USER);
+        setCollaborationOverview(undefined);
+        setNotifications([]);
+        setActiveProjectId(null);
+        setActiveSurface('hub');
+    }, []);
 
     useEffect(() => {
         const savedSession = loadWorkspaceSession();
@@ -271,6 +284,7 @@ export function RemoteWorkspaceShell() {
                 }
             }
 
+            setIsSigningOut(false);
             setAuthLoading(false);
         };
 
@@ -280,6 +294,9 @@ export function RemoteWorkspaceShell() {
             data: { subscription }
         } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
             setSessionUser(session?.user ?? null);
+            if (!session) {
+                setIsSigningOut(false);
+            }
             setAuthLoading(false);
         });
 
@@ -317,20 +334,38 @@ export function RemoteWorkspaceShell() {
         });
     }, [profile, projects, sessionUser]);
 
+    const refreshWorkspace = useCallback(async (options?: { suppressErrors?: boolean }) => {
+        if (!sessionUser || isSigningOut) {
+            return;
+        }
+
+        try {
+            const data = await fetchApiJson<WorkspaceResponse>('/api/workspace', {
+                cache: 'no-store'
+            });
+            setProjects(data.workspace.projects);
+            setProfile(data.workspace.profile);
+            setCollaborationOverview(data.workspace.collaborationOverview);
+            setNotifications(data.workspace.notifications || []);
+        } catch (error) {
+            if (!options?.suppressErrors) {
+                setAuthError(error instanceof Error ? error.message : 'Unable to load workspace.');
+            }
+        }
+    }, [isSigningOut, sessionUser]);
+
     useEffect(() => {
         if (!isNavigationHydrated || authLoading) {
             return;
         }
 
         const syncWorkspace = async () => {
+            if (isSigningOut) {
+                return;
+            }
+
             if (!sessionUser) {
-                clearWorkspaceSession();
-                clearOnboardingGuideSession();
-                setProjects([]);
-                setProfile(DEFAULT_USER);
-                setCollaborationOverview(undefined);
-                setActiveProjectId(null);
-                setActiveSurface('hub');
+                clearWorkspaceViewState();
                 setWorkspaceLoading(false);
                 setView((currentView) => (
                     currentView === 'landing' || currentView === 'auth' ? currentView : 'landing'
@@ -349,8 +384,9 @@ export function RemoteWorkspaceShell() {
                 setProjects(data.workspace.projects);
                 setProfile(data.workspace.profile);
                 setCollaborationOverview(data.workspace.collaborationOverview);
+                setNotifications(data.workspace.notifications || []);
                 setView((currentView) => (
-                    currentView === 'landing' || currentView === 'auth' || currentView === 'logging_out'
+                    currentView === 'landing' || currentView === 'auth'
                         ? 'dashboard'
                         : currentView
                 ));
@@ -362,7 +398,7 @@ export function RemoteWorkspaceShell() {
         };
 
         void syncWorkspace();
-    }, [authLoading, isNavigationHydrated, sessionUser]);
+    }, [authLoading, clearWorkspaceViewState, isNavigationHydrated, isSigningOut, sessionUser]);
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -439,14 +475,35 @@ export function RemoteWorkspaceShell() {
         }
     }, [authLoading, guideStep, guideVariant, isGuideViewportEligible, profile.guidePreferences?.onboardingSeenAt, projects.length, view, workspaceLoading]);
 
-    const refreshWorkspace = async () => {
-        const data = await fetchApiJson<WorkspaceResponse>('/api/workspace', {
-            cache: 'no-store'
-        });
-        setProjects(data.workspace.projects);
-        setProfile(data.workspace.profile);
-        setCollaborationOverview(data.workspace.collaborationOverview);
-    };
+    useEffect(() => {
+        if (authLoading || !sessionUser || isSigningOut) {
+            return;
+        }
+
+        const refreshSilently = () => {
+            void refreshWorkspace({ suppressErrors: true });
+        };
+
+        const handleFocus = () => {
+            refreshSilently();
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                refreshSilently();
+            }
+        };
+
+        const intervalId = window.setInterval(refreshSilently, 30000);
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.clearInterval(intervalId);
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [authLoading, isSigningOut, refreshWorkspace, sessionUser]);
 
     const getEmailRegistrationStatus = async (email: string) => {
         const { data, error } = await supabase.rpc('get_email_registration_status', {
@@ -689,7 +746,7 @@ export function RemoteWorkspaceShell() {
             method: 'DELETE'
         });
 
-        setProjects((current) => current.filter((project) => project.id !== projectId));
+        await refreshWorkspace({ suppressErrors: true });
         if (activeProjectId === projectId) {
             setActiveProjectId(null);
             setView('dashboard');
@@ -839,10 +896,20 @@ export function RemoteWorkspaceShell() {
 
     const handleLogout = async () => {
         clearOnboardingGuideSession();
+        setWorkspaceStatus(null);
+        setAuthError(null);
+        setIsSigningOut(true);
         setView('logging_out');
-        await supabase.auth.signOut();
-        clearWorkspaceSession();
-        setView('landing');
+
+        try {
+            await supabase.auth.signOut();
+            setSessionUser(null);
+            clearWorkspaceViewState();
+        } catch (error) {
+            setIsSigningOut(false);
+            setAuthError(error instanceof Error ? error.message : 'Unable to sign out right now.');
+            setView('dashboard');
+        }
     };
 
     const handleOpenProfile = (source: 'dashboard' | 'sandbox') => {
@@ -928,6 +995,7 @@ export function RemoteWorkspaceShell() {
                     runtimeMode="remote-supabase"
                     projects={projects}
                     profile={profile}
+                    notifications={notifications}
                     currentUserId={profile.id}
                     onOpenProject={handleOpenProject}
                     onCreateProject={handleCreateProject}
@@ -958,6 +1026,7 @@ export function RemoteWorkspaceShell() {
                 <SandboxApp
                     project={activeProject}
                     profile={profile}
+                    notifications={notifications}
                     currentSurface={activeSurface}
                     onSurfaceChange={setActiveSurface}
                     onExit={() => {
@@ -993,6 +1062,7 @@ export function RemoteWorkspaceShell() {
                     runtimeMode="remote-supabase"
                     projects={projects}
                     profile={profile}
+                    notifications={notifications}
                     currentUserId={profile.id}
                     onOpenProject={handleOpenProject}
                     onCreateProject={handleCreateProject}

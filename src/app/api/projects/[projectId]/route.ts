@@ -40,7 +40,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
         return NextResponse.json({ ok: true });
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to delete project.';
-        const status = message === 'Unauthenticated' ? 401 : 500;
+        const status = message === 'Unauthenticated'
+            ? 401
+            : message === 'Forbidden'
+                ? 403
+                : message === 'Project not found.'
+                    ? 404
+                    : 500;
 
         return NextResponse.json({ error: message }, { status });
     }

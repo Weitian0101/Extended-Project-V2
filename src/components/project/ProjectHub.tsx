@@ -272,6 +272,8 @@ export function ProjectHub({
     const openThreadCount = hub.threads.filter((thread) => thread.status === 'open').length;
     const currentMember = projectSummary.members.find((member) => member.id === currentUserId);
     const canManageSharedTodos = currentMember?.permission === 'owner' || currentMember?.permission === 'edit';
+    const canManageSharedRecords = canManageSharedTodos;
+    const canEditBrief = canManageSharedRecords;
     const systemTimeZone = useMemo(() => getSystemTimezone(), []);
     const cardsByColumn = useMemo(() => Object.fromEntries(
         BOARD_COLUMNS.map((column) => [column.id, hub.cards.filter((card) => card.status === column.id)])
@@ -332,6 +334,26 @@ export function ProjectHub({
         readyArtifactCount > 0 ? `${readyArtifactCount} output${readyArtifactCount === 1 ? '' : 's'}` : null,
         proposedDecisionCount > 0 ? `${proposedDecisionCount} decision${proposedDecisionCount === 1 ? '' : 's'}` : null
     ].filter(Boolean).join(' · ');
+    const showPermissionError = (action: string) => {
+        setActionError(`You don't have permission to ${action}.`);
+    };
+    const canManageTaskRecord = (task: TaskItem) => {
+        if (getTodoScope(task) === 'personal') {
+            return task.ownerId === currentUserId || task.createdBy === currentUserId;
+        }
+
+        return canManageSharedTodos;
+    };
+    const canManageRecord = (
+        resource: 'cards' | 'tasks' | 'sessions' | 'decisions' | 'artifacts',
+        record: CollaborationCard | TaskItem | ProjectSession | DecisionLogEntry | ProjectArtifact
+    ) => {
+        if (resource === 'tasks') {
+            return canManageTaskRecord(record as TaskItem);
+        }
+
+        return canManageSharedRecords;
+    };
 
     useEffect(() => {
         if (!pendingJumpTarget) {
@@ -485,6 +507,11 @@ export function ProjectHub({
         }));
 
     const handleBriefSave = async () => {
+        if (!canEditBrief) {
+            showPermissionError('edit the project brief');
+            return;
+        }
+
         setSavingBrief(true);
         try {
             await onUpdateBrief({
@@ -497,6 +524,16 @@ export function ProjectHub({
     };
 
     const handleCreateCardFromScope = (scope: 'board' | 'global-todo' | 'personal-todo') => {
+        if (scope === 'board' && !canManageSharedRecords) {
+            showPermissionError('create board cards');
+            return;
+        }
+
+        if (scope === 'global-todo' && !canManageSharedTodos) {
+            showPermissionError('create shared tasks');
+            return;
+        }
+
         if (scope === 'board') {
             setEditingRecord(null);
             setBoardDraft({ title: '', summary: '', type: 'idea', status: 'open-questions', ownerId: '', dueDate: '' });
@@ -517,6 +554,11 @@ export function ProjectHub({
     };
 
     const handleEditRecord = (resource: 'cards' | 'tasks' | 'sessions' | 'decisions' | 'artifacts', record: CollaborationCard | TaskItem | ProjectSession | DecisionLogEntry | ProjectArtifact) => {
+        if (!canManageRecord(resource, record)) {
+            showPermissionError(resource === 'tasks' ? 'edit this task' : 'edit shared project items');
+            return;
+        }
+
         setEditingRecord({ resource, recordId: record.id });
         setDetailState(null);
         setContextMenu(null);
@@ -594,6 +636,11 @@ export function ProjectHub({
 
     const handleRename = async () => {
         if (!contextMenu) return;
+        if (!canManageRecord(contextMenu.resource, contextMenu.record)) {
+            showPermissionError('rename this item');
+            setContextMenu(null);
+            return;
+        }
         setRenameDialog({
             resource: contextMenu.resource,
             record: contextMenu.record,
@@ -629,6 +676,11 @@ export function ProjectHub({
     };
 
     const handleTodoToggle = async (task: TaskItem) => {
+        if (!canManageTaskRecord(task)) {
+            showPermissionError('update this task');
+            return;
+        }
+
         const nextStatus = task.status === 'done' ? 'open' : 'done';
         try {
             setActionError(null);
@@ -654,6 +706,11 @@ export function ProjectHub({
 
     const handleDelete = async () => {
         if (!contextMenu) return;
+        if (!canManageRecord(contextMenu.resource, contextMenu.record)) {
+            showPermissionError('delete this item');
+            setContextMenu(null);
+            return;
+        }
         setDeleteDialog({
             resource: contextMenu.resource,
             id: contextMenu.record.id,
@@ -677,6 +734,11 @@ export function ProjectHub({
     };
 
     const handleCardSubmit = async () => {
+        if (!canManageSharedRecords) {
+            showPermissionError('create or edit board cards');
+            return;
+        }
+
         const payload = {
             ...boardDraft,
             ownerId: boardDraft.ownerId || null,
@@ -701,6 +763,20 @@ export function ProjectHub({
     };
 
     const handleTaskSubmit = async () => {
+        const existingTask = editingRecord?.resource === 'tasks'
+            ? hub.tasks.find((task) => task.id === editingRecord.recordId)
+            : null;
+
+        if (existingTask && !canManageTaskRecord(existingTask)) {
+            showPermissionError('edit this task');
+            return;
+        }
+
+        if (!existingTask && taskDraft.todoScope === 'global' && !canManageSharedTodos) {
+            showPermissionError('create shared tasks');
+            return;
+        }
+
         const payload = {
             ...taskDraft,
             ownerId: taskDraft.ownerId || null,
@@ -732,6 +808,11 @@ export function ProjectHub({
     };
 
     const handleSessionSubmit = async () => {
+        if (!canManageSharedRecords) {
+            showPermissionError('create or edit sessions');
+            return;
+        }
+
         const scheduledAt = sessionDraft.scheduledAt ? new Date(sessionDraft.scheduledAt).toISOString() : null;
         const metadata = buildSessionMetadata({
             existingMetadata: editingRecord?.resource === 'sessions'
@@ -795,6 +876,11 @@ export function ProjectHub({
     };
 
     const handleDecisionSubmit = async () => {
+        if (!canManageSharedRecords) {
+            showPermissionError('create or edit decisions');
+            return;
+        }
+
         if (decisionDraft.requiresApproval && decisionDraft.approverIds.length === 0) {
             setActionError('Select at least one approver before creating an approval-based decision.');
             return;
@@ -904,6 +990,11 @@ export function ProjectHub({
     };
 
     const handleArtifactSubmit = async () => {
+        if (!canManageSharedRecords) {
+            showPermissionError('create or edit outputs');
+            return;
+        }
+
         if (editingRecord?.resource === 'artifacts') {
             const existing = hub.artifacts.find((artifact) => artifact.id === editingRecord.recordId);
             if (!existing) return;
@@ -920,6 +1011,8 @@ export function ProjectHub({
         setEditingRecord(null);
         setComposerMode(null);
     };
+    const canManageDetailRecord = detailState ? canManageRecord(detailState.resource, detailState.record) : false;
+    const canManageContextMenuRecord = contextMenu ? canManageRecord(contextMenu.resource, contextMenu.record) : false;
 
     if (isLoading && !hasCachedData) {
         return (
@@ -1108,6 +1201,12 @@ export function ProjectHub({
                     </div>
                 )}
 
+                {!canManageSharedRecords && (
+                    <div className="rounded-[24px] border border-sky-400/20 bg-sky-500/10 px-4 py-3 text-sm text-sky-700 dark:text-sky-300">
+                        You have view-only access. Shared create, edit, and delete actions are disabled.
+                    </div>
+                )}
+
                 {activeTab === 'brief' && (
                     <div className="grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
                         <div className="space-y-6">
@@ -1231,7 +1330,7 @@ export function ProjectHub({
                                     onChange={(values) => setBriefDraft((current) => ({ ...current, keyLinks: serializeListField(values) }))}
                                 />
                                 <div className="mt-6 flex justify-end">
-                                    <Button onClick={() => void handleBriefSave()} disabled={savingBrief}>{savingBrief ? 'Saving...' : 'Save Brief'}</Button>
+                                    <Button onClick={() => void handleBriefSave()} disabled={savingBrief || !canEditBrief}>{savingBrief ? 'Saving...' : 'Save Brief'}</Button>
                                 </div>
                             </div>
                             <div className="surface-panel rounded-[30px] p-6">
@@ -1289,11 +1388,11 @@ export function ProjectHub({
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-3">
-                                    <Button variant="secondary" onClick={() => handleCreateCardFromScope('board')}>
+                                    <Button variant="secondary" onClick={() => handleCreateCardFromScope('board')} disabled={!canManageSharedRecords}>
                                         <Plus className="mr-2 h-4 w-4" />
                                         New board card
                                     </Button>
-                                    <Button variant="outline" onClick={() => handleCreateCardFromScope('global-todo')}>
+                                    <Button variant="outline" onClick={() => handleCreateCardFromScope('global-todo')} disabled={!canManageSharedTodos}>
                                         <Plus className="mr-2 h-4 w-4" />
                                         New task
                                     </Button>
@@ -1349,7 +1448,8 @@ export function ProjectHub({
                                                             const bounds = event.currentTarget.getBoundingClientRect();
                                                             setContextMenu({ resource: 'cards', record: card, x: bounds.right - 176, y: bounds.bottom + 8 });
                                                         }}
-                                                        className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]"
+                                                        disabled={!canManageSharedRecords}
+                                                        className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
                                                     >
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </button>
@@ -1390,7 +1490,7 @@ export function ProjectHub({
                                             panelClassName="right-0 left-auto w-[220px]"
                                         />
                                     </div>
-                                    <Button variant="ghost" onClick={() => handleCreateCardFromScope('global-todo')}>
+                                    <Button variant="ghost" onClick={() => handleCreateCardFromScope('global-todo')} disabled={!canManageSharedTodos}>
                                         <Plus className="mr-2 h-4 w-4" />
                                         Add task
                                     </Button>
@@ -1435,7 +1535,8 @@ export function ProjectHub({
                                                     const bounds = event.currentTarget.getBoundingClientRect();
                                                     setContextMenu({ resource: 'tasks', record: task, x: bounds.right - 176, y: bounds.bottom + 8 });
                                                 }}
-                                                className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]"
+                                                disabled={!canManageTaskRecord(task)}
+                                                className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </button>
@@ -1477,7 +1578,7 @@ export function ProjectHub({
                                     });
                                     setSessionDetailsExpanded(false);
                                     setComposerMode('session');
-                                }}>
+                                }} disabled={!canManageSharedRecords}>
                                     <Plus className="mr-2 h-4 w-4" />
                                     Schedule session
                                 </Button>
@@ -1522,7 +1623,8 @@ export function ProjectHub({
                                                     const bounds = event.currentTarget.getBoundingClientRect();
                                                     setContextMenu({ resource: 'sessions', record: session, x: bounds.right - 176, y: bounds.bottom + 8 });
                                                 }}
-                                                className="rounded-full bg-white/55 p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-white/80 hover:text-[var(--foreground)]"
+                                                disabled={!canManageSharedRecords}
+                                                className="rounded-full bg-white/55 p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-white/80 hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 <MoreHorizontal className="h-4 w-4" />
                                             </button>
@@ -1568,7 +1670,7 @@ export function ProjectHub({
                                         </div>
                                         <div className="mt-2 text-xl font-display font-semibold text-[var(--foreground)]">Important project calls</div>
                                     </div>
-                                    <Button variant="secondary" onClick={() => setComposerMode('decision')}>
+                                    <Button variant="secondary" onClick={() => setComposerMode('decision')} disabled={!canManageSharedRecords}>
                                         <Plus className="mr-2 h-4 w-4" />
                                         Log decision
                                     </Button>
@@ -1610,7 +1712,8 @@ export function ProjectHub({
                                                         const bounds = event.currentTarget.getBoundingClientRect();
                                                         setContextMenu({ resource: 'decisions', record: decision, x: bounds.right - 176, y: bounds.bottom + 8 });
                                                     }}
-                                                    className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]"
+                                                    disabled={!canManageSharedRecords}
+                                                    className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </button>
@@ -1649,7 +1752,7 @@ export function ProjectHub({
                                         </div>
                                         <div className="mt-2 text-xl font-display font-semibold text-[var(--foreground)]">Reusable artifacts</div>
                                     </div>
-                                    <Button variant="secondary" onClick={() => setComposerMode('artifact')}>
+                                    <Button variant="secondary" onClick={() => setComposerMode('artifact')} disabled={!canManageSharedRecords}>
                                         <Plus className="mr-2 h-4 w-4" />
                                         Capture output
                                     </Button>
@@ -1684,7 +1787,8 @@ export function ProjectHub({
                                                         const bounds = event.currentTarget.getBoundingClientRect();
                                                         setContextMenu({ resource: 'artifacts', record: artifact, x: bounds.right - 176, y: bounds.bottom + 8 });
                                                     }}
-                                                    className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]"
+                                                    disabled={!canManageSharedRecords}
+                                                    className="rounded-full p-1.5 text-[var(--foreground-muted)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </button>
@@ -1932,31 +2036,35 @@ export function ProjectHub({
                                     </Button>
                                 </>
                             )}
-                        <Button
-                            variant="ghost"
-                            onClick={() => {
-                                setDeleteDialog({
-                                    resource: detailState.resource,
-                                    id: detailState.record.id,
-                                    title: detailState.record.title
-                                });
-                                setDetailState(null);
-                            }}
-                        >
-                            Delete
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            onClick={() => {
-                                if (detailState.resource === 'cards') handleEditRecord('cards', detailState.record);
-                                if (detailState.resource === 'tasks') handleEditRecord('tasks', detailState.record);
-                                if (detailState.resource === 'sessions') handleEditRecord('sessions', detailState.record);
-                                if (detailState.resource === 'decisions') handleEditRecord('decisions', detailState.record);
-                                if (detailState.resource === 'artifacts') handleEditRecord('artifacts', detailState.record);
-                            }}
-                        >
-                            Edit
-                        </Button>
+                        {canManageDetailRecord && (
+                            <>
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => {
+                                        setDeleteDialog({
+                                            resource: detailState.resource,
+                                            id: detailState.record.id,
+                                            title: detailState.record.title
+                                        });
+                                        setDetailState(null);
+                                    }}
+                                >
+                                    Delete
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => {
+                                        if (detailState.resource === 'cards') handleEditRecord('cards', detailState.record);
+                                        if (detailState.resource === 'tasks') handleEditRecord('tasks', detailState.record);
+                                        if (detailState.resource === 'sessions') handleEditRecord('sessions', detailState.record);
+                                        if (detailState.resource === 'decisions') handleEditRecord('decisions', detailState.record);
+                                        if (detailState.resource === 'artifacts') handleEditRecord('artifacts', detailState.record);
+                                    }}
+                                >
+                                    Edit
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </ModalShell>
             )}
@@ -1991,15 +2099,15 @@ export function ProjectHub({
 
             {contextMenu && (
                 <div className="fixed z-[70] w-44 rounded-[18px] border border-[var(--panel-border)] bg-[var(--panel-strong)] p-2 shadow-[0_24px_40px_rgba(15,23,42,0.28)]" style={{ left: contextMenu.x, top: contextMenu.y }} onPointerDown={(event) => event.stopPropagation()}>
-                    <button type="button" onClick={() => handleEditRecord(contextMenu.resource, contextMenu.record)} className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-[var(--foreground-soft)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]">
+                    <button type="button" onClick={() => handleEditRecord(contextMenu.resource, contextMenu.record)} disabled={!canManageContextMenuRecord} className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-[var(--foreground-soft)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50">
                         <PencilLine className="h-4 w-4" />
                         Edit
                     </button>
-                    <button type="button" onClick={() => void handleRename()} className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-[var(--foreground-soft)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)]">
+                    <button type="button" onClick={() => void handleRename()} disabled={!canManageContextMenuRecord} className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-[var(--foreground-soft)] transition-colors hover:bg-[var(--panel)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50">
                         <PencilLine className="h-4 w-4" />
                         Rename
                     </button>
-                    <button type="button" onClick={() => void handleDelete()} className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-rose-500 transition-colors hover:bg-rose-500/10 hover:text-rose-400">
+                    <button type="button" onClick={() => void handleDelete()} disabled={!canManageContextMenuRecord} className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-rose-500 transition-colors hover:bg-rose-500/10 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-50">
                         <Trash2 className="h-4 w-4" />
                         Delete
                     </button>

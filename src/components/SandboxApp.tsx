@@ -16,13 +16,25 @@ import { TellStoryView } from '@/components/stages/TellStoryView';
 import { AvatarCluster } from '@/components/ui/AvatarCluster';
 import { Button } from '@/components/ui/Button';
 import { BrandedLoadingScreen } from '@/components/ui/BrandedLoadingScreen';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { UserMenu } from '@/components/ui/UserMenu';
 import { getGuideProgress } from '@/data/onboarding';
 import { useProjectHubData } from '@/hooks/useProjectHubData';
 import { useProjectData } from '@/hooks/useProjectData';
 import { aiGateway } from '@/lib/services/aiGateway';
-import { AiResponseEntry, GuideFlowVariant, OnboardingStepId, ProjectInvite, ProjectSurface, StageId, TeamMember, UserProfileData, WorkspaceProject } from '@/types';
+import {
+    AiResponseEntry,
+    GuideFlowVariant,
+    OnboardingStepId,
+    ProjectInvite,
+    ProjectSurface,
+    StageId,
+    TeamMember,
+    UserProfileData,
+    WorkspaceNotification,
+    WorkspaceProject
+} from '@/types';
 
 function getStagePreferenceMode(metadata: Record<string, unknown>): 'auto' | 'manual' {
     return metadata.stageMode === 'manual' ? 'manual' : 'auto';
@@ -51,6 +63,7 @@ const SURFACE_LABELS: Record<ProjectSurface, string> = {
 interface SandboxAppProps {
     project: WorkspaceProject;
     profile: UserProfileData;
+    notifications?: WorkspaceNotification[];
     currentSurface: ProjectSurface;
     onSurfaceChange: (surface: ProjectSurface) => void;
     onExit: () => void;
@@ -77,6 +90,7 @@ interface SandboxAppProps {
 export function SandboxApp({
     project: incomingProjectSummary,
     profile,
+    notifications = [],
     currentSurface,
     onSurfaceChange,
     onExit,
@@ -406,6 +420,7 @@ export function SandboxApp({
                             <div className="hidden items-center gap-3 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 sm:flex">
                                 <AvatarCluster members={projectSummary.members.filter((member) => member.status !== 'offline')} size="sm" />
                             </div>
+                            <NotificationBell notifications={notifications} />
                             <ThemeToggle compact />
                             <button
                                 type="button"

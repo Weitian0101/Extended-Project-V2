@@ -7,6 +7,7 @@ import {
     ToolFieldValue,
     UserProfileData,
     WorkspaceCollaborationOverview,
+    WorkspaceNotification,
     WorkspaceProject
 } from '@/types';
 
@@ -18,6 +19,7 @@ export interface WorkspaceShellDto {
     projects: WorkspaceProject[];
     profile: UserProfileData;
     collaborationOverview?: WorkspaceCollaborationOverview;
+    notifications?: WorkspaceNotification[];
 }
 
 export interface WorkspaceExportDto {

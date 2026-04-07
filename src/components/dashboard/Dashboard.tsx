@@ -28,23 +28,34 @@ import { AvatarCluster } from '@/components/ui/AvatarCluster';
 import { BrandLockup } from '@/components/ui/BrandLockup';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { UserMenu } from '@/components/ui/UserMenu';
 import { getGuideProgress, shouldShowCreateStep } from '@/data/onboarding';
 import { getMembershipPlan } from '@/lib/membership';
 import { saveWorkspaceShell } from '@/lib/services/mvpWorkspace';
 import { cn } from '@/lib/utils';
-import { GuideFlowVariant, OnboardingStepId, ProjectInvite, TeamMember, UserProfileData, WorkspaceCollaborationOverview, WorkspaceProject } from '@/types';
+import {
+    GuideFlowVariant,
+    OnboardingStepId,
+    ProjectInvite,
+    TeamMember,
+    UserProfileData,
+    WorkspaceCollaborationOverview,
+    WorkspaceNotification,
+    WorkspaceProject
+} from '@/types';
 
 interface DashboardProps {
     runtimeMode?: 'local-mvp' | 'remote-supabase';
     projects: WorkspaceProject[];
     profile: UserProfileData;
+    notifications?: WorkspaceNotification[];
     currentUserId?: string;
     onOpenProject: (projectId: string) => void;
     onCreateProject: () => Promise<WorkspaceProject | null> | WorkspaceProject | null;
     onUpdateProject: (projectId: string, updates: Partial<WorkspaceProject>) => Promise<void> | void;
-    onDeleteProject: (projectId: string) => void;
+    onDeleteProject: (projectId: string) => Promise<void> | void;
     onOpenProfile: () => void;
     onOpenLearningCenter: () => void;
     onLogout: () => void;
@@ -79,6 +90,35 @@ interface OverviewCardItem {
 
 function getOwner(project: WorkspaceProject): TeamMember | undefined {
     return project.members.find((member) => member.id === project.ownerId) || project.members[0];
+}
+
+function getProjectRemovalCopy(project: WorkspaceProject, currentUserId?: string) {
+    const isOwner = !currentUserId || project.ownerId === currentUserId;
+
+    if (!isOwner) {
+        return {
+            menuLabel: 'Leave project',
+            title: 'Leave project',
+            description: `Leave "${project.name}"? You will lose access to this project and it will be removed from your dashboard.`,
+            confirmLabel: 'Leave Project'
+        };
+    }
+
+    if (project.members.length > 1) {
+        return {
+            menuLabel: 'Dissolve project',
+            title: 'Dissolve project',
+            description: `Dissolve "${project.name}" for all ${project.members.length} members? It will be removed from every dashboard and members will receive a notification.`,
+            confirmLabel: 'Dissolve Project'
+        };
+    }
+
+    return {
+        menuLabel: 'Delete project',
+        title: 'Delete project',
+        description: `Delete "${project.name}" from the workspace? This removes the project from your dashboard.`,
+        confirmLabel: 'Delete Project'
+    };
 }
 
 function formatStageLabel(stage?: WorkspaceProject['currentStage']) {
@@ -143,6 +183,7 @@ function getOverviewTitleLines(title: string) {
 export function Dashboard({
     projects,
     profile,
+    notifications = [],
     currentUserId,
     onOpenProject,
     onCreateProject,
@@ -173,6 +214,8 @@ export function Dashboard({
     const [projectPendingDelete, setProjectPendingDelete] = useState<WorkspaceProject | null>(null);
     const [isImporting, setIsImporting] = useState(false);
     const [isCreatingProject, setIsCreatingProject] = useState(false);
+    const [projectActionError, setProjectActionError] = useState<string | null>(null);
+    const [projectActionTargetId, setProjectActionTargetId] = useState<string | null>(null);
     const [pendingOpenProjectId, setPendingOpenProjectId] = useState<string | null>(null);
     const workspaceMenuRef = useRef<HTMLDivElement | null>(null);
     const activeMenuRef = useRef<HTMLDivElement | null>(null);
@@ -244,6 +287,7 @@ export function Dashboard({
     const handleCreateProjectClick = async () => {
         try {
             setIsCreatingProject(true);
+            setProjectActionError(null);
             const createdProject = await Promise.resolve(onCreateProject());
 
             if (createdProject) {
@@ -259,6 +303,34 @@ export function Dashboard({
             // Parent shell owns the error surface.
         } finally {
             setIsCreatingProject(false);
+        }
+    };
+
+    const handleProjectRemovalConfirm = async () => {
+        if (!projectPendingDelete) {
+            return;
+        }
+
+        const isOwner = !currentUserId || projectPendingDelete.ownerId === currentUserId;
+        setProjectActionError(null);
+        setProjectActionTargetId(projectPendingDelete.id);
+
+        try {
+            if (!isOwner) {
+                if (!currentUserId || !onRemoveMember) {
+                    throw new Error('Unable to leave this project right now.');
+                }
+
+                await onRemoveMember(projectPendingDelete.id, currentUserId);
+            } else {
+                await Promise.resolve(onDeleteProject(projectPendingDelete.id));
+            }
+
+            setProjectPendingDelete(null);
+        } catch (error) {
+            setProjectActionError(error instanceof Error ? error.message : 'Unable to update this project.');
+        } finally {
+            setProjectActionTargetId(null);
         }
     };
 
@@ -392,6 +464,7 @@ export function Dashboard({
                 <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 lg:px-8">
                     <BrandLockup compact framed={false} />
                     <div className="flex items-center gap-2 lg:gap-3">
+                        <NotificationBell notifications={notifications} />
                         <ThemeToggle compact />
                         <UserMenu
                             name={profile.name}
@@ -410,7 +483,7 @@ export function Dashboard({
                     <div>
                         <h1 className="text-4xl font-display font-semibold text-[var(--foreground)]">Dashboard</h1>
                         <p className="mt-2 max-w-2xl text-base text-[var(--foreground-soft)]">
-                            Pick a project, invite collaborators, or create a new sandbox project without leaving this page.
+                            Pick a project, invite collaborators, or create a sandbox project.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -530,16 +603,16 @@ export function Dashboard({
                     </div>
                 </section>
 
-                {(workspaceStatus || workspaceError) && (
+                {(workspaceStatus || workspaceError || projectActionError) && (
                     <div className="mb-8 grid gap-3 lg:grid-cols-2">
                         {workspaceStatus && (
                             <div className="rounded-[22px] border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
                                 {workspaceStatus}
                             </div>
                         )}
-                        {workspaceError && (
+                        {(workspaceError || projectActionError) && (
                             <div className="rounded-[22px] border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
-                                {workspaceError}
+                                {projectActionError || workspaceError}
                             </div>
                         )}
                     </div>
@@ -661,8 +734,10 @@ export function Dashboard({
                                                         }}
                                                         className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-sm text-rose-500 transition-colors hover:bg-rose-500/10 hover:text-rose-400"
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
-                                                        Delete Project
+                                                        {project.ownerId === currentUserId || !currentUserId
+                                                            ? <Trash2 className="h-4 w-4" />
+                                                            : <ArrowUpRight className="h-4 w-4" />}
+                                                        {getProjectRemovalCopy(project, currentUserId).menuLabel}
                                                     </button>
                                                 </div>
                                             )}
@@ -739,20 +814,19 @@ export function Dashboard({
             />
             <ConfirmDialog
                 open={Boolean(projectPendingDelete)}
-                title="Delete project"
+                title={projectPendingDelete ? getProjectRemovalCopy(projectPendingDelete, currentUserId).title : 'Delete project'}
                 description={projectPendingDelete
-                    ? `Delete "${projectPendingDelete.name}" from the workspace? This removes the project from the dashboard.`
+                    ? getProjectRemovalCopy(projectPendingDelete, currentUserId).description
                     : ''}
-                confirmLabel="Delete Project"
+                confirmLabel={projectPendingDelete ? getProjectRemovalCopy(projectPendingDelete, currentUserId).confirmLabel : 'Delete Project'}
                 tone="danger"
-                onClose={() => setProjectPendingDelete(null)}
-                onConfirm={() => {
-                    if (!projectPendingDelete) {
-                        return;
+                isLoading={projectActionTargetId === projectPendingDelete?.id}
+                onClose={() => {
+                    if (!projectActionTargetId) {
+                        setProjectPendingDelete(null);
                     }
-                    onDeleteProject(projectPendingDelete.id);
-                    setProjectPendingDelete(null);
                 }}
+                onConfirm={() => void handleProjectRemovalConfirm()}
             />
             <SpotlightGuide
                 open={hasGuide && guideStep === 'dashboard-summary'}

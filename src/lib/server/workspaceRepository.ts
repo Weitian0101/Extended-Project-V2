@@ -8,7 +8,18 @@ import {
     saveProjectHubSnapshot
 } from '@/lib/server/projectHubRepository';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { PermissionLevel, ProjectData, ProjectHubData, ProjectInvite, TeamMember, ToolRun, UserProfileData, WorkspaceProject } from '@/types';
+import {
+    PermissionLevel,
+    ProjectData,
+    ProjectHubData,
+    ProjectInvite,
+    TeamMember,
+    ToolRun,
+    UserProfileData,
+    WorkspaceNotification,
+    WorkspaceNotificationType,
+    WorkspaceProject
+} from '@/types';
 
 interface ProfileRow {
     id: string;
@@ -99,6 +110,18 @@ interface ToolRunRow {
     updated_at: string;
 }
 
+interface WorkspaceNotificationRow {
+    id: string;
+    type: WorkspaceNotificationType | string;
+    title: string;
+    message: string;
+    project_id: string | null;
+    project_name: string | null;
+    invite_id: string | null;
+    read_at: string | null;
+    created_at: string;
+}
+
 export interface InviteMemberResult {
     delivery: 'invite-created';
     invite: ProjectInvite;
@@ -187,6 +210,15 @@ function isMissingGuidePreferencesColumnError(error: unknown) {
         && error.code === '42703'
         && typeof error.message === 'string'
         && error.message.includes('guide_preferences');
+}
+
+function isMissingWorkspaceNotificationsFeatureError(error: unknown) {
+    return isRecord(error)
+        && typeof error.message === 'string'
+        && (
+            error.message.includes('workspace_notifications')
+            || error.message.includes('get_workspace_notifications')
+        );
 }
 
 async function fetchProfileById(
@@ -445,6 +477,64 @@ async function getAuthenticatedProjectManager(projectId: string, requiredPermiss
     };
 }
 
+function mapWorkspaceNotification(row: WorkspaceNotificationRow): WorkspaceNotification {
+    const type: WorkspaceNotificationType = row.type === 'project-invite'
+        ? 'project-invite'
+        : 'project-dissolved';
+
+    return {
+        id: row.id,
+        type,
+        title: row.title,
+        message: row.message,
+        createdAt: row.created_at,
+        projectId: row.project_id,
+        projectName: row.project_name,
+        inviteId: row.invite_id,
+        readAt: row.read_at
+    };
+}
+
+async function fetchWorkspaceNotifications(
+    supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>
+) {
+    const { data, error } = await supabase.rpc('get_workspace_notifications');
+
+    if (error) {
+        if (isMissingWorkspaceNotificationsFeatureError(error)) {
+            return [] as WorkspaceNotificationRow[];
+        }
+
+        throw error;
+    }
+
+    return (data || []) as unknown as WorkspaceNotificationRow[];
+}
+
+async function insertWorkspaceNotifications(
+    supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+    notifications: Array<{
+        user_id: string;
+        project_id: string | null;
+        project_name: string;
+        type: 'project-dissolved';
+        title: string;
+        message: string;
+    }>
+) {
+    if (notifications.length === 0) {
+        return;
+    }
+
+    const { error } = await supabase
+        .from('workspace_notifications')
+        .insert(notifications);
+
+    if (error && !isMissingWorkspaceNotificationsFeatureError(error)) {
+        console.error('Unable to persist workspace notifications.', error);
+    }
+}
+
 async function getPendingInviteRow(projectId: string, inviteId: string) {
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
@@ -551,6 +641,8 @@ export async function getWorkspaceShell() {
         throw profileError || new Error('Profile not found');
     }
 
+    const notifications = (await fetchWorkspaceNotifications(supabase)).map(mapWorkspaceNotification);
+
     const { data: membershipData, error: membershipError } = await supabase
         .from('project_members')
         .select('project_id, user_id, role, permission, status, created_at, updated_at')
@@ -572,7 +664,8 @@ export async function getWorkspaceShell() {
                 upcomingSessions: [],
                 assignedTasks: [],
                 recentActivity: []
-            }
+            },
+            notifications
         };
     }
 
@@ -642,7 +735,8 @@ export async function getWorkspaceShell() {
     return {
         profile,
         projects: enrichedWorkspace.projects,
-        collaborationOverview: enrichedWorkspace.collaborationOverview
+        collaborationOverview: enrichedWorkspace.collaborationOverview,
+        notifications
     };
 }
 
@@ -722,6 +816,44 @@ export async function updateProjectSummary(projectId: string, updates: Partial<P
 
 export async function deleteProject(projectId: string) {
     const supabase = await createSupabaseServerClient();
+    const { user } = await getAuthenticatedProjectManager(projectId, 'owner');
+
+    const { data: projectData, error: projectError } = await supabase
+        .from('projects')
+        .select('id, name, owner_id')
+        .eq('id', projectId)
+        .maybeSingle();
+    const project = projectData as { id: string; name: string; owner_id: string } | null;
+
+    if (projectError || !project) {
+        throw projectError || new Error('Project not found.');
+    }
+
+    const { data: memberData, error: memberError } = await supabase
+        .from('project_members')
+        .select('user_id')
+        .eq('project_id', projectId);
+    const members = (memberData || []) as Array<{ user_id: string }>;
+
+    if (memberError) {
+        throw memberError;
+    }
+
+    await insertWorkspaceNotifications(
+        supabase,
+        members
+            .map((member) => member.user_id)
+            .filter((memberId) => memberId !== user.id)
+            .map((memberId) => ({
+                user_id: memberId,
+                project_id: projectId,
+                project_name: project.name,
+                type: 'project-dissolved' as const,
+                title: 'Project dissolved',
+                message: `"${project.name}" was dissolved and removed from your dashboard.`
+            }))
+    );
+
     const { error } = await supabase
         .from('projects')
         .delete()
@@ -822,11 +954,29 @@ export async function updateProjectMember(projectId: string, memberId: string, u
 }
 
 export async function removeProjectMember(projectId: string, memberId: string) {
-    const { user } = await getAuthenticatedProjectManager(projectId, 'owner');
     const supabase = await createSupabaseServerClient();
+    const user = await getAuthenticatedUser();
 
-    if (memberId === user.id) {
-        throw new Error('Owners cannot remove themselves from the project.');
+    if (!user) {
+        throw new Error('Unauthenticated');
+    }
+
+    const { data: currentMembershipData, error: currentMembershipError } = await supabase
+        .from('project_members')
+        .select('permission')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+    const currentMembership = currentMembershipData as { permission: PermissionLevel } | null;
+
+    if (currentMembershipError || !currentMembership) {
+        throw currentMembershipError || new Error('Forbidden');
+    }
+
+    const isSelfRemoval = memberId === user.id;
+
+    if (!isSelfRemoval && currentMembership.permission !== 'owner') {
+        throw new Error('Forbidden');
     }
 
     const { data: projectData, error: projectError } = await supabase
@@ -841,7 +991,11 @@ export async function removeProjectMember(projectId: string, memberId: string) {
     }
 
     if (project.owner_id === memberId) {
-        throw new Error('Remove or transfer project ownership before deleting this member.');
+        throw new Error(
+            isSelfRemoval
+                ? 'Owners cannot leave their own project. Delete the project or transfer ownership first.'
+                : 'Remove or transfer project ownership before deleting this member.'
+        );
     }
 
     const { error } = await supabase

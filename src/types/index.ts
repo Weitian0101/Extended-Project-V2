@@ -264,6 +264,7 @@ export interface WorkspaceCollaborationOverview {
 export type PermissionLevel = 'owner' | 'edit' | 'view';
 export type MembershipTier = 'free' | 'plus' | 'ultra' | 'business';
 export type BillingCycle = 'monthly' | 'yearly';
+export type WorkspaceNotificationType = 'project-invite' | 'project-dissolved';
 export type OnboardingStepId =
     | 'dashboard-summary'
     | 'dashboard-create'
@@ -342,6 +343,18 @@ export interface WorkspaceProject {
     lastActivityAt?: string | null;
     members: TeamMember[];
     pendingInvites?: ProjectInvite[];
+}
+
+export interface WorkspaceNotification {
+    id: string;
+    type: WorkspaceNotificationType;
+    title: string;
+    message: string;
+    createdAt: string;
+    projectId?: string | null;
+    projectName?: string | null;
+    inviteId?: string | null;
+    readAt?: string | null;
 }
 
 export interface UserProfileData {

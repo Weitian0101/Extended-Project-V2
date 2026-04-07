@@ -50,7 +50,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
             ? 401
             : message === 'Forbidden'
                 ? 403
-                : (message === 'Owners cannot remove themselves from the project.'
+                : (message === 'Owners cannot leave their own project. Delete the project or transfer ownership first.'
                     || message === 'Remove or transfer project ownership before deleting this member.')
                     ? 400
                     : 500;
