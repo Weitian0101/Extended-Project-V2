@@ -165,6 +165,29 @@ function getProjectHref(projectId: string) {
     return `/?${params.toString()}`;
 }
 
+function openProjectLaunchTab(projectName: string) {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const params = new URLSearchParams({
+        name: projectName.trim() || 'Project'
+    });
+    const nextTab = window.open(`/opening-project?${params.toString()}`, '_blank');
+
+    if (!nextTab) {
+        return null;
+    }
+
+    try {
+        nextTab.opener = null;
+    } catch {
+        return nextTab;
+    }
+
+    return nextTab;
+}
+
 function getOverviewTitleLines(title: string) {
     switch (title) {
         case 'Needs Review':
@@ -794,14 +817,15 @@ export function Dashboard({
                 onSave={(updatedProject) => {
                     const shouldOpenProject = pendingOpenProjectId === updatedProject.id;
                     const pendingProjectTab = shouldOpenProject && typeof window !== 'undefined'
-                        ? window.open('', '_blank')
+                        ? openProjectLaunchTab(updatedProject.name)
                         : null;
 
                     void Promise.resolve(onUpdateProject(updatedProject.id, updatedProject))
-                        .then(() => {
+                        .then(async () => {
                             setSettingsProject(null);
                             if (shouldOpenProject) {
                                 setPendingOpenProjectId(null);
+                                await new Promise((resolve) => window.setTimeout(resolve, 320));
                                 openProjectInNewTab(updatedProject.id, pendingProjectTab);
                             }
                         })

@@ -316,6 +316,14 @@ export function RemoteWorkspaceShell() {
     }, [activeProjectId, activeSurface, authLoading, isNavigationHydrated, view]);
 
     useEffect(() => {
+        if (authLoading || !sessionUser || view !== 'auth') {
+            return;
+        }
+
+        setView('dashboard');
+    }, [authLoading, sessionUser, view]);
+
+    useEffect(() => {
         if (typeof document === 'undefined') {
             return;
         }
@@ -947,6 +955,16 @@ export function RemoteWorkspaceShell() {
                 fullscreen
                 label="Loading workspace"
                 detail="Connecting your account, projects, and guide preferences."
+            />
+        );
+    }
+
+    if (view === 'auth' && sessionUser) {
+        return (
+            <BrandedLoadingScreen
+                fullscreen
+                label="Opening workspace"
+                detail="You are already signed in."
             />
         );
     }

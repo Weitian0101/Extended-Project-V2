@@ -14,6 +14,8 @@ interface BrandedLoadingScreenProps {
 }
 
 export function BrandedLoadingScreen({
+    label,
+    detail,
     fullscreen = false,
     compact = false,
     className
@@ -57,9 +59,13 @@ export function BrandedLoadingScreen({
                     </div>
                 </div>
 
-                <div className="mt-3 text-lg font-display font-semibold text-[var(--foreground)]">
-                    Loading...
-                </div>
+                <div className="mt-3 text-lg font-display font-semibold text-[var(--foreground)]">{label}</div>
+
+                {detail && (
+                    <div className="mt-2 max-w-sm text-sm leading-relaxed text-[var(--foreground-soft)]">
+                        {detail}
+                    </div>
+                )}
 
                 <div className="mt-5 w-full max-w-xs">
                     <div className="h-2.5 overflow-hidden rounded-full bg-[var(--panel)]/80">
