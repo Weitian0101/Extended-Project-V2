@@ -40,6 +40,7 @@ This is a single Next.js application. The frontend, API routes, auth callbacks, 
 - React 19
 - Supabase Auth + Postgres for remote mode
 - Vercel for web hosting and serverless API routes
+- optional OpenAI-compatible AI provider for facilitator flows
 - optional Resend for invite emails
 
 ## Deployment Modes
@@ -85,6 +86,11 @@ Current variables:
 | `NEXT_PUBLIC_APP_URL` | yes | Base URL for local auth redirects, password reset, invite links, and production callback URLs |
 | `NEXT_PUBLIC_SUPABASE_URL` | yes for remote mode | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes for remote mode | Supabase publishable key |
+| `AI_API_KEY` | optional | Enables real server-side AI responses for prompt board, facilitator chat, and step assist |
+| `AI_MODEL` | optional | Model name sent to the OpenAI-compatible chat completions endpoint |
+| `AI_BASE_URL` | optional | Base URL for an OpenAI-compatible API, defaults to `https://api.openai.com/v1` |
+| `AI_TEMPERATURE` | optional | Default sampling temperature for AI requests |
+| `AI_TIMEOUT_MS` | optional | Timeout for AI requests in milliseconds |
 | `DEMO_ADMIN_EMAIL` | optional | Enables the "Open Test Workspace" button on the sign-in screen |
 | `DEMO_ADMIN_PASSWORD` | optional | Password for the demo admin account |
 | `DEMO_ADMIN_NAME` | optional | Display name for the demo admin account |
@@ -96,6 +102,7 @@ Notes:
 - If you leave the Supabase variables empty, the app falls back to `local-mvp`.
 - For local development, `NEXT_PUBLIC_APP_URL` should be `http://localhost:3000`.
 - For production on Vercel, `NEXT_PUBLIC_APP_URL` should be your real HTTPS domain.
+- If you leave `AI_API_KEY` empty, the AI UI still works but responses come from the built-in local mock gateway.
 
 ## 3. Set Up Supabase
 
@@ -202,6 +209,36 @@ INVITE_FROM_EMAIL=Innovation Sandbox <onboarding@your-domain.example>
 
 Without `RESEND_API_KEY`, the app still runs, but the invite email endpoint will return an error when used.
 
+### AI Provider
+
+The app now exposes real server-side AI routes:
+
+- `POST /api/ai/prompt-board`
+- `POST /api/ai/facilitator-chat`
+- `POST /api/ai/step-assist`
+
+What the backend actually uses:
+
+- the project-level `aiHandoffPrompt` as the primary system prompt when it exists
+- the generated project context markdown from challenge, audiences, and constraints
+- method metadata like stage, method title, selected prompt, step type, and recent facilitator history
+
+What it does not do yet:
+
+- store standalone `.md` files on disk
+- stream responses token-by-token
+- persist raw prompt/response logs separately from existing tool run data
+
+To enable real AI responses, set:
+
+```env
+AI_API_KEY=your_api_key
+AI_MODEL=gpt-4.1-mini
+AI_BASE_URL=https://api.openai.com/v1
+```
+
+If you use another OpenAI-compatible provider, point `AI_BASE_URL` at that provider instead.
+
 ### Demo Admin Access
 
 If you want a one-click demo workspace button on the sign-in page, set:
@@ -265,9 +302,15 @@ Set both `DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD`.
 
 ## AI Integration Boundary
 
-The current AI layer is intentionally isolated so it can be replaced later without rewriting the product surface.
+The AI layer is now isolated behind server routes so it can be replaced later without rewriting the product surface.
 
 Primary handoff points:
 
 - `src/lib/services/aiGateway.ts`
+- `src/lib/server/aiGateway.ts`
 - `src/lib/contracts/api.ts`
+
+Current behavior:
+
+- with `AI_API_KEY`: real server-side AI calls through an OpenAI-compatible API
+- without `AI_API_KEY`: automatic fallback to the existing local mock responses

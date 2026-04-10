@@ -12,7 +12,7 @@ import {
 } from '@/types';
 
 export type RuntimeMode = 'local-mvp' | 'remote-supabase';
-export type ResponseSource = 'local-mock' | 'remote-supabase';
+export type ResponseSource = 'local-mock' | 'remote-supabase' | 'remote-ai';
 export type WorkspaceExportVersion = 'local-mvp-v1' | 'remote-supabase-v1';
 
 export interface WorkspaceShellDto {

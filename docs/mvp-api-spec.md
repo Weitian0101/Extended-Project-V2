@@ -5,7 +5,7 @@ This project now supports two concrete runtime modes:
 - `local-mvp`: browser-local persistence with demo auth
 - `remote-supabase`: real auth, real Postgres persistence, real invites, and real project state
 
-The AI layer is still intentionally local and abstracted. That keeps the UX complete for testing while leaving the eventual model provider replaceable.
+The AI layer is abstracted behind server routes. That keeps the UX complete for testing while leaving the model provider replaceable.
 
 ## Runtime Modes
 
@@ -14,7 +14,7 @@ The AI layer is still intentionally local and abstracted. That keeps the UX comp
 - Auth is simulated in the UI
 - Workspace and project documents live in browser storage
 - Export and import use a local JSON snapshot
-- AI responses come from the local gateway
+- AI responses come from the local gateway unless `AI_API_KEY` is configured
 
 ### `remote-supabase`
 
@@ -23,6 +23,7 @@ The AI layer is still intentionally local and abstracted. That keeps the UX comp
 - Workspace metadata, projects, members, invites, and tool runs live in Postgres
 - Export and import use a remote JSON snapshot through authenticated API routes
 - Invite links can be generated for users who have not signed in yet
+- AI routes require an authenticated user and use the configured AI provider when available
 
 ## Core Resources
 
@@ -167,14 +168,27 @@ The export format supports both modes:
 
 ## AI Surface
 
-The AI contract is still routed through:
+The client-side AI contract is routed through:
 
 - [api.ts](/D:/Local_Code/Extended_Project/src/lib/contracts/api.ts)
 - [aiGateway.ts](/D:/Local_Code/Extended_Project/src/lib/services/aiGateway.ts)
 
-Current behavior:
+Server-side AI implementation:
 
-- `mode: "local-mvp"`
-- `source: "local-mock"`
+- [server ai gateway](/D:/Local_Code/Extended_Project/src/lib/server/aiGateway.ts)
+- [provider client](/D:/Local_Code/Extended_Project/src/lib/server/aiProvider.ts)
+
+Route surface:
+
+- `POST /api/ai/prompt-board`
+- `POST /api/ai/facilitator-chat`
+- `POST /api/ai/step-assist`
+
+Actual backend behavior:
+
+- uses the project `aiHandoffPrompt` as the system prompt when present
+- uses generated project context markdown as the shared project context
+- falls back to `source: "local-mock"` when `AI_API_KEY` is missing
+- returns `source: "remote-ai"` when the server-side provider is configured
 
 That seam is intentionally left in place so the client can later replace only the AI implementation without rewriting the rest of the product.
