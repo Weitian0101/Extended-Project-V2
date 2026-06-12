@@ -9,7 +9,7 @@
   <img src="./public/images/logo.png" alt="Innovation Sandbox for ADT logo" height="90" />
 </p>
 
-本仓库记录的是一个为 Academy of Design Thinking 设计与开发的 Sandbox 平台。该项目同时也是 University College London 信息管理商业项目课程要求的一部分。
+本仓库记录的是一个为 Academy of Design Thinking 设计与开发的 Sandbox 平台。
 
 除非文中另有明确说明，当前实现与文档内容基本均为本人独立完成。只要明确注明来源，本项目可以被自由复制与传播。
 
