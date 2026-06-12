@@ -9,7 +9,7 @@
   <img src="./public/images/logo.png" alt="Innovation Sandbox for ADT logo" height="90" />
 </p>
 
-This repository documents a Sandbox platform designed and built for Academy of Design Thinking. It was produced as part of the requirements for the Information Management for Business programme at University College London.
+This repository documents a Sandbox platform designed and built for Academy of Design Thinking.
 
 Unless otherwise indicated, the implementation and documentation are substantially the result of my own work. The project may be freely copied and distributed provided the source is explicitly acknowledged.
 
